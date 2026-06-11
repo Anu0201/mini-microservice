@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: auth-service
+
+  cloud:
+    compatibility-verifier:
+      enabled: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/micro_auth_db
+    username: postgres
+    password: 9909
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+services:
+  user-service:
+    url: http://localhost:8082
+
+app:
+  internal-secret: "my-super-shared-secret-key-123"
+  jwt:
+    secret: "9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef"
+    expiration: 86400000

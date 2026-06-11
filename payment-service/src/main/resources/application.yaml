@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: payment-service
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/micro_payment_db
+    username: postgres
+    password: 9909
+server:
+  port: 8081
