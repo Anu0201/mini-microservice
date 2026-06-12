@@ -13,6 +13,16 @@ subprojects {
     apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
 
+    ext {
+        set('springCloudVersion', "2024.0.1")
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
