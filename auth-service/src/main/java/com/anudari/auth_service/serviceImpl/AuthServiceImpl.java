@@ -4,7 +4,7 @@ import com.anudari.auth_service.dto.AuthResponse;
 import com.anudari.auth_service.dto.LoginRequest;
 import com.anudari.auth_service.dto.UserInternalDto;
 import com.anudari.auth_service.entity.AuthHistory;
-import com.anudari.auth_service.constant.AppConstants;
+import com.anudari.common.constant.AppConstants;
 import com.anudari.auth_service.exception.AuthenticationException;
 import com.anudari.auth_service.feign.UserClient;
 import com.anudari.auth_service.repository.AuthHistoryRepository;
@@ -41,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
             authHistoryRepository.save(AuthHistory.builder()
                     .userId(userDto.getId())
                     .username(request.getUsername())
-                    .eventType(AppConstants.EVENT_LOGIN_FAIL)
+                    .eventType(AppConstants.EVENT.LOGIN_FAIL)
                     .ipAddress(ipAddress)
                     .userAgent(userAgent)
                     .build());
@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
         authHistoryRepository.save(AuthHistory.builder()
                 .userId(userDto.getId())
                 .username(userDto.getUsername())
-                .eventType(AppConstants.EVENT_LOGIN_SUCCESS)
+                .eventType(AppConstants.EVENT.LOGIN_SUCCESS)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .build());

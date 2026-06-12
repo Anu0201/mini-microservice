@@ -1,6 +1,6 @@
 package com.anudari.user_service.serviceImpl;
 
-import com.anudari.user_service.constant.AppConstants;
+import com.anudari.common.constant.AppConstants;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRoles(Set.of(AppConstants.ROLE_USER));
+        user.setRoles(Set.of(AppConstants.ROLE.USER));
         return UserResponse.from(userRepository.save(user));
     }
 

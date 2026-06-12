@@ -27,6 +27,9 @@
       <module name="microservice-parent.auth-service" options="-parameters" />
       <module name="microservice-parent.auth-service.main" options="-parameters" />
       <module name="microservice-parent.auth-service.test" options="-parameters" />
+      <module name="microservice-parent.common" options="-parameters" />
+      <module name="microservice-parent.common.main" options="-parameters" />
+      <module name="microservice-parent.common.test" options="-parameters" />
       <module name="microservice-parent.gateway-service" options="-parameters" />
       <module name="microservice-parent.gateway-service.main" options="-parameters" />
       <module name="microservice-parent.gateway-service.test" options="-parameters" />

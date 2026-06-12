@@ -1,6 +1,6 @@
 package com.anudari.gateway_service.filter;
 
-import com.anudari.gateway_service.constant.AppConstants;
+import com.anudari.common.constant.AppConstants;
 import com.anudari.gateway_service.utility.JwtUtility;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,11 +50,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
             ServerHttpRequest.Builder requestBuilder = request.mutate()
                     .headers(headers -> {
-                        headers.remove(AppConstants.HEADER_AUTH_USERNAME);
-                        headers.remove(AppConstants.HEADER_AUTH_USER_ID);
+                        headers.remove(AppConstants.HEADER.AUTH_USERNAME);
+                        headers.remove(AppConstants.HEADER.AUTH_USER_ID);
                     });
 
-            if (path.startsWith(AppConstants.ADMIN_PATH_PREFIX)) {
+            if (path.startsWith(AppConstants.PATH.ADMIN_PREFIX)) {
                 InetSocketAddress remoteAddress = request.getRemoteAddress();
                 if (remoteAddress == null) {
                     return onError(exchange, HttpStatus.FORBIDDEN);
@@ -82,8 +82,8 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 try {
                     Claims claims = jwtUtility.extractClaims(token);
                     requestBuilder
-                            .header(AppConstants.HEADER_AUTH_USERNAME, claims.getSubject())
-                            .header(AppConstants.HEADER_AUTH_USER_ID, String.valueOf(claims.get("userId")));
+                            .header(AppConstants.HEADER.AUTH_USERNAME, claims.getSubject())
+                            .header(AppConstants.HEADER.AUTH_USER_ID, String.valueOf(claims.get("userId")));
                 } catch (Exception e) {
                     return onError(exchange, HttpStatus.UNAUTHORIZED);
                 }
