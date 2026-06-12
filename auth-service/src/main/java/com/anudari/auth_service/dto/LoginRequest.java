@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class LoginRequest {
-    @NotBlank
+    @NotBlank //not null, hooson, space avaagui baihiig shalgaj baigaa
     private String username;
 
     @NotBlank

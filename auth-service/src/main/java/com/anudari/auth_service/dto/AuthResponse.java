@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
+@AllArgsConstructor //argument avdag constructoruudiig uusgene
 public class AuthResponse {
     private String token;
     private String username;

@@ -8,7 +8,7 @@ import com.anudari.auth_service.constant.AppConstants;
 import com.anudari.auth_service.exception.AuthenticationException;
 import com.anudari.auth_service.feign.UserClient;
 import com.anudari.auth_service.repository.AuthHistoryRepository;
-import com.anudari.auth_service.security.JwtUtil;
+import com.anudari.auth_service.util.JwtUtil;
 import com.anudari.auth_service.service.*;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;

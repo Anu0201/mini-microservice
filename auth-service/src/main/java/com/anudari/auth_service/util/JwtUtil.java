@@ -1,4 +1,4 @@
-package com.anudari.auth_service.security;
+package com.anudari.auth_service.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
