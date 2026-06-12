@@ -32,7 +32,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="micro_payment_db@localhost" uuid="f9254326-ded3-46fb-b709-620717edfe52">
+    <data-source source="LOCAL" name="micro_payment_db@localhost" uuid="ca165ae2-3691-4240-bff1-593d207ddc17">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
