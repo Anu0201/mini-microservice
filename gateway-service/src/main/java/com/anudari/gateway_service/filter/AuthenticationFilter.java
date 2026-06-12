@@ -1,6 +1,8 @@
 package com.anudari.gateway_service.filter;
 
+import com.anudari.gateway_service.constant.AppConstants;
 import com.anudari.gateway_service.utility.JwtUtility;
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -32,13 +34,13 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public static class Config {
     }
 
-    private final Predicate<ServerHttpRequest> isSecured = request -> {
-        List<String> openEndpoints = List.of(
-                "/api/auth/login",
-                "/api/users/register"
-        );
-        return openEndpoints.stream().noneMatch(uri -> request.getURI().getPath().contains(uri));
-    };
+    private static final List<String> OPEN_ENDPOINTS = List.of(
+            "/api/auth/login",
+            "/api/users/register"
+    );
+
+    private final Predicate<ServerHttpRequest> isSecured = request ->
+            OPEN_ENDPOINTS.stream().noneMatch(uri -> request.getURI().getPath().equals(uri));
 
     @Override
     public GatewayFilter apply(Config config) {
@@ -46,15 +48,19 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             ServerHttpRequest request = exchange.getRequest();
             String path = request.getURI().getPath();
 
-            if (path.startsWith("/api/admin/")) {
+            ServerHttpRequest.Builder requestBuilder = request.mutate()
+                    .headers(headers -> {
+                        headers.remove(AppConstants.HEADER_AUTH_USERNAME);
+                        headers.remove(AppConstants.HEADER_AUTH_USER_ID);
+                    });
+
+            if (path.startsWith(AppConstants.ADMIN_PATH_PREFIX)) {
                 InetSocketAddress remoteAddress = request.getRemoteAddress();
                 if (remoteAddress == null) {
                     return onError(exchange, HttpStatus.FORBIDDEN);
                 }
-
                 String clientIp = remoteAddress.getAddress().getHostAddress();
-
-                if (!allowedOrigins.contains(clientIp)) {
+                if (allowedOrigins.stream().map(String::trim).noneMatch(clientIp::equals)) {
                     return onError(exchange, HttpStatus.FORBIDDEN);
                 }
             }
@@ -73,8 +79,17 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 if (jwtUtility.isInvalid(token)) {
                     return onError(exchange, HttpStatus.UNAUTHORIZED);
                 }
+                try {
+                    Claims claims = jwtUtility.extractClaims(token);
+                    requestBuilder
+                            .header(AppConstants.HEADER_AUTH_USERNAME, claims.getSubject())
+                            .header(AppConstants.HEADER_AUTH_USER_ID, String.valueOf(claims.get("userId")));
+                } catch (Exception e) {
+                    return onError(exchange, HttpStatus.UNAUTHORIZED);
+                }
             }
-            return chain.filter(exchange);
+
+            return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
         };
     }
 

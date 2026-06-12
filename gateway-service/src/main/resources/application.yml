@@ -30,12 +30,11 @@ spring:
           filters:
             - AuthenticationFilter
 jwt:
-  secret: "9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef"
+  secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
 
 logging:
   level:
-    org.springframework.cloud.gateway: TRACE
-    org.springframework.http.server.reactive: DEBUG
+    org.springframework.cloud.gateway: INFO
     com.anudari.gateway_service: DEBUG
 
 security:

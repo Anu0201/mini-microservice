@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: auth-service
@@ -14,22 +17,21 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
   flyway:
-    enabled: true
-    baseline-on-migrate: true
+    enabled: false
 
 services:
   user-service:
     url: http://localhost:8082
 
 app:
-  internal-secret: "my-super-shared-secret-key-123"
+  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
   jwt:
-    secret: "9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef"
-    expiration: 86400000
+    secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
+    expiration: ${JWT_EXPIRATION:86400000}

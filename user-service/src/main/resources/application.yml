@@ -14,15 +14,14 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
 
   flyway:
-    enabled: true
-    baseline-on-migrate: true
+    enabled: false
 
 server:
   port: 8082
 
 app:
-  internal-secret: "my-super-shared-secret-key-123"
+  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}

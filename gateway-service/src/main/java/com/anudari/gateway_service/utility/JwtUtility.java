@@ -21,15 +21,17 @@ public class JwtUtility {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    public Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
     public boolean isInvalid(String token) {
         try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            return claims.getExpiration().before(new Date());
+            return extractClaims(token).getExpiration().before(new Date());
         } catch (Exception e) {
             return true;
         }

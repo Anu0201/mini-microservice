@@ -1,91 +1,61 @@
 package com.anudari.user_service.controller;
 
-import com.anudari.user_service.entity.User;
-import com.anudari.user_service.repository.UserRepository;
+import com.anudari.user_service.dto.RegisterRequest;
+import com.anudari.user_service.dto.UpdateUserRequest;
+import com.anudari.user_service.dto.UserInternalResponse;
+import com.anudari.user_service.dto.UserResponse;
+import com.anudari.user_service.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
-
-    @Value("${app.internal-secret}")
-    private String internalSecret;
+    private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            user.setRoles(new java.util.HashSet<>());
-            user.getRoles().add("ROLE_USER");
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(userRepository.save(user));
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        return userRepository.findById(id).map(user -> {
-            user.setEmail(userDetails.getEmail());
-            if (userDetails.getRoles() != null) {
-                user.setRoles(userDetails.getRoles());
-            }
-            return ResponseEntity.ok(userRepository.save(user));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
+    // Username is forwarded by the gateway as a trusted header after JWT validation
     @GetMapping("/me")
-    public ResponseEntity<User> getMe(@RequestParam String username) {
-        return userRepository.findByUsername(username)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponse> getMe(
+            @RequestHeader(value = "X-Auth-Username", required = false) String username) {
+        if (username == null || username.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(userService.getMe(username));
     }
 
     @GetMapping("/internal/search")
-    public ResponseEntity<?> internalLookup(
+    public ResponseEntity<UserInternalResponse> internalLookup(
             @RequestParam String username,
             @RequestHeader(value = "X-Internal-Secret", required = false) String secretToken) {
-
-        if (secretToken == null || !secretToken.equals(internalSecret)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Access Denied: Only internal auth-service can access this endpoint."));
-        }
-
-        return userRepository.findByUsername(username)
-                .map(user -> ResponseEntity.ok(Map.of(
-                        "id", user.getId(),
-                        "username", user.getUsername(),
-                        "credentialHash", user.getPassword(),
-                        "roles", user.getRoles()
-                )))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "User not found")));
+        return ResponseEntity.ok(userService.internalSearch(username, secretToken));
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
-    }
-
-    @GetMapping("/admin/dashboard")
-    public ResponseEntity<String> getAdminDashboard() {
-        return ResponseEntity.ok("Баяр хүргэе! Та Админ системд амжилттай нэвтэрлээ.");
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 }
