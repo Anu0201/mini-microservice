@@ -5,6 +5,7 @@ import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
 import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.service.UserService;
+import com.anudari.common.constant.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,10 +38,9 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
-    // Username is forwarded by the gateway as a trusted header after JWT validation
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getMe(
-            @RequestHeader(value = "X-Auth-Username", required = false) String username) {
+            @RequestHeader(value = AppConstants.HEADER.AUTH_USERNAME, required = false) String username) {
         if (username == null || username.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -50,7 +50,7 @@ public class UserController {
     @GetMapping("/internal/search")
     public ResponseEntity<UserInternalResponse> internalLookup(
             @RequestParam String username,
-            @RequestHeader(value = "X-Internal-Secret", required = false) String secretToken) {
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
         return ResponseEntity.ok(userService.internalSearch(username, secretToken));
     }
 
