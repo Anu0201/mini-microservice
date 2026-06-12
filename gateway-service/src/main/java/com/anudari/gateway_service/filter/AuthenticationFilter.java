@@ -14,12 +14,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Predicate;
 
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthenticationFilter.class);
 
     private final JwtUtility jwtUtility;
 
@@ -46,7 +51,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
-            String path = request.getURI().getPath();
 
             ServerHttpRequest.Builder requestBuilder = request.mutate()
                     .headers(headers -> {
@@ -54,27 +58,23 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         headers.remove(AppConstants.HEADER.AUTH_USER_ID);
                     });
 
-            if (path.startsWith(AppConstants.PATH.ADMIN_PREFIX)) {
-                InetSocketAddress remoteAddress = request.getRemoteAddress();
-                if (remoteAddress == null) {
-                    return onError(exchange, HttpStatus.FORBIDDEN);
-                }
-                String clientIp = remoteAddress.getAddress().getHostAddress();
-                if (allowedOrigins.stream().map(String::trim).noneMatch(clientIp::equals)) {
-                    return onError(exchange, HttpStatus.FORBIDDEN);
-                }
-            }
+            InetSocketAddress remoteAddress = request.getRemoteAddress();
+            String clientIp = remoteAddress != null ? remoteAddress.getAddress().getHostAddress() : "null";
+            log.debug("Request from IP: {}, path: {}", clientIp, request.getURI().getPath());
 
-            if (isSecured.test(request)) {
-                if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                    return onError(exchange, HttpStatus.UNAUTHORIZED);
-                }
+            boolean isAdminOrigin = remoteAddress != null &&
+                    allowedOrigins.stream()
+                            .map(String::trim)
+                            .anyMatch(clientIp::equals);
 
+            boolean hasToken = request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION);
+
+            if (hasToken && isSecured.test(request)) {
+                // JWT-тэй request - user route: шалгаж header нэмнэ
                 String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     return onError(exchange, HttpStatus.UNAUTHORIZED);
                 }
-
                 String token = authHeader.substring(7);
                 if (jwtUtility.isInvalid(token)) {
                     return onError(exchange, HttpStatus.UNAUTHORIZED);
@@ -87,7 +87,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 } catch (Exception e) {
                     return onError(exchange, HttpStatus.UNAUTHORIZED);
                 }
+            } else if (!hasToken && !isAdminOrigin && isSecured.test(request)) {
+                // Token байхгүй + admin origin биш = 401 zaana
+                return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
+            // Token байхгүй + admin origin = шууд дамжуулна
 
             return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
         };

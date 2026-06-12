@@ -7,7 +7,7 @@ services:
     platform: linux/amd64
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: 9909
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"

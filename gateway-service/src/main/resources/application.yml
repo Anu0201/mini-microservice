@@ -29,6 +29,13 @@ spring:
             - Path=/api/auth/**
           filters:
             - AuthenticationFilter
+
+        - id: payment-route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - AuthenticationFilter
 jwt:
   secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
 
