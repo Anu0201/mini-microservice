@@ -2,10 +2,10 @@ package com.anudari.payment_service.serviceImpl;
 
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
+import com.anudari.common.constant.AppConstants.*;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
-import com.anudari.payment_service.enums.InvoiceStatus;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
@@ -57,7 +57,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .currency(request.getCurrency() != null ? request.getCurrency() : "MNT")
                 .description(request.getDescription())
                 .dueDate(request.getDueDate())
-                .status(InvoiceStatus.UNPAID)
+                .status(INVOICE_STATUS.UNPAID)
                 .build();
 
         items.forEach(item -> item.setInvoice(invoice));
@@ -97,11 +97,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (!invoice.getUserId().equals(userId)) {
             throw new SecurityException("Access denied");
         }
-        if (invoice.getStatus() != InvoiceStatus.UNPAID) {
+        if (!INVOICE_STATUS.UNPAID.equals(invoice.getStatus())) {
             throw new IllegalStateException("Invoice is not payable: " + invoice.getStatus());
         }
 
-        invoice.setStatus(InvoiceStatus.PAID);
+        invoice.setStatus(INVOICE_STATUS.PAID);
         paymentRepository.save(Payment.builder()
                 .invoice(invoice)
                 .userId(userId)
@@ -115,10 +115,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse cancel(Long id) {
         Invoice invoice = findById(id);
-        if (invoice.getStatus() == InvoiceStatus.PAID) {
+        if (INVOICE_STATUS.PAID.equals(invoice.getStatus())) {
             throw new IllegalStateException("Cannot cancel a paid invoice");
         }
-        invoice.setStatus(InvoiceStatus.CANCELLED);
+        invoice.setStatus(INVOICE_STATUS.CANCELLED);
         return InvoiceResponse.from(invoiceRepository.save(invoice));
     }
 

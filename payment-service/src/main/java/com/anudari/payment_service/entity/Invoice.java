@@ -1,10 +1,10 @@
 package com.anudari.payment_service.entity;
 
-import com.anudari.payment_service.enums.InvoiceStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.anudari.common.constant.AppConstants.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,10 +35,8 @@ public class Invoice {
     @Column(length = 10)
     private String currency = "MNT";
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private InvoiceStatus status = InvoiceStatus.UNPAID;
-
+    private String status = INVOICE_STATUS.UNPAID;
     private String description;
 
     @Column(name = "due_date")

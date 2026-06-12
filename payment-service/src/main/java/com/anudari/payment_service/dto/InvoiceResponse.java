@@ -1,7 +1,6 @@
 package com.anudari.payment_service.dto;
 
 import com.anudari.payment_service.entity.Invoice;
-import com.anudari.payment_service.enums.InvoiceStatus;
 import lombok.Value;
 
 import java.math.BigDecimal;
@@ -16,7 +15,7 @@ public class InvoiceResponse {
     Long                     userId;
     BigDecimal               amount;
     String                   currency;
-    InvoiceStatus            status;
+    String                   status;
     String                   description;
     LocalDate                dueDate;
     List<InvoiceItemResponse> items;

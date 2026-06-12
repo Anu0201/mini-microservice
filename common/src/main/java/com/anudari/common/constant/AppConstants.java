@@ -14,12 +14,14 @@ public final class AppConstants {
         String USER = "ROLE_USER";
     }
 
-    public interface PATH {
-        String ADMIN_PREFIX = "/api/admin/";
-    }
-
     public interface EVENT {
         String LOGIN_SUCCESS = "LOGIN_SUCCESS";
         String LOGIN_FAIL    = "LOGIN_FAIL";
+    }
+
+    public interface INVOICE_STATUS {
+        String UNPAID    = "UNPAID";
+        String PAID      = "PAID";
+        String CANCELLED = "CANCELLED";
     }
 }
