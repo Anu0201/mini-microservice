@@ -13,6 +13,7 @@ plugins {
 rootProject.name = 'microservice-parent'
 
 include 'common'
+include 'admin-service'
 include 'auth-service'
 include 'gateway-service'
 include 'payment-service'

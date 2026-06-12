@@ -1,10 +1,11 @@
-package com.anudari.user_service.controller;
+package com.anudari.admin_service.controller;
 
-import com.anudari.user_service.dto.UserResponse;
-import com.anudari.user_service.service.UserService;
+import com.anudari.admin_service.dto.UserResponse;
+import com.anudari.admin_service.feign.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final UserService userService;
+    private final UserServiceClient userServiceClient;
 
     @GetMapping("/dashboard")
     public ResponseEntity<String> getDashboard() {
@@ -24,6 +25,11 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+        return ResponseEntity.ok(userServiceClient.getAllUsers());
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userServiceClient.getUserById(id));
     }
 }

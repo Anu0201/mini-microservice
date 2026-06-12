@@ -17,6 +17,7 @@
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.36/5a30490a6e14977d97d9c73c924c1f1b5311ea95/lombok-1.18.36.jar" />
         </processorPath>
         <module name="microservice-parent.payment-service.main" />
+        <module name="microservice-parent.admin-service.main" />
         <module name="microservice-parent.auth-service.main" />
       </profile>
     </annotationProcessing>
@@ -24,6 +25,9 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="microservice-parent.admin-service" options="-parameters" />
+      <module name="microservice-parent.admin-service.main" options="-parameters" />
+      <module name="microservice-parent.admin-service.test" options="-parameters" />
       <module name="microservice-parent.auth-service" options="-parameters" />
       <module name="microservice-parent.auth-service.main" options="-parameters" />
       <module name="microservice-parent.auth-service.test" options="-parameters" />
