@@ -7,6 +7,7 @@ public final class AppConstants {
     public interface HEADER {
         String AUTH_USERNAME   = "X-Auth-Username";
         String AUTH_USER_ID    = "X-Auth-UserId";
+        String AUTH_IS_ADMIN   = "X-Auth-IsAdmin";
         String INTERNAL_SECRET = "X-Internal-Secret";
     }
 

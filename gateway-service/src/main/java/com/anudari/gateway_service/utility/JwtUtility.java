@@ -36,4 +36,15 @@ public class JwtUtility {
             return true;
         }
     }
+
+    public Claims extractValidClaims(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
+        String token = authHeader.substring(7);
+        if (isInvalid(token)) return null;
+        try {
+            return extractClaims(token);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

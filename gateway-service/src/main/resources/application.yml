@@ -9,40 +9,39 @@ spring:
       enabled: false
     gateway:
       routes:
+        - id: auth-route
+          uri: http://localhost:8080
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: AuthFilter
+              args:
+                openPaths:
+                  - /api/auth/login
+
         - id: user-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/users/**
           filters:
-            - AuthenticationFilter
+            - name: AuthFilter
+              args:
+                openPaths:
+                  - /api/users/register
 
         - id: admin-route
           uri: http://localhost:8083
           predicates:
             - Path=/api/admin/**
           filters:
-            - AuthenticationFilter
-
-        - id: auth-route
-          uri: http://localhost:8080
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - AuthenticationFilter
-
-        - id: payment-admin-route
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/payments/admin/**
-          filters:
-            - AdminOnlyFilter
+            - AuthFilter
 
         - id: payment-route
           uri: http://localhost:8081
           predicates:
-            - Path=/api/payments/**
+            - Path=/api/payments/invoices/**
           filters:
-            - AuthenticationFilter
+            - AuthFilter
 jwt:
   secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
 

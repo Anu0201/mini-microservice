@@ -23,7 +23,7 @@ public class InvoiceResponse {
 
     public static InvoiceResponse from(Invoice invoice) {
         return new InvoiceResponse(
-                invoice.getInvoice(),
+                invoice.getInvoiceId(),
                 invoice.getInvoiceNumber(),
                 invoice.getUserId(),
                 invoice.getAmount(),

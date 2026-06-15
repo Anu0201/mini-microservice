@@ -10,8 +10,8 @@ spring:
 
 services:
   user-service:
-    url: http://localhost:8082
+    url: http://localhost:8060
   auth-service:
-    url: http://localhost:8080
+    url: http://localhost:8060
   payment-service:
-    url: http://localhost:8084
+    url: http://localhost:8060
