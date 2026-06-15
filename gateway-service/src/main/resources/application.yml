@@ -30,6 +30,13 @@ spring:
           filters:
             - AuthenticationFilter
 
+        - id: payment-admin-route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/payments/admin/**
+          filters:
+            - AdminOnlyFilter
+
         - id: payment-route
           uri: http://localhost:8081
           predicates:

@@ -30,7 +30,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse create(CreateInvoiceRequest request) {
+    public InvoiceResponse createInvoice(CreateInvoiceRequest request) {
         try {
             userServiceClient.getUserById(request.getUserId());
         } catch (FeignException.NotFound e) {
@@ -67,22 +67,22 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public List<InvoiceResponse> listAll() {
+    public List<InvoiceResponse> listAllInvoices() {
         return invoiceRepository.findAll().stream()
                 .map(InvoiceResponse::from)
                 .toList();
     }
 
     @Override
-    public List<InvoiceResponse> listMine(Long userId) {
+    public List<InvoiceResponse> listUserInvoices(Long userId) {
         return invoiceRepository.findByUserId(userId).stream()
                 .map(InvoiceResponse::from)
                 .toList();
     }
 
     @Override
-    public InvoiceResponse getOne(Long id, Long userId) {
-        Invoice invoice = findById(id);
+    public InvoiceResponse getInvoiceById(Long invoiceId, Long userId) {
+        Invoice invoice = findById(invoiceId);
         if (userId != null && !invoice.getUserId().equals(userId)) {
             throw new SecurityException("Access denied");
         }
@@ -91,8 +91,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse pay(Long id, Long userId) {
-        Invoice invoice = findById(id);
+    public InvoiceResponse payInvoice(Long invoiceId, Long userId) {
+        Invoice invoice = findById(invoiceId);
 
         if (!invoice.getUserId().equals(userId)) {
             throw new SecurityException("Access denied");
@@ -113,8 +113,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse cancel(Long id) {
-        Invoice invoice = findById(id);
+    public InvoiceResponse cancelInvoice(Long invoiceId) {
+        Invoice invoice = findById(invoiceId);
         if (INVOICE_STATUS.PAID.equals(invoice.getStatus())) {
             throw new IllegalStateException("Cannot cancel a paid invoice");
         }
@@ -122,8 +122,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         return InvoiceResponse.from(invoiceRepository.save(invoice));
     }
 
-    private Invoice findById(Long id) {
-        return invoiceRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Invoice not found: " + id));
+    private Invoice findById(Long invoiceId) {
+        return invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new NoSuchElementException("Invoice not found: " + invoiceId));
     }
 }

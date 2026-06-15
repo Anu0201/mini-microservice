@@ -6,10 +6,10 @@ import com.anudari.payment_service.dto.InvoiceResponse;
 import java.util.List;
 
 public interface InvoiceService {
-    InvoiceResponse create(CreateInvoiceRequest request);
-    List<InvoiceResponse> listAll();
-    List<InvoiceResponse> listMine(Long userId);
-    InvoiceResponse getOne(Long id, Long userId);
-    InvoiceResponse pay(Long id, Long userId);
-    InvoiceResponse cancel(Long id);
+    InvoiceResponse createInvoice(CreateInvoiceRequest request);
+    List<InvoiceResponse> listAllInvoices();
+    List<InvoiceResponse> listUserInvoices(Long userId);
+    InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
+    InvoiceResponse payInvoice(Long invoiceId, Long userId);
+    InvoiceResponse cancelInvoice(Long invoiceId);
 }
