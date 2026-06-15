@@ -10,7 +10,7 @@ spring:
     gateway:
       routes:
         - id: auth-route
-          uri: http://localhost:8080
+          uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
           filters:
@@ -20,7 +20,7 @@ spring:
                   - /api/auth/login
 
         - id: user-service
-          uri: http://localhost:8082
+          uri: lb://user-service
           predicates:
             - Path=/api/users/**
           filters:
@@ -30,18 +30,25 @@ spring:
                   - /api/users/register
 
         - id: admin-route
-          uri: http://localhost:8083
+          uri: lb://admin-service
           predicates:
             - Path=/api/admin/**
           filters:
             - AuthFilter
 
         - id: payment-route
-          uri: http://localhost:8081
+          uri: lb://payment-service
           predicates:
             - Path=/api/payments/invoices/**
           filters:
             - AuthFilter
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
 jwt:
   secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
 

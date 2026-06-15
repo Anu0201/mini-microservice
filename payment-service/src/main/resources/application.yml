@@ -19,6 +19,13 @@ spring:
   flyway:
     enabled: false
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
 services:
   user-service:
     url: http://localhost:8082
