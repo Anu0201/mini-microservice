@@ -27,7 +27,7 @@ spring:
             - name: AuthFilter
               args:
                 openPaths:
-                  - /api/users/register
+                  - /api/users
 
         - id: admin-route
           uri: lb://admin-service

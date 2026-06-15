@@ -32,7 +32,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse createInvoice(CreateInvoiceRequest request) {
         try {
-            userServiceClient.getUserById(request.getUserId());
+            userServiceClient.getUserById(request.getUserId(), "true");
         } catch (FeignException.NotFound e) {
             throw new NoSuchElementException("User not found: " + request.getUserId());
         }

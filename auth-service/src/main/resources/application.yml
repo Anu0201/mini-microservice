@@ -33,9 +33,6 @@ eureka:
   instance:
     prefer-ip-address: true
 
-services:
-  user-service:
-    url: http://localhost:8082
 
 app:
   internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}

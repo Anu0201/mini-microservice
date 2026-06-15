@@ -1,11 +1,11 @@
 package com.anudari.user_service.controller;
 
+import com.anudari.common.constant.AppConstants;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
 import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.service.UserService;
-import com.anudari.common.constant.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,21 +21,9 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
+    @PostMapping
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(request));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> updateUser(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @GetMapping("/me")
@@ -47,15 +35,42 @@ public class UserController {
         return ResponseEntity.ok(userService.getMe(username));
     }
 
-    @GetMapping("/internal/search")
-    public ResponseEntity<UserInternalResponse> internalLookup(
-            @RequestParam String username,
-            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
-        return ResponseEntity.ok(userService.internalSearch(username, secretToken));
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUserById(
+            @PathVariable Long id,
+            @RequestHeader(value = AppConstants.HEADER.AUTH_USER_ID, required = false) Long requesterId,
+            @RequestHeader(value = AppConstants.HEADER.AUTH_IS_ADMIN, required = false) String isAdmin) {
+        if (!"true".equals(isAdmin) && !id.equals(requesterId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request,
+            @RequestHeader(value = AppConstants.HEADER.AUTH_USER_ID, required = false) Long requesterId,
+            @RequestHeader(value = AppConstants.HEADER.AUTH_IS_ADMIN, required = false) String isAdmin) {
+        if (!"true".equals(isAdmin) && !id.equals(requesterId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers(
+            @RequestHeader(value = AppConstants.HEADER.AUTH_IS_ADMIN, required = false) String isAdmin) {
+        if (!"true".equals(isAdmin)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/internal/by-username/{username}")
+    public ResponseEntity<UserInternalResponse> internalLookup(
+            @PathVariable String username,
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
+        return ResponseEntity.ok(userService.internalSearch(username, secretToken));
     }
 }
