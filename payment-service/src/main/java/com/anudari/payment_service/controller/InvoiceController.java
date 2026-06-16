@@ -48,7 +48,7 @@ public class InvoiceController {
     public ResponseEntity<InvoiceResponse> payInvoice(
             @PathVariable Long invoiceId,
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+            @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
         return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, userId, idempotencyKey));
     }
 
