@@ -9,10 +9,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(name = "user-service")
 public interface UserClient {
-
+    //login hiihed hereglegchiin password iig shalgahiin tuld user-service-s medeelel avah heregtei.
+    //credentialHash-iig avch password shalgadag dotood internal holboosoos eureka-aar user-service-g haij holbono
     @GetMapping("/api/users/internal/by-username/{username}")
     UserInternalDto findByUsernameInternal(
-            @PathVariable("username") String username,
+            @PathVariable String username,
             @RequestHeader(AppConstants.HEADER.INTERNAL_SECRET) String internalSecret
     );
 }

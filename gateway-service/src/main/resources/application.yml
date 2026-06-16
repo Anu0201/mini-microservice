@@ -18,6 +18,7 @@ spring:
               args:
                 openPaths:
                   - /api/auth/login
+                  - /api/auth/refresh
 
         - id: user-service
           uri: lb://user-service

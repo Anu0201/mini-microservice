@@ -1,5 +1,7 @@
 package com.anudari.auth_service.util;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +24,19 @@ public class JwtUtil {
     private SecretKey getSigningKey() {
         byte[] keyBytes = this.jwtSecret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public Claims parseToken(String bearerToken) {
+        try {
+            String token = bearerToken.startsWith("Bearer ") ? bearerToken.substring(7) : bearerToken;
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public String generateToken(Long userId, String username, List<String> roles) {

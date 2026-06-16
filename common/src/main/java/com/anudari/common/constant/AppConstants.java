@@ -16,8 +16,10 @@ public final class AppConstants {
     }
 
     public interface EVENT {
-        String LOGIN_SUCCESS = "LOGIN_SUCCESS";
-        String LOGIN_FAIL    = "LOGIN_FAIL";
+        String LOGIN_SUCCESS  = "LOGIN_SUCCESS";
+        String LOGIN_FAIL     = "LOGIN_FAIL";
+        String LOGOUT         = "LOGOUT";
+        String TOKEN_REFRESH  = "TOKEN_REFRESH";
     }
 
     public interface INVOICE_STATUS {
