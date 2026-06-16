@@ -54,3 +54,12 @@ logging:
 security:
   allowlist:
     origins: "127.0.0.1, 0:0:0:0:0:0:0:1"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

@@ -36,6 +36,9 @@ public class Payment {
     @Builder.Default
     private String status = "SUCCESS";
 
+    @Column(name = "idempotency_key", unique = true)
+    private String idempotencyKey;
+
     @Column(name = "paid_at", nullable = false)
     @Builder.Default
     private LocalDateTime paidAt = LocalDateTime.now();
