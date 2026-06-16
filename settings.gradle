@@ -14,7 +14,6 @@ rootProject.name = 'microservice-parent'
 
 include 'common'
 include 'eureka-server'
-include 'admin-service'
 include 'auth-service'
 include 'gateway-service'
 include 'payment-service'

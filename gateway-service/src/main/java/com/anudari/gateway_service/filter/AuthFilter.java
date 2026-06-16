@@ -49,7 +49,16 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String path = request.getURI().getPath();
             ServerHttpRequest.Builder builder = stripAuthHeaders(request);
 
-            if (config.getOpenPaths().stream().anyMatch(path::equals)) {
+            String method = request.getMethod().name();
+            boolean isOpen = config.getOpenPaths().stream().anyMatch(entry -> {
+                if (entry.contains(":")) {
+                    String[] parts = entry.split(":", 2);
+                    return parts[0].equalsIgnoreCase(method) && parts[1].equals(path);
+                }
+                return entry.equals(path);
+            });
+
+            if (isOpen) {
                 log.debug("Open path, skipping auth: {}", path);
                 return chain.filter(exchange.mutate().request(builder.build()).build());
             }

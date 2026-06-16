@@ -12,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -27,12 +25,12 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getMe(
+    public ResponseEntity<UserResponse> getUser(
             @RequestHeader(value = AppConstants.HEADER.AUTH_USERNAME, required = false) String username) {
         if (username == null || username.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(userService.getMe(username));
+        return ResponseEntity.ok(userService.getUser(username));
     }
 
     @GetMapping("/{id}")
@@ -56,15 +54,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.updateUser(id, request));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers(
-            @RequestHeader(value = AppConstants.HEADER.AUTH_IS_ADMIN, required = false) String isAdmin) {
-        if (!"true".equals(isAdmin)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/internal/by-username/{username}")

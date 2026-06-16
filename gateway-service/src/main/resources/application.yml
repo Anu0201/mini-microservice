@@ -28,14 +28,7 @@ spring:
             - name: AuthFilter
               args:
                 openPaths:
-                  - /api/users
-
-        - id: admin-route
-          uri: lb://admin-service
-          predicates:
-            - Path=/api/admin/**
-          filters:
-            - AuthFilter
+                  - POST:/api/users
 
         - id: payment-route
           uri: lb://payment-service

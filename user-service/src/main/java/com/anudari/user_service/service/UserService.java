@@ -5,8 +5,6 @@ import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
 import com.anudari.user_service.dto.UserResponse;
 
-import java.util.List;
-
 public interface UserService {
 
     UserResponse register(RegisterRequest request);
@@ -15,9 +13,7 @@ public interface UserService {
 
     UserResponse updateUser(Long id, UpdateUserRequest request);
 
-    UserResponse getMe(String username);
+    UserResponse getUser(String username);
 
     UserInternalResponse internalSearch(String username, String secretToken);
-
-    List<UserResponse> getAllUsers();
 }
