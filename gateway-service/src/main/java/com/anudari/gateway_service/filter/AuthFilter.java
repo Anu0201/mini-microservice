@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
@@ -49,6 +50,13 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String path = request.getURI().getPath();
             ServerHttpRequest.Builder builder = stripAuthHeaders(request);
 
+            String requestId = request.getHeaders().getFirst(AppConstants.HEADER.REQUEST_ID);
+            if (requestId == null || requestId.isBlank()) {
+                requestId = UUID.randomUUID().toString();
+            }
+            builder.header(AppConstants.HEADER.REQUEST_ID, requestId);
+            final String finalRequestId = requestId;
+
             String method = request.getMethod().name();
             boolean isOpen = config.getOpenPaths().stream().anyMatch(entry -> {
                 if (entry.contains(":")) {
@@ -59,13 +67,15 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             });
 
             if (isOpen) {
-                log.debug("Open path, skipping auth: {}", path);
-                return chain.filter(exchange.mutate().request(builder.build()).build());
+                log.debug("requestId={} open path, skipping auth: {}", finalRequestId, path);
+                return chain.filter(exchange.mutate().request(builder.build()).build())
+                        .doFinally(s -> exchange.getResponse().getHeaders()
+                                .set(AppConstants.HEADER.REQUEST_ID, finalRequestId));
             }
 
             boolean hasToken = request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION);
             boolean isAdmin = !hasToken && isAdminOrigin(request);
-            log.debug("path={}, hasToken={}, isAdmin={}", path, hasToken, isAdmin);
+            log.debug("requestId={} path={} hasToken={} isAdmin={}", finalRequestId, path, hasToken, isAdmin);
 
             if (hasToken) {
                 Claims claims = jwtUtility.extractValidClaims(
@@ -79,7 +89,9 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                 return onError(exchange);
             }
 
-            return chain.filter(exchange.mutate().request(builder.build()).build());
+            return chain.filter(exchange.mutate().request(builder.build()).build())
+                    .doFinally(s -> exchange.getResponse().getHeaders()
+                            .set(AppConstants.HEADER.REQUEST_ID, finalRequestId));
         };
     }
 

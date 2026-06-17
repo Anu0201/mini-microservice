@@ -9,6 +9,8 @@ public final class AppConstants {
         String AUTH_USER_ID    = "X-Auth-UserId";
         String AUTH_IS_ADMIN   = "X-Auth-IsAdmin";
         String INTERNAL_SECRET = "X-Internal-Secret";
+        String REQUEST_ID      = "X-Request-Id";
+        String IDEMPOTENCY_KEY = "Idempotency-Key";
     }
 
     public interface ROLE {

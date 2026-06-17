@@ -47,8 +47,9 @@ public class InvoiceController {
     @PostMapping("/{invoiceId}/pay")
     public ResponseEntity<InvoiceResponse> payInvoice(
             @PathVariable Long invoiceId,
-            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId) {
-        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, userId));
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId,
+            @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
+        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, userId, idempotencyKey));
     }
 
     //hoyulaa

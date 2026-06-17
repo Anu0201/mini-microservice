@@ -10,6 +10,6 @@ public interface InvoiceService {
     List<InvoiceResponse> listAllInvoices();
     List<InvoiceResponse> listUserInvoices(Long userId);
     InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
-    InvoiceResponse payInvoice(Long invoiceId, Long userId);
+    InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey);
     InvoiceResponse cancelInvoice(Long invoiceId);
 }

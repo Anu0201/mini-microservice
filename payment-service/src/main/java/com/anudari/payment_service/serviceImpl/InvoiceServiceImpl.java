@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -91,7 +92,14 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse payInvoice(Long invoiceId, Long userId) {
+    public InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey) {
+        if (idempotencyKey != null) {
+            Optional<Payment> existing = paymentRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                return InvoiceResponse.from(existing.get().getInvoice());
+            }
+        }
+
         Invoice invoice = findById(invoiceId);
 
         if (!invoice.getUserId().equals(userId)) {
@@ -106,6 +114,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .invoice(invoice)
                 .userId(userId)
                 .amount(invoice.getAmount())
+                .idempotencyKey(idempotencyKey)
                 .build());
 
         return InvoiceResponse.from(invoiceRepository.save(invoice));
