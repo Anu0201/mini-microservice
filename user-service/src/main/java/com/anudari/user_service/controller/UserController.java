@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -22,6 +24,13 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(request));
+    }
+
+    // Admin (only callable by admin-service, proven via shared internal secret)
+    @GetMapping
+    public ResponseEntity<List<UserResponse>> listAllUsers(
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
+        return ResponseEntity.ok(userService.listAllUsers(secretToken));
     }
 
     @GetMapping("/me")
