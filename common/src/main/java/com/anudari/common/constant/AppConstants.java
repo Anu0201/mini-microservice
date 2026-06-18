@@ -14,7 +14,8 @@ public final class AppConstants {
     }
 
     public interface ROLE {
-        String USER = "ROLE_USER";
+        String USER  = "ROLE_USER";
+        String ADMIN = "ROLE_ADMIN";
     }
 
     public interface EVENT {

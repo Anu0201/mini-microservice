@@ -34,3 +34,6 @@ management:
   endpoint:
     health:
       show-details: always
+
+app:
+  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
