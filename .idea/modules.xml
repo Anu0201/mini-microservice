@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/admin-service/microservice-parent.admin-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/admin-service/microservice-parent.admin-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/auth-service/microservice-parent.auth-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/auth-service/microservice-parent.auth-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/eureka-server/microservice-parent.eureka-server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/eureka-server/microservice-parent.eureka-server.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gateway-service/microservice-parent.gateway-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gateway-service/microservice-parent.gateway-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service/microservice-parent.payment-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service/microservice-parent.payment-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/user-service/microservice-parent.user-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/user-service/microservice-parent.user-service.main.iml" />
