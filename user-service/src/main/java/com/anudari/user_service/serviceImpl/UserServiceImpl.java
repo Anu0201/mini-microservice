@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -66,5 +67,15 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByUsername(username)
                 .map(UserInternalResponse::from)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+    }
+
+    @Override
+    public List<UserResponse> listAllUsers(String secretToken) {
+        if (secretToken == null || !secretToken.equals(internalSecret)) {
+            throw new SecurityException("Access Denied");
+        }
+        return userRepository.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
     }
 }

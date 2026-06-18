@@ -6,6 +6,7 @@ import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +20,38 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
-    // Admin
+    @Value("${app.internal-secret}")
+    private String internalSecret;
+
+    // Admin-service ees duudagdana
 
     @PostMapping
-    public ResponseEntity<InvoiceResponse> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
+    public ResponseEntity<InvoiceResponse> createInvoice(
+            @Valid @RequestBody CreateInvoiceRequest request,
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secret) {
+        requireInternalSecret(secret);
         return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.createInvoice(request));
     }
 
     @GetMapping
-    public ResponseEntity<List<InvoiceResponse>> listAllInvoices() {
+    public ResponseEntity<List<InvoiceResponse>> listAllInvoices(
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secret) {
+        requireInternalSecret(secret);
         return ResponseEntity.ok(invoiceService.listAllInvoices());
     }
 
     @PostMapping("/{invoiceId}/cancel")
-    public ResponseEntity<InvoiceResponse> cancelInvoice(@PathVariable Long invoiceId) {
+    public ResponseEntity<InvoiceResponse> cancelInvoice(
+            @PathVariable Long invoiceId,
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secret) {
+        requireInternalSecret(secret);
         return ResponseEntity.ok(invoiceService.cancelInvoice(invoiceId));
+    }
+
+    private void requireInternalSecret(String secret) {
+        if (secret == null || !secret.equals(internalSecret)) {
+            throw new SecurityException("Access denied");
+        }
     }
 
     // User
