@@ -9,31 +9,23 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SignalType;
 
 import java.io.ByteArrayOutputStream;
-import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
@@ -45,201 +37,184 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
+        // Run before route-specific filters so every request, including rejected ones, is logged.
         return Ordered.HIGHEST_PRECEDENCE;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String requestId = resolveRequestId(exchange.getRequest());
-        long startedAt = System.nanoTime();
-        CapturedBody responseBody = new CapturedBody();
-        AtomicBoolean responseLogged = new AtomicBoolean();
+        String requestId = getRequestId(exchange);
+        long startTime = System.currentTimeMillis();
+        ByteArrayOutputStream responseBody = new ByteArrayOutputStream();
 
-        ServerHttpRequest requestWithId = exchange.getRequest().mutate()
-                .headers(headers -> headers.set(REQUEST_ID_HEADER, requestId))
+        // Propagate one correlation ID downstream and return the same ID to the client.
+        ServerWebExchange tracedExchange = exchange.mutate()
+                .request(exchange.getRequest().mutate()
+                        .headers(headers -> headers.set(REQUEST_ID_HEADER, requestId))
+                        .build())
+                .response(captureResponse(exchange, responseBody))
                 .build();
 
-        ServerHttpResponse decoratedResponse = decorateResponse(
-                exchange.getResponse(), responseBody);
-        decoratedResponse.getHeaders().set(REQUEST_ID_HEADER, requestId);
+        tracedExchange.getResponse().getHeaders().set(REQUEST_ID_HEADER, requestId);
 
-        ServerWebExchange exchangeWithTracing = exchange.mutate()
-                .request(requestWithId)
-                .response(decoratedResponse)
-                .build();
-
-        return readBody(requestWithId)
+        return readBody(tracedExchange.getRequest())
                 .flatMap(requestBody -> {
-                    logRequest(exchangeWithTracing, requestBody, requestId);
-                    ServerHttpRequest replayableRequest =
-                            decorateRequest(
-                                    requestWithId,
-                                    requestBody,
-                                    decoratedResponse.bufferFactory());
-                    ServerWebExchange replayableExchange = exchangeWithTracing.mutate()
-                            .request(replayableRequest)
+                    logRequest(tracedExchange, requestBody, requestId);
+
+                    // A reactive request body can only be consumed once. Replay the buffered bytes
+                    // so AuthFilter and the downstream service can still read the original body.
+                    ServerWebExchange replayableExchange = tracedExchange.mutate()
+                            .request(replayRequest(tracedExchange, requestBody))
                             .build();
 
                     return chain.filter(replayableExchange)
-                            .doOnError(throwable -> LogUtility.withRequestId(requestId,
-                                    () -> LogUtility.error(
-                                            LogCategory.ERROR,
-                                            "gateway.error",
-                                            buildErrorMessage(replayableExchange, throwable),
-                                            throwable)))
-                            .doFinally(signalType -> logResponseOnce(
+                            .doOnError(error -> logError(replayableExchange, error, requestId))
+                            .doFinally(signal -> logResponse(
                                     replayableExchange,
-                                    responseBody.bytes(),
+                                    responseBody.toByteArray(),
                                     requestId,
-                                    startedAt,
-                                    signalType,
-                                    responseLogged));
+                                    System.currentTimeMillis() - startTime,
+                                    signal.name()));
                 });
     }
 
-    private String resolveRequestId(ServerHttpRequest request) {
-        String requestId = request.getHeaders().getFirst(REQUEST_ID_HEADER);
+    private String getRequestId(ServerWebExchange exchange) {
+        String requestId = exchange.getRequest().getHeaders().getFirst(REQUEST_ID_HEADER);
         return requestId == null || requestId.isBlank()
                 ? UUID.randomUUID().toString()
                 : requestId;
     }
 
     private Mono<byte[]> readBody(ServerHttpRequest request) {
+        // Join all incoming chunks into one byte array for logging and replay.
         return DataBufferUtils.join(request.getBody())
                 .map(buffer -> {
-                    byte[] bytes = new byte[buffer.readableByteCount()];
-                    buffer.read(bytes);
+                    byte[] body = new byte[buffer.readableByteCount()];
+                    buffer.read(body);
                     DataBufferUtils.release(buffer);
-                    return bytes;
+                    return body;
                 })
                 .defaultIfEmpty(new byte[0]);
     }
 
-    private ServerHttpRequest decorateRequest(
-            ServerHttpRequest request,
-            byte[] body,
-            DataBufferFactory bufferFactory
-    ) {
-        return new ServerHttpRequestDecorator(request) {
+    private ServerHttpRequest replayRequest(ServerWebExchange exchange, byte[] body) {
+        return new ServerHttpRequestDecorator(exchange.getRequest()) {
             @Override
             public HttpHeaders getHeaders() {
+                // The replayed body is a single known-size buffer, so update its transport headers.
                 HttpHeaders headers = new HttpHeaders();
                 headers.putAll(super.getHeaders());
-                if (body.length > 0) {
-                    headers.remove(HttpHeaders.TRANSFER_ENCODING);
-                    headers.setContentLength(body.length);
-                }
+                headers.remove(HttpHeaders.TRANSFER_ENCODING);
+                headers.setContentLength(body.length);
                 return headers;
             }
 
             @Override
             public Flux<DataBuffer> getBody() {
-                if (body.length == 0) {
-                    return Flux.empty();
-                }
-                return Flux.defer(() -> Flux.just(
-                        bufferFactory.wrap(body)));
+                return body.length == 0
+                        ? Flux.empty()
+                        : Flux.just(exchange.getResponse().bufferFactory().wrap(body));
             }
         };
     }
 
-    private ServerHttpResponse decorateResponse(
-            ServerHttpResponse response,
-            CapturedBody capturedBody
+    private ServerHttpResponseDecorator captureResponse(
+            ServerWebExchange exchange,
+            ByteArrayOutputStream capturedBody
     ) {
-        return new ServerHttpResponseDecorator(response) {
+        return new ServerHttpResponseDecorator(exchange.getResponse()) {
             @Override
             public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
+                // Copy each response chunk for logging while forwarding the same buffer unchanged.
                 return super.writeWith(Flux.from(body)
-                        .doOnNext(capturedBody::append));
+                        .doOnNext(buffer -> copy(buffer, capturedBody)));
             }
 
             @Override
             public Mono<Void> writeAndFlushWith(
                     Publisher<? extends Publisher<? extends DataBuffer>> body
             ) {
+                // Streaming responses use nested publishers, so capture their inner chunks too.
                 return super.writeAndFlushWith(Flux.from(body)
-                        .map(publisher -> Flux.from(publisher)
-                                .doOnNext(capturedBody::append)));
+                        .map(chunks -> Flux.from(chunks)
+                                .doOnNext(buffer -> copy(buffer, capturedBody))));
             }
         };
     }
 
-    private void logRequest(
-            ServerWebExchange exchange,
-            byte[] body,
-            String requestId
-    ) {
-        ServerHttpRequest request = exchange.getRequest();
+    private void copy(DataBuffer buffer, ByteArrayOutputStream target) {
+        // Read through a view of the buffer so its reader index is not changed.
+        ByteBuffer bytes = buffer.toByteBuffer().asReadOnlyBuffer();
+        byte[] chunk = new byte[bytes.remaining()];
+        bytes.get(chunk);
+        target.writeBytes(chunk);
+    }
+
+    private void logRequest(ServerWebExchange exchange, byte[] body, String requestId) {
         Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
-        String routeId = route == null ? "unmatched" : route.getId();
-        URI destination = route == null ? null : route.getUri();
-        InetSocketAddress remoteAddress = request.getRemoteAddress();
+        ServerHttpRequest request = exchange.getRequest();
 
         String message = "[direction=client->gateway->service]"
                 + "[method=" + request.getMethod() + "]"
                 + "[uri=" + request.getURI() + "]"
-                + "[remoteAddress=" + remoteAddress + "]"
-                + "[routeId=" + routeId + "]"
-                + "[destination=" + destination + "]"
+                + "[remoteAddress=" + request.getRemoteAddress() + "]"
+                + routeDetails(route)
                 + "[headers=" + request.getHeaders() + "]"
                 + "[body=" + formatBody(body, request.getHeaders().getContentType()) + "]";
 
-        LogUtility.withRequestId(requestId,
-                () -> LogUtility.info(
-                        LogCategory.REQUEST, "gateway.request.in", message));
+        logInfo(requestId, LogCategory.REQUEST, "gateway.request.in", message);
     }
 
-    private void logResponseOnce(
+    private void logResponse(
             ServerWebExchange exchange,
             byte[] body,
             String requestId,
-            long startedAt,
-            SignalType signalType,
-            AtomicBoolean responseLogged
+            long durationMs,
+            String signal
     ) {
-        if (!responseLogged.compareAndSet(false, true)) {
-            return;
-        }
-
-        ServerHttpResponse response = exchange.getResponse();
         Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
-        URI routedUrl = exchange.getAttribute(GATEWAY_REQUEST_URL_ATTR);
-        String status = response.getStatusCode() == null
-                ? signalType == SignalType.ON_ERROR
-                    ? HttpStatus.INTERNAL_SERVER_ERROR.toString()
-                    : HttpStatus.OK.toString()
-                : response.getStatusCode().toString();
-        long durationMillis = Duration.ofNanos(
-                System.nanoTime() - startedAt).toMillis();
+        Object source = exchange.getAttribute(GATEWAY_REQUEST_URL_ATTR);
 
         String message = "[direction=service->gateway->client]"
-                + "[routeId=" + (route == null ? "unmatched" : route.getId()) + "]"
-                + "[source=" + (routedUrl == null
-                ? route == null ? null : route.getUri()
-                : routedUrl) + "]"
-                + "[status=" + status + "]"
-                + "[signal=" + signalType + "]"
-                + "[durationMs=" + durationMillis + "]"
-                + "[headers=" + response.getHeaders() + "]"
+                + routeDetails(route)
+                + "[source=" + source + "]"
+                + "[status=" + exchange.getResponse().getStatusCode() + "]"
+                + "[signal=" + signal + "]"
+                + "[durationMs=" + durationMs + "]"
+                + "[headers=" + exchange.getResponse().getHeaders() + "]"
                 + "[body=" + formatBody(
-                        body, response.getHeaders().getContentType()) + "]";
+                        body, exchange.getResponse().getHeaders().getContentType()) + "]";
 
-        LogUtility.withRequestId(requestId,
-                () -> LogUtility.info(
-                        LogCategory.RESPONSE, "gateway.response.out", message));
+        logInfo(requestId, LogCategory.RESPONSE, "gateway.response.out", message);
     }
 
-    private String buildErrorMessage(
-            ServerWebExchange exchange,
-            Throwable throwable
-    ) {
+    private void logError(ServerWebExchange exchange, Throwable error, String requestId) {
         Route route = exchange.getAttribute(GATEWAY_ROUTE_ATTR);
-        return "[method=" + exchange.getRequest().getMethod() + "]"
+        String message = "[method=" + exchange.getRequest().getMethod() + "]"
                 + "[uri=" + exchange.getRequest().getURI() + "]"
-                + "[routeId=" + (route == null ? "unmatched" : route.getId()) + "]"
-                + "[exception=" + throwable.getClass().getName() + "]"
-                + "[message=" + throwable.getMessage() + "]";
+                + routeDetails(route)
+                + "[exception=" + error.getClass().getName() + "]"
+                + "[message=" + error.getMessage() + "]";
+
+        LogUtility.withRequestId(requestId,
+                () -> LogUtility.error(
+                        LogCategory.ERROR, "gateway.error", message, error));
+    }
+
+    private String routeDetails(Route route) {
+        return "[routeId=" + (route == null ? "unmatched" : route.getId()) + "]"
+                + "[destination=" + (route == null ? null : route.getUri()) + "]";
+    }
+
+    private void logInfo(
+            String requestId,
+            LogCategory category,
+            String tag,
+            String message
+    ) {
+        // Reactor may switch threads; scope ThreadContext only around the actual log statement.
+        LogUtility.withRequestId(requestId,
+                () -> LogUtility.info(category, tag, message));
     }
 
     static String formatBody(byte[] body, MediaType contentType) {
@@ -247,17 +222,18 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
             return "<empty>";
         }
 
-        if (isTextual(contentType)) {
-            Charset charset = contentType == null || contentType.getCharset() == null
-                    ? StandardCharsets.UTF_8
-                    : contentType.getCharset();
+        // Keep human-readable payloads readable; encode binary data safely as text.
+        if (isText(contentType)) {
+            Charset charset = contentType != null && contentType.getCharset() != null
+                    ? contentType.getCharset()
+                    : StandardCharsets.UTF_8;
             return new String(body, charset);
         }
 
         return "base64:" + Base64.getEncoder().encodeToString(body);
     }
 
-    private static boolean isTextual(MediaType contentType) {
+    private static boolean isText(MediaType contentType) {
         if (contentType == null) {
             return true;
         }
@@ -267,22 +243,7 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 || subtype.contains("json")
                 || subtype.contains("xml")
                 || subtype.contains("javascript")
-                || subtype.contains("x-www-form-urlencoded")
+                || subtype.contains("form-urlencoded")
                 || subtype.contains("graphql");
-    }
-
-    private static final class CapturedBody {
-        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        synchronized void append(DataBuffer buffer) {
-            ByteBuffer byteBuffer = buffer.toByteBuffer().asReadOnlyBuffer();
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get(bytes);
-            output.writeBytes(bytes);
-        }
-
-        synchronized byte[] bytes() {
-            return output.toByteArray();
-        }
     }
 }
