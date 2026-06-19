@@ -1,12 +1,12 @@
 package com.anudari.gateway_service.filter;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.gateway_service.constants.LogCategory;
 import com.anudari.gateway_service.utility.JwtUtility;
+import com.anudari.gateway_service.utils.LogUtility;
 import io.jsonwebtoken.Claims;
 import lombok.Getter;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -24,8 +24,6 @@ import java.util.UUID;
 
 @Component
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
-
-    private static final Logger log = LoggerFactory.getLogger(AuthFilter.class);
 
     private final JwtUtility jwtUtility;
 
@@ -67,7 +65,8 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             });
 
             if (isOpen) {
-                log.debug("requestId={} open path, skipping auth: {}", finalRequestId, path);
+                logAuth(finalRequestId,
+                        "[path=" + path + "][result=open-path]");
                 return chain.filter(exchange.mutate().request(builder.build()).build())
                         .doFinally(s -> exchange.getResponse().getHeaders()
                                 .set(AppConstants.HEADER.REQUEST_ID, finalRequestId));
@@ -75,24 +74,38 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
             boolean hasToken = request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION);
             boolean isAdmin = !hasToken && isAdminOrigin(request);
-            log.debug("requestId={} path={} hasToken={} isAdmin={}", finalRequestId, path, hasToken, isAdmin);
+            logAuth(finalRequestId, "[path=" + path + "]"
+                    + "[hasToken=" + hasToken + "]"
+                    + "[isAdmin=" + isAdmin + "]");
 
             if (hasToken) {
                 Claims claims = jwtUtility.extractValidClaims(
                         request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-                if (claims == null) return onError(exchange);
+                if (claims == null) {
+                    logAuth(finalRequestId,
+                            "[path=" + path + "][result=invalid-token]");
+                    return onError(exchange, finalRequestId);
+                }
                 builder.header(AppConstants.HEADER.AUTH_USERNAME, claims.getSubject())
                        .header(AppConstants.HEADER.AUTH_USER_ID, String.valueOf(claims.get("userId")));
             } else if (isAdmin) {
                 builder.header(AppConstants.HEADER.AUTH_IS_ADMIN, "true");
             } else {
-                return onError(exchange);
+                logAuth(finalRequestId,
+                        "[path=" + path + "][result=unauthorized]");
+                return onError(exchange, finalRequestId);
             }
 
             return chain.filter(exchange.mutate().request(builder.build()).build())
                     .doFinally(s -> exchange.getResponse().getHeaders()
                             .set(AppConstants.HEADER.REQUEST_ID, finalRequestId));
         };
+    }
+
+    private void logAuth(String requestId, String message) {
+        LogUtility.withRequestId(requestId,
+                () -> LogUtility.info(
+                        LogCategory.AUTHENTICATION, "gateway.auth", message));
     }
 
     private boolean isAdminOrigin(ServerHttpRequest request) {
@@ -110,8 +123,10 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
         });
     }
 
-    private Mono<Void> onError(ServerWebExchange exchange) {
+    private Mono<Void> onError(ServerWebExchange exchange, String requestId) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        exchange.getResponse().getHeaders()
+                .set(AppConstants.HEADER.REQUEST_ID, requestId);
         return exchange.getResponse().setComplete();
     }
 }
