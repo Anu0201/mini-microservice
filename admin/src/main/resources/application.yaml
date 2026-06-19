@@ -1,0 +1,39 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: admin-service
+  cloud:
+    compatibility-verifier:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/micro_admin_db
+    username: postgres
+    password: 9909
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8082}
+
+payment-service:
+  url: ${PAYMENT_SERVICE_URL:http://localhost:8081}
+
+app:
+  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
+  jwt:
+    secret: ${ADMIN_JWT_SECRET:5f8a3c7e1b9d4a6f2e0c8b5a7d3f1e9c4b6a8d2f0e7c5b3a9d1f6e4c2b8a0d7f}
+    expiration: ${ADMIN_JWT_EXPIRATION:3600000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
