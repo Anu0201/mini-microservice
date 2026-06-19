@@ -26,19 +26,14 @@ spring:
   flyway:
     enabled: false
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
-
-
 app:
   internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
   jwt:
     secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
     expiration: ${JWT_EXPIRATION:86400000}
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8082}
 
 management:
   endpoints:
