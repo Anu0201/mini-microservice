@@ -3,7 +3,7 @@ package com.anudari.gateway_service.filter;
 import com.anudari.common.constant.AppConstants;
 import com.anudari.gateway_service.constants.LogCategory;
 import com.anudari.gateway_service.utility.JwtUtility;
-import com.anudari.gateway_service.utils.LogUtility;
+import com.anudari.gateway_service.utility.LogUtility;
 import io.jsonwebtoken.Claims;
 import lombok.Getter;
 import lombok.Setter;

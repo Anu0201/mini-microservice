@@ -1,4 +1,4 @@
-package com.anudari.gateway_service.utils;
+package com.anudari.gateway_service.utility;
 
 import com.anudari.gateway_service.constants.LogCategory;
 import org.apache.logging.log4j.CloseableThreadContext;

@@ -2,7 +2,7 @@ package com.anudari.gateway_service.filter;
 
 import com.anudari.common.constant.AppConstants;
 import com.anudari.gateway_service.constants.LogCategory;
-import com.anudari.gateway_service.utils.LogUtility;
+import com.anudari.gateway_service.utility.LogUtility;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
