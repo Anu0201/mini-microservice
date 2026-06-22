@@ -52,8 +52,6 @@ services:
   admin-service:
     image: ${DOCKERHUB_USERNAME}/mini-microservice-admin-service:latest
     container_name: admin-service
-    ports:
-      - "8090:8090"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/micro_admin_db
       SPRING_DATASOURCE_USERNAME: postgres
@@ -70,8 +68,6 @@ services:
   gateway-service:
     image: ${DOCKERHUB_USERNAME}/mini-microservice-gateway-service:latest
     container_name: gateway-service
-    ports:
-      - "8060:8060"
     environment:
       AUTH_SERVICE_URL: http://auth-service:8080
       USER_SERVICE_URL: http://user-service:8082
@@ -80,6 +76,26 @@ services:
       - auth-service
       - user-service
       - payment-service
+    networks:
+      - microservice-network
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - gateway-service
+      - admin-service
     networks:
       - microservice-network
     restart: unless-stopped
@@ -108,6 +124,8 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   microservice-network:

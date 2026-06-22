@@ -1,0 +1,11 @@
+{
+	email {$CADDY_EMAIL}
+}
+
+{$DOMAIN} {
+	reverse_proxy gateway-service:8060
+}
+
+admin.{$DOMAIN} {
+	reverse_proxy admin-service:8090
+}
