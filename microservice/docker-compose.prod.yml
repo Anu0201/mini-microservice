@@ -5,10 +5,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/micro_auth_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres-db}:${POSTGRES_PORT:-5432}/micro_auth_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      USER_SERVICE_URL: http://user-service:8082
+      USER_SERVICE_URL: http://${USER_SERVICE_HOST:-user-service}:${USER_SERVICE_PORT:-8082}
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -22,7 +22,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/micro_user_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres-db}:${POSTGRES_PORT:-5432}/micro_user_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
@@ -38,10 +38,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/micro_payment_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres-db}:${POSTGRES_PORT:-5432}/micro_payment_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      USER_SERVICE_URL: http://user-service:8082
+      USER_SERVICE_URL: http://${USER_SERVICE_HOST:-user-service}:${USER_SERVICE_PORT:-8082}
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -53,11 +53,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/mini-microservice-admin-service:latest
     container_name: admin-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/micro_admin_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${POSTGRES_HOST:-postgres-db}:${POSTGRES_PORT:-5432}/micro_admin_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      USER_SERVICE_URL: http://user-service:8082
-      PAYMENT_SERVICE_URL: http://payment-service:8081
+      USER_SERVICE_URL: http://${USER_SERVICE_HOST:-user-service}:${USER_SERVICE_PORT:-8082}
+      PAYMENT_SERVICE_URL: http://${PAYMENT_SERVICE_HOST:-payment-service}:${PAYMENT_SERVICE_PORT:-8081}
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -69,9 +69,9 @@ services:
     image: ${DOCKERHUB_USERNAME}/mini-microservice-gateway-service:latest
     container_name: gateway-service
     environment:
-      AUTH_SERVICE_URL: http://auth-service:8080
-      USER_SERVICE_URL: http://user-service:8082
-      PAYMENT_SERVICE_URL: http://payment-service:8081
+      AUTH_SERVICE_URL: http://${AUTH_SERVICE_HOST:-auth-service}:${AUTH_SERVICE_PORT:-8080}
+      USER_SERVICE_URL: http://${USER_SERVICE_HOST:-user-service}:${USER_SERVICE_PORT:-8082}
+      PAYMENT_SERVICE_URL: http://${PAYMENT_SERVICE_HOST:-payment-service}:${PAYMENT_SERVICE_PORT:-8081}
     depends_on:
       - auth-service
       - user-service
@@ -89,6 +89,10 @@ services:
     environment:
       DOMAIN: ${DOMAIN}
       CADDY_EMAIL: ${CADDY_EMAIL}
+      GATEWAY_SERVICE_HOST: ${GATEWAY_SERVICE_HOST:-gateway-service}
+      GATEWAY_SERVICE_PORT: ${GATEWAY_SERVICE_PORT:-8060}
+      ADMIN_SERVICE_HOST: ${ADMIN_SERVICE_HOST:-admin-service}
+      ADMIN_SERVICE_PORT: ${ADMIN_SERVICE_PORT:-8090}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data

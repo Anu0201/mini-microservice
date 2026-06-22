@@ -3,9 +3,9 @@
 }
 
 {$DOMAIN} {
-	reverse_proxy gateway-service:8060
+	reverse_proxy {$GATEWAY_SERVICE_HOST}:{$GATEWAY_SERVICE_PORT}
 }
 
 admin.{$DOMAIN} {
-	reverse_proxy admin-service:8090
+	reverse_proxy {$ADMIN_SERVICE_HOST}:{$ADMIN_SERVICE_PORT}
 }
