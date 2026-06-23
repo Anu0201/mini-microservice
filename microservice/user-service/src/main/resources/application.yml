@@ -24,7 +24,7 @@ server:
   port: 8082
 
 app:
-  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
+  internal-secret: ${INTERNAL_SECRET}
 
 management:
   endpoints:

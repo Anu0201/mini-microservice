@@ -27,7 +27,7 @@ spring:
     enabled: false
 
 app:
-  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
+  internal-secret: ${INTERNAL_SECRET}
   jwt:
     secret: ${JWT_SECRET:9a726673ea132d752495738c8230531234567890abcdef1234567890abcdef}
     expiration: ${JWT_EXPIRATION:86400000}

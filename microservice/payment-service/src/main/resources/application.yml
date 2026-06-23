@@ -29,7 +29,7 @@ management:
       show-details: always
 
 app:
-  internal-secret: ${INTERNAL_SECRET:my-super-shared-secret-key-123}
+  internal-secret: ${INTERNAL_SECRET}
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8082}
