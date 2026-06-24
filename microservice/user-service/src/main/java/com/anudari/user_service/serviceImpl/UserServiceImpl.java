@@ -30,9 +30,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse register(RegisterRequest request) {
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(AppConstants.ROLE.USER));
         return UserResponse.from(userRepository.save(user));
     }
@@ -48,7 +48,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
-        user.setEmail(request.getEmail());
+        user.setEmail(request.email());
         return UserResponse.from(userRepository.save(user));
     }
 

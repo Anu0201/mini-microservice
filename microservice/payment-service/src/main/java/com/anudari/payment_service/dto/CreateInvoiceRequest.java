@@ -3,16 +3,14 @@ package com.anudari.payment_service.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Value;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Value
-public class CreateInvoiceRequest {
-    @NotNull  Long userId;
-    String    description;
-    LocalDate dueDate;
-    String    currency;
-    @NotEmpty @Valid List<InvoiceItemRequest> items;
-}
+public record CreateInvoiceRequest(
+        @NotNull Long userId,
+        String description,
+        LocalDate dueDate,
+        String currency,
+        @NotEmpty @Valid List<InvoiceItemRequest> items
+) {}

@@ -33,17 +33,17 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse createInvoice(CreateInvoiceRequest request) {
         try {
-            userServiceClient.getUserById(request.getUserId(), "true");
+            userServiceClient.getUserById(request.userId(), "true");
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("User not found: " + request.getUserId());
+            throw new NoSuchElementException("User not found: " + request.userId());
         }
 
-        List<InvoiceItem> items = request.getItems().stream()
+        List<InvoiceItem> items = request.items().stream()
                 .map(i -> InvoiceItem.builder()
-                        .name(i.getName())
-                        .qty(i.getQty())
-                        .unitPrice(i.getUnitPrice())
-                        .lineTotal(i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQty())))
+                        .name(i.name())
+                        .qty(i.qty())
+                        .unitPrice(i.unitPrice())
+                        .lineTotal(i.unitPrice().multiply(BigDecimal.valueOf(i.qty())))
                         .build())
                 .toList();
 
@@ -53,11 +53,11 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Invoice invoice = Invoice.builder()
                 .invoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .userId(request.getUserId())
+                .userId(request.userId())
                 .amount(total)
-                .currency(request.getCurrency() != null ? request.getCurrency() : "MNT")
-                .description(request.getDescription())
-                .dueDate(request.getDueDate())
+                .currency(request.currency() != null ? request.currency() : "MNT")
+                .description(request.description())
+                .dueDate(request.dueDate())
                 .status(INVOICE_STATUS.UNPAID)
                 .build();
 

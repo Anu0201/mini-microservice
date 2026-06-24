@@ -36,15 +36,15 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         UserInternalDto userDto;
         try {
-            userDto = userClient.findByUsernameInternal(request.getUsername(), internalSecret);
+            userDto = userClient.findByUsernameInternal(request.username(), internalSecret);
         } catch (FeignException.NotFound e) {
             throw new AuthenticationException("Invalid credentials");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), userDto.getCredentialHash())) {
+        if (!passwordEncoder.matches(request.password(), userDto.credentialHash())) {
             authHistoryRepository.save(AuthHistory.builder()
-                    .userId(userDto.getId())
-                    .username(request.getUsername())
+                    .userId(userDto.id())
+                    .username(request.username())
                     .eventType(AppConstants.EVENT.LOGIN_FAIL)
                     .ipAddress(ipAddress)
                     .userAgent(userAgent)
@@ -52,17 +52,17 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthenticationException("Invalid credentials");
         }
 
-        String token = jwtUtil.generateToken(userDto.getId(), userDto.getUsername(), userDto.getRoles());
+        String token = jwtUtil.generateToken(userDto.id(), userDto.username(), userDto.roles());
 
         authHistoryRepository.save(AuthHistory.builder()
-                .userId(userDto.getId())
-                .username(userDto.getUsername())
+                .userId(userDto.id())
+                .username(userDto.username())
                 .eventType(AppConstants.EVENT.LOGIN_SUCCESS)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .build());
 
-        return new AuthResponse(token, userDto.getUsername(), userDto.getRoles());
+        return new AuthResponse(token, userDto.username(), userDto.roles());
     }
 
     @Override
