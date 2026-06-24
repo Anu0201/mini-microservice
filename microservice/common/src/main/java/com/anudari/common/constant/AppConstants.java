@@ -25,9 +25,5 @@ public final class AppConstants {
         String TOKEN_REFRESH  = "TOKEN_REFRESH";
     }
 
-    public interface INVOICE_STATUS {
-        String UNPAID    = "UNPAID";
-        String PAID      = "PAID";
-        String CANCELLED = "CANCELLED";
-    }
+
 }

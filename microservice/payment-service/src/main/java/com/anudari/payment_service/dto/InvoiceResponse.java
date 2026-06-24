@@ -19,7 +19,7 @@ public record InvoiceResponse(
                 invoice.getUserId(),
                 invoice.getAmount(),
                 invoice.getCurrency(),
-                invoice.getStatus(),
+                invoice.getStatus().value(),
                 invoice.getDescription(),
                 invoice.getDueDate(),
                 invoice.getItems().stream().map(InvoiceItemResponse::from).toList(),

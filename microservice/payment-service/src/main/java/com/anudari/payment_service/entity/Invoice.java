@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import com.anudari.common.constant.AppConstants.*;
+import com.anudari.common.constant.InvoiceStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,7 +36,7 @@ public class Invoice {
     private String currency = "MNT";
 
     @Column(length = 20)
-    private String status = INVOICE_STATUS.UNPAID;
+    private InvoiceStatus status = new InvoiceStatus.Unpaid();
     private String description;
 
     @Column(name = "due_date")

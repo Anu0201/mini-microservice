@@ -2,7 +2,7 @@ package com.anudari.payment_service.serviceImpl;
 
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
-import com.anudari.common.constant.AppConstants.*;
+import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
@@ -58,7 +58,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .currency(request.currency() != null ? request.currency() : "MNT")
                 .description(request.description())
                 .dueDate(request.dueDate())
-                .status(INVOICE_STATUS.UNPAID)
+                .status(new InvoiceStatus.Unpaid())
                 .build();
 
         items.forEach(item -> item.setInvoice(invoice));
@@ -105,11 +105,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (!invoice.getUserId().equals(userId)) {
             throw new SecurityException("Access denied");
         }
-        if (!INVOICE_STATUS.UNPAID.equals(invoice.getStatus())) {
-            throw new IllegalStateException("Invoice is not payable: " + invoice.getStatus());
+        if (!(invoice.getStatus() instanceof InvoiceStatus.Unpaid)) {
+            throw new IllegalStateException("Invoice is not payable: " + invoice.getStatus().value());
         }
 
-        invoice.setStatus(INVOICE_STATUS.PAID);
+        invoice.setStatus(new InvoiceStatus.Paid());
         paymentRepository.save(Payment.builder()
                 .invoice(invoice)
                 .userId(userId)
@@ -124,10 +124,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse cancelInvoice(Long invoiceId) {
         Invoice invoice = findById(invoiceId);
-        if (INVOICE_STATUS.PAID.equals(invoice.getStatus())) {
+        if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
             throw new IllegalStateException("Cannot cancel a paid invoice");
         }
-        invoice.setStatus(INVOICE_STATUS.CANCELLED);
+        invoice.setStatus(new InvoiceStatus.Cancelled());
         return InvoiceResponse.from(invoiceRepository.save(invoice));
     }
 
