@@ -8,12 +8,14 @@ import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getUser(
             @RequestHeader(value = AppConstants.HEADER.AUTH_USERNAME, required = false) String username) {
+        log.info("[THREAD] name={} virtual={}", Thread.currentThread().getName(), Thread.currentThread().isVirtual());
         if (username == null || username.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

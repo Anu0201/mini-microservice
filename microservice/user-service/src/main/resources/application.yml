@@ -1,9 +1,12 @@
 spring:
   application:
     name: user-service
+  threads:
+    virtual:
+      enabled: false
   cloud:
     compatibility-verifier:
-      enabled: false
+      enabled: true
 
   datasource:
     url: jdbc:postgresql://localhost:5432/micro_user_db
@@ -30,7 +33,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,threaddump
   endpoint:
     health:
       show-details: always

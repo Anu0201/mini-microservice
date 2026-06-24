@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: auth-service
+  threads:
+    virtual:
+      enabled: true
 
   cloud:
     compatibility-verifier:
@@ -39,7 +42,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,threaddump
   endpoint:
     health:
       show-details: always
