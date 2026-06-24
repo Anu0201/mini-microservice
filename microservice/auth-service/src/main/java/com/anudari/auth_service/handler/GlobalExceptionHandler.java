@@ -10,22 +10,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import static org.springframework.http.HttpStatus.*;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, Object>> handleAuth(AuthenticationException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(errorBody(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    @ExceptionHandler
+    public ResponseEntity<Map<String, Object>> handle(Exception ex) {
+        return switch (ex) {
+            case AuthenticationException e         -> ResponseEntity.status(UNAUTHORIZED).body(errorBody(UNAUTHORIZED, e.getMessage()));
+            case MethodArgumentNotValidException e -> ResponseEntity.status(BAD_REQUEST).body(errorBody(BAD_REQUEST, firstError(e)));
+            default                                -> ResponseEntity.status(INTERNAL_SERVER_ERROR).body(errorBody(INTERNAL_SERVER_ERROR, "Internal server error"));
+        };
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+    private String firstError(MethodArgumentNotValidException e) {
+        return e.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .findFirst().orElse("Validation failed");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(errorBody(HttpStatus.BAD_REQUEST, message));
     }
 
     private Map<String, Object> errorBody(HttpStatus status, String message) {

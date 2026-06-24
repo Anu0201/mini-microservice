@@ -10,34 +10,26 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static org.springframework.http.HttpStatus.*;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(NoSuchElementException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(errorBody(HttpStatus.NOT_FOUND, ex.getMessage()));
+    @ExceptionHandler
+    public ResponseEntity<Map<String, Object>> handle(Exception ex) {
+        return switch (ex) {
+            case NoSuchElementException e          -> ResponseEntity.status(NOT_FOUND).body(errorBody(NOT_FOUND, e.getMessage()));
+            case SecurityException e               -> ResponseEntity.status(FORBIDDEN).body(errorBody(FORBIDDEN, "Access denied"));
+            case IllegalStateException e           -> ResponseEntity.status(CONFLICT).body(errorBody(CONFLICT, e.getMessage()));
+            case MethodArgumentNotValidException e -> ResponseEntity.status(BAD_REQUEST).body(errorBody(BAD_REQUEST, firstError(e)));
+            default                                -> ResponseEntity.status(INTERNAL_SERVER_ERROR).body(errorBody(INTERNAL_SERVER_ERROR, "Internal server error"));
+        };
     }
 
-    @ExceptionHandler(SecurityException.class)
-    public ResponseEntity<Map<String, Object>> handleForbidden(SecurityException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(errorBody(HttpStatus.FORBIDDEN, "Access denied"));
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(errorBody(HttpStatus.CONFLICT, ex.getMessage()));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+    private String firstError(MethodArgumentNotValidException e) {
+        return e.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .findFirst().orElse("Validation failed");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(errorBody(HttpStatus.BAD_REQUEST, message));
     }
 
     private Map<String, Object> errorBody(HttpStatus status, String message) {
@@ -45,6 +37,7 @@ public class GlobalExceptionHandler {
                 "status", status.value(),
                 "error", status.getReasonPhrase(),
                 "message", message,
-                "timestamp", LocalDateTime.now().toString());
+                "timestamp", LocalDateTime.now().toString()
+        );
     }
 }
