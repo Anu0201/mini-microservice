@@ -5,9 +5,9 @@ COPY gradlew settings.gradle build.gradle ./
 COPY gradle gradle
 COPY common common
 COPY auth-service auth-service
-COPY user-service user-service
-COPY payment-service payment-service
-COPY gateway-service gateway-service
+COPY user-service/build.gradle  user-service/build.gradle
+COPY payment-service/build.gradle  payment-service/build.gradle
+COPY gateway-service/build.gradle  gateway-service/build.gradle
 RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew :auth-service:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-jammy
