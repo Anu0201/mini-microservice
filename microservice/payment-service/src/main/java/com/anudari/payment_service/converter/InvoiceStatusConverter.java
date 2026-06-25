@@ -8,7 +8,7 @@ import jakarta.persistence.Converter;
 public class InvoiceStatusConverter implements AttributeConverter<InvoiceStatus, String> {
 
     @Override
-    public String convertToDatabaseColumn(InvoiceStatus status) {
+    public String convertToDatabainseColumn(InvoiceStatus status) {
         return status.value();
     }
 
