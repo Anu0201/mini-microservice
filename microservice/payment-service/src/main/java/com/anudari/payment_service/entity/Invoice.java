@@ -29,6 +29,9 @@ public class Invoice {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "sender_id")
+    private Long senderId;
+
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 

@@ -2,6 +2,7 @@ package com.anudari.payment_service.serviceImpl;
 
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
+import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
@@ -68,6 +69,35 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @Transactional
+    public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId) {
+        try {
+            userServiceClient.getUserById(request.receiverId(), "true");
+        } catch (FeignException.NotFound e) {
+            throw new NoSuchElementException("User not found: " + request.receiverId());
+        }
+
+        Invoice invoice = Invoice.builder()
+                .invoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .senderId(senderId)
+                .userId(request.receiverId())
+                .amount(request.amount())
+                .currency(request.currency() != null ? request.currency() : "MNT")
+                .description(request.description())
+                .status(new InvoiceStatus.Unpaid())
+                .build();
+
+        return InvoiceResponse.from(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    public List<InvoiceResponse> listSentInvoices(Long senderId) {
+        return invoiceRepository.findBySenderId(senderId).stream()
+                .map(InvoiceResponse::from)
+                .toList();
+    }
+
+    @Override
     public List<InvoiceResponse> listAllInvoices() {
         return invoiceRepository.findAll().stream()
                 .map(InvoiceResponse::from)
@@ -84,7 +114,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public InvoiceResponse getInvoiceById(Long invoiceId, Long userId) {
         Invoice invoice = findById(invoiceId);
-        if (userId != null && !invoice.getUserId().equals(userId)) {
+        if (userId != null && !invoice.getUserId().equals(userId) && !userId.equals(invoice.getSenderId())) {
             throw new SecurityException("Access denied");
         }
         return InvoiceResponse.from(invoice);

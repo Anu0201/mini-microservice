@@ -19,6 +19,7 @@ public class InvoiceResponse {
     private Long id;
     private String invoiceNumber;
     private Long userId;
+    private Long senderId;
     private BigDecimal amount;
     private String currency;
     private String status;
@@ -32,6 +33,7 @@ public class InvoiceResponse {
                 .id(invoice.getInvoiceId())
                 .invoiceNumber(invoice.getInvoiceNumber())
                 .userId(invoice.getUserId())
+                .senderId(invoice.getSenderId())
                 .amount(invoice.getAmount())
                 .currency(invoice.getCurrency())
                 .status(invoice.getStatus().value())

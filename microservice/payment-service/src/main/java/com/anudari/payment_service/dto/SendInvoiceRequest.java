@@ -1,0 +1,13 @@
+package com.anudari.payment_service.dto;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
+
+public record SendInvoiceRequest(
+        @NotNull Long receiverId,
+        @NotNull @DecimalMin("0.01") BigDecimal amount,
+        String currency,
+        String description
+) {}

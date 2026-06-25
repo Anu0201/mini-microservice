@@ -3,6 +3,7 @@ package com.anudari.payment_service.controller;
 import com.anudari.common.constant.AppConstants;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
+import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,10 +57,23 @@ public class InvoiceController {
 
     // User
 
+    @PostMapping("/send")
+    public ResponseEntity<InvoiceResponse> sendUserInvoice(
+            @Valid @RequestBody SendInvoiceRequest request,
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.sendUserInvoice(request, senderId));
+    }
+
     @GetMapping("/user")
     public ResponseEntity<List<InvoiceResponse>> listUserInvoices(
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId) {
         return ResponseEntity.ok(invoiceService.listUserInvoices(userId));
+    }
+
+    @GetMapping("/sent")
+    public ResponseEntity<List<InvoiceResponse>> listSentInvoices(
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
+        return ResponseEntity.ok(invoiceService.listSentInvoices(senderId));
     }
 
     @PostMapping("/{invoiceId}/pay")
