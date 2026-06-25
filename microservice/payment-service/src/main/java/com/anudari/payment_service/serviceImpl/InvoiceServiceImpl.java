@@ -129,6 +129,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         invoice.setStatus(new InvoiceStatus.Cancelled());
         return InvoiceResponse.from(invoiceRepository.save(invoice));
+    }
 
     private Invoice findById(Long invoiceId) {
         return invoiceRepository.findById(invoiceId)
