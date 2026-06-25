@@ -171,9 +171,17 @@ class InvoiceControllerTest {
     }
 
     private InvoiceResponse sampleInvoiceResponse() {
-        return new InvoiceResponse(1L, "INV-ABC123", 1L, BigDecimal.valueOf(20), "MNT", "UNPAID",
-                "desc", LocalDate.now().plusDays(7),
-                List.of(new InvoiceItemResponse(1L, "Widget", 2, BigDecimal.TEN, BigDecimal.valueOf(20))),
-                LocalDateTime.now());
+        return InvoiceResponse.builder()
+                .id(1L)
+                .invoiceNumber("INV-ABC123")
+                .userId(1L)
+                .amount(BigDecimal.valueOf(20))
+                .currency("MNT")
+                .status("UNPAID")
+                .description("desc")
+                .dueDate(LocalDate.now().plusDays(7))
+                .items(List.of(new InvoiceItemResponse(1L, "Widget", 2, BigDecimal.TEN, BigDecimal.valueOf(20))))
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 }

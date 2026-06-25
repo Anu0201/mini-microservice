@@ -3,7 +3,7 @@ spring:
     name: user-service
   threads:
     virtual:
-      enabled: false
+      enabled: true
   cloud:
     compatibility-verifier:
       enabled: true

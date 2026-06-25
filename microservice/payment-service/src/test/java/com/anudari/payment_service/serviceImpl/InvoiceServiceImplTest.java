@@ -1,5 +1,6 @@
 package com.anudari.payment_service.serviceImpl;
 
+import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceItemRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
@@ -69,7 +70,7 @@ class InvoiceServiceImplTest {
         assertThat(saved.getUserId()).isEqualTo(42L);
         assertThat(saved.getAmount()).isEqualByComparingTo("20");
         assertThat(saved.getCurrency()).isEqualTo("MNT");
-        assertThat(saved.getStatus()).isEqualTo("UNPAID");
+        assertThat(saved.getStatus().value()).isEqualTo("UNPAID");
         assertThat(saved.getInvoiceNumber()).startsWith("INV-");
         assertThat(saved.getItems()).hasSize(1);
         assertThat(response.getAmount()).isEqualByComparingTo("20");
@@ -218,12 +219,17 @@ class InvoiceServiceImplTest {
     }
 
     private Invoice invoiceWithId(Long id, Long userId, String status) {
+        InvoiceStatus invoiceStatus = switch (status) {
+            case "PAID" -> new InvoiceStatus.Paid();
+            case "CANCELLED" -> new InvoiceStatus.Cancelled();
+            default -> new InvoiceStatus.Unpaid();
+        };
         Invoice invoice = Invoice.builder()
                 .invoiceNumber("INV-" + id)
                 .userId(userId)
                 .amount(BigDecimal.valueOf(20))
                 .currency("MNT")
-                .status(status)
+                .status(invoiceStatus)
                 .build();
         invoice.setInvoiceId(id);
         invoice.getItems().add(InvoiceItem.builder()
