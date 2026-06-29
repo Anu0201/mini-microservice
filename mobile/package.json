@@ -1,0 +1,20 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.1.2",
+    "axios": "^1.18.1",
+    "expo": "~56.0.12",
+    "expo-status-bar": "~56.0.4",
+    "react": "19.2.3",
+    "react-native": "0.85.3"
+  },
+  "scripts": {
+    "start": "expo start --port 8088",
+    "android": "expo start --android --port 8088",
+    "ios": "expo start --ios --port 8088",
+    "web": "expo start --web --port 8088"
+  },
+  "private": true
+}
