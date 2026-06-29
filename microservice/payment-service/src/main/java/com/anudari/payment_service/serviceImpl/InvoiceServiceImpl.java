@@ -7,12 +7,14 @@ import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
+import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
 import com.anudari.payment_service.service.InvoiceService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
     private final UserServiceClient userServiceClient;
+
+    @Value("${app.internal-secret}")
+    private String internalSecret;
 
     @Override
     @Transactional
@@ -71,16 +76,21 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId) {
+        UserIdResponse receiver;
         try {
-            userServiceClient.getUserById(request.receiverId(), "true");
+            receiver = userServiceClient.getUserByPhone(request.receiverPhone(), internalSecret);
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("User not found: " + request.receiverId());
+            throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
+        }
+
+        if (senderId.equals(receiver.id())) {
+            throw new IllegalArgumentException("Cannot send an invoice to yourself");
         }
 
         Invoice invoice = Invoice.builder()
                 .invoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .senderId(senderId)
-                .userId(request.receiverId())
+                .userId(receiver.id())
                 .amount(request.amount())
                 .currency(request.currency() != null ? request.currency() : "MNT")
                 .description(request.description())
@@ -154,6 +164,22 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse cancelInvoice(Long invoiceId) {
         Invoice invoice = findById(invoiceId);
+        if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
+            throw new IllegalStateException("Cannot cancel a paid invoice");
+        }
+        invoice.setStatus(new InvoiceStatus.Cancelled());
+        return InvoiceResponse.from(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    @Transactional
+    public InvoiceResponse cancelUserInvoice(Long invoiceId, Long userId) {
+        Invoice invoice = findById(invoiceId);
+        boolean isSender = userId.equals(invoice.getSenderId());
+        boolean isReceiver = userId.equals(invoice.getUserId());
+        if (!isSender && !isReceiver) {
+            throw new SecurityException("You can only cancel your own invoices");
+        }
         if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
             throw new IllegalStateException("Cannot cancel a paid invoice");
         }

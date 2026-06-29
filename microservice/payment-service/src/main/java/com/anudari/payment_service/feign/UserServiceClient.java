@@ -14,4 +14,10 @@ public interface UserServiceClient {
             @PathVariable Long id,
             @RequestHeader(AppConstants.HEADER.AUTH_IS_ADMIN) String isAdmin
     );
+
+    @GetMapping("/api/users/internal/by-phone/{phoneNumber}")
+    UserIdResponse getUserByPhone(
+            @PathVariable String phoneNumber,
+            @RequestHeader(AppConstants.HEADER.INTERNAL_SECRET) String internalSecret
+    );
 }

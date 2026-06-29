@@ -32,6 +32,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(request.username());
         user.setEmail(request.email());
+        user.setPhoneNumber(request.phoneNumber());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRoles(Set.of(AppConstants.ROLE.USER));
         return UserResponse.from(userRepository.save(user));
@@ -67,6 +68,16 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByUsername(username)
                 .map(UserInternalResponse::from)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+    }
+
+    @Override
+    public UserInternalResponse internalSearchByPhone(String phoneNumber, String secretToken) {
+        if (secretToken == null || !secretToken.equals(internalSecret)) {
+            throw new SecurityException("Access Denied");
+        }
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .map(UserInternalResponse::from)
+                .orElseThrow(() -> new NoSuchElementException("User not found with phone: " + phoneNumber));
     }
 
     @Override

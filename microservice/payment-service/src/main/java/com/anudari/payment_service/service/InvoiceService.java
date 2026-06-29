@@ -15,4 +15,5 @@ public interface InvoiceService {
     InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
     InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey);
     InvoiceResponse cancelInvoice(Long invoiceId);
+    InvoiceResponse cancelUserInvoice(Long invoiceId, Long senderId);
 }

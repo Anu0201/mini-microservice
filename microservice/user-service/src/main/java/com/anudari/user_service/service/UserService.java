@@ -19,5 +19,7 @@ public interface UserService {
 
     UserInternalResponse internalSearch(String username, String secretToken);
 
+    UserInternalResponse internalSearchByPhone(String phoneNumber, String secretToken);
+
     List<UserResponse> listAllUsers(String secretToken);
 }

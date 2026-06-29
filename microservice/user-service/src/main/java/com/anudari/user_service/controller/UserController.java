@@ -74,4 +74,11 @@ public class UserController {
             @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
         return ResponseEntity.ok(userService.internalSearch(username, secretToken));
     }
+
+    @GetMapping("/internal/by-phone/{phoneNumber}")
+    public ResponseEntity<UserInternalResponse> internalLookupByPhone(
+            @PathVariable String phoneNumber,
+            @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
+        return ResponseEntity.ok(userService.internalSearchByPhone(phoneNumber, secretToken));
+    }
 }

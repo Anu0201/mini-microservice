@@ -57,6 +57,13 @@ public class InvoiceController {
 
     // User
 
+    @PostMapping("/{invoiceId}/cancel/user")
+    public ResponseEntity<InvoiceResponse> cancelUserInvoice(
+            @PathVariable Long invoiceId,
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
+        return ResponseEntity.ok(invoiceService.cancelUserInvoice(invoiceId, senderId));
+    }
+
     @PostMapping("/send")
     public ResponseEntity<InvoiceResponse> sendUserInvoice(
             @Valid @RequestBody SendInvoiceRequest request,
