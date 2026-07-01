@@ -12,8 +12,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: 9909
       USER_SERVICE_URL: http://user-service:8082
       INTERNAL_SECRET: ${INTERNAL_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       postgres-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - microservice-network
@@ -30,8 +34,12 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 9909
       INTERNAL_SECRET: ${INTERNAL_SECRET:-internal-secret-key}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       postgres-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - microservice-network
@@ -49,8 +57,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: 9909
       USER_SERVICE_URL: http://user-service:8082
       INTERNAL_SECRET: ${INTERNAL_SECRET:-internal-secret-key}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       postgres-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - microservice-network
@@ -114,8 +126,24 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: microservice-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   microservice-network:
