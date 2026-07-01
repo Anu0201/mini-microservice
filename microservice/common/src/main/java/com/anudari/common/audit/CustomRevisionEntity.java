@@ -1,6 +1,5 @@
-package com.anudari.user_service.entity;
+package com.anudari.common.audit;
 
-import com.anudari.user_service.handler.CustomRevisionListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

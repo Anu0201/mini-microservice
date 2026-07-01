@@ -4,6 +4,9 @@ jar     { enabled = true  }
 
 dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.springframework:spring-web'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
+    compileOnly 'org.hibernate.orm:hibernate-envers'
     compileOnly 'com.fasterxml.jackson.core:jackson-annotations'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
