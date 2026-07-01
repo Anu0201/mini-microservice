@@ -1,12 +1,10 @@
-package com.anudari.auth_service.config;
+package com.anudari.auth_service.handler;
 
 import com.anudari.common.constant.AppConstants;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import org.slf4j.MDC;
-import org.springframework.stereotype.Component;
 
-@Component
 public class FeignRequestInterceptor implements RequestInterceptor {
 
     @Override
