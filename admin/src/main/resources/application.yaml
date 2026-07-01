@@ -29,7 +29,7 @@ payment-service:
 app:
   internal-secret: ${INTERNAL_SECRET}
   jwt:
-    secret: ${ADMIN_JWT_SECRET:5f8a3c7e1b9d4a6f2e0c8b5a7d3f1e9c4b6a8d2f0e7c5b3a9d1f6e4c2b8a0d7f}
+    secret: ${ADMIN_JWT_SECRET}
     expiration: ${ADMIN_JWT_EXPIRATION:3600000}
 
 management:
