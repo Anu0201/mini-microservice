@@ -2,9 +2,11 @@ package com.anudari.payment_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.envers.Audited;
 
 import java.math.BigDecimal;
 
+@Audited
 @Entity
 @Table(name = "invoice_items")
 @Getter @Setter
