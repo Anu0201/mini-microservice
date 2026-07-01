@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -30,9 +31,10 @@ public class UserController {
 
     // Admin (only callable by admin-service, proven via shared internal secret)
     @GetMapping
-    public ResponseEntity<List<UserResponse>> listAllUsers(
+    public CompletableFuture<ResponseEntity<List<UserResponse>>> listAllUsers(
             @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secretToken) {
-        return ResponseEntity.ok(userService.listAllUsers(secretToken));
+        return userService.listAllUsers(secretToken)
+                .thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/me")

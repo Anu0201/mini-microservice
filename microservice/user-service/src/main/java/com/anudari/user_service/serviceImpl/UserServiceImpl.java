@@ -10,12 +10,14 @@ import com.anudari.user_service.repository.UserRepository;
 import com.anudari.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -80,13 +82,15 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NoSuchElementException("User not found with phone: " + phoneNumber));
     }
 
+    @Async("asyncExecutor")
     @Override
-    public List<UserResponse> listAllUsers(String secretToken) {
+    public CompletableFuture<List<UserResponse>> listAllUsers(String secretToken) {
         if (secretToken == null || !secretToken.equals(internalSecret)) {
             throw new SecurityException("Access Denied");
         }
-        return userRepository.findAll().stream()
+        List<UserResponse> users = userRepository.findAll().stream()
                 .map(UserResponse::from)
                 .toList();
+        return CompletableFuture.completedFuture(users);
     }
 }

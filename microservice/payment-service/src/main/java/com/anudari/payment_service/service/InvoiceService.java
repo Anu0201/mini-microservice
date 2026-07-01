@@ -5,13 +5,14 @@ import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface InvoiceService {
     InvoiceResponse createInvoice(CreateInvoiceRequest request);
     InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId);
-    List<InvoiceResponse> listAllInvoices();
-    List<InvoiceResponse> listUserInvoices(Long userId);
-    List<InvoiceResponse> listSentInvoices(Long senderId);
+    CompletableFuture<List<InvoiceResponse>> listAllInvoices();
+    CompletableFuture<List<InvoiceResponse>> listUserInvoices(Long userId);
+    CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId);
     InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
     InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey);
     InvoiceResponse cancelInvoice(Long invoiceId);

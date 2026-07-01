@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2ed4b8d7-1876-4765-b772-bc4e53653789" name="Changes" comment="Feat: Mobile React native">
-      <change beforePath="$PROJECT_DIR$/microservice/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/payment-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/user-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/axiosInstance.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/api/axiosInstance.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/app.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package.json" afterDir="false" />
+    <list default="true" id="2ed4b8d7-1876-4765-b772-bc4e53653789" name="Changes" comment="Fix: mobile package version">
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/controller/InvoiceController.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/controller/InvoiceController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/service/InvoiceService.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/service/InvoiceService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/serviceImpl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/serviceImpl/UserServiceImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,61 +61,61 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.3808884658864975" />
-      <entry key="MS500" value="3.2787342948835962" />
-      <entry key="S2" value="5.031370030198631" />
-      <entry key="S5" value="5.663763161140746" />
-      <entry key="S10" value="6.8366148057418" />
-      <entry key="S30" value="11.795502055250187" />
-      <entry key="S60" value="15.019497524653007" />
-      <entry key="M2" value="17.23903867940679" />
-      <entry key="M5" value="18.822699115322347" />
-      <entry key="M10" value="19.39846585925778" />
-      <entry key="M15" value="19.596057382828423" />
-      <entry key="M30" value="19.796554303471755" />
-      <entry key="H1" value="19.898857652455685" />
-      <entry key="H2" value="20.265777033683673" />
-      <entry key="H4" value="26.281130049740188" />
-      <entry key="D1" value="150.45302275645" />
-      <entry key="W1" value="803.8349974767463" />
+      <entry key="MS100" value="1.688245160995106" />
+      <entry key="MS500" value="3.906124241890299" />
+      <entry key="S2" value="5.331015600972969" />
+      <entry key="S5" value="5.717851789786668" />
+      <entry key="S10" value="5.856370135506608" />
+      <entry key="S30" value="5.951542803463437" />
+      <entry key="S60" value="5.975698025487369" />
+      <entry key="M2" value="5.987830607780418" />
+      <entry key="M5" value="5.995130419317441" />
+      <entry key="M10" value="6.007623037054376" />
+      <entry key="M15" value="6.1563663103338575" />
+      <entry key="M30" value="8.48111996075708" />
+      <entry key="H1" value="15.837965435455711" />
+      <entry key="H2" value="25.746567618914664" />
+      <entry key="H4" value="38.1061604804482" />
+      <entry key="D1" value="165.99524017095843" />
+      <entry key="W1" value="822.107439433401" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="4.462569761195052E-113" />
-      <entry key="MS500" value="3.387794071275058E-23" />
-      <entry key="S2" value="2.4125662657812815E-6" />
-      <entry key="S5" value="0.00566228467961148" />
-      <entry key="S10" value="0.07524815399470929" />
-      <entry key="S30" value="0.4221809343595101" />
-      <entry key="S60" value="0.649754518537201" />
-      <entry key="M2" value="0.8060735193127243" />
-      <entry key="M5" value="0.9173812545685279" />
-      <entry key="M10" value="0.9578002164170394" />
-      <entry key="M15" value="0.9716651367314495" />
-      <entry key="M30" value="0.985730763161309" />
-      <entry key="H1" value="0.9928760250406777" />
-      <entry key="H2" value="1.009501305193606" />
-      <entry key="H4" value="1.2662693029163612" />
-      <entry key="D1" value="4.6394592004894815" />
-      <entry key="W1" value="9.876064206366836" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="1.6028024171266708E-217" />
+      <entry key="S30" value="5.432002938826231E-73" />
+      <entry key="S60" value="7.37021230279442E-37" />
+      <entry key="M2" value="8.584994061031391E-19" />
+      <entry key="M5" value="5.936028803669817E-8" />
+      <entry key="M10" value="2.4363966843824549E-4" />
+      <entry key="M15" value="0.0039009046342561773" />
+      <entry key="M30" value="0.06245722245754376" />
+      <entry key="H1" value="0.24992356207036107" />
+      <entry key="H2" value="0.5064807852717932" />
+      <entry key="H4" value="0.8969208571968125" />
+      <entry key="D1" value="4.380315246252649" />
+      <entry key="W1" value="9.795303701795644" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.2994671438048164" />
-      <entry key="MS500" value="3.2220918431142995" />
-      <entry key="S2" value="5.010030506250219" />
-      <entry key="S5" value="5.658249265275919" />
-      <entry key="S10" value="6.894065351776719" />
-      <entry key="S30" value="12.190483484395305" />
-      <entry key="S60" value="15.648492670491581" />
-      <entry key="M2" value="18.03224907058999" />
-      <entry key="M5" value="19.734223904954334" />
-      <entry key="M10" value="20.353208357418463" />
-      <entry key="M15" value="20.565654401601027" />
-      <entry key="M30" value="20.78123596656332" />
-      <entry key="H1" value="20.891205310211216" />
-      <entry key="H2" value="21.275010865900516" />
-      <entry key="H4" value="27.547244508096774" />
-      <entry key="D1" value="155.09240481893534" />
-      <entry key="W1" value="813.7110122795201" />
+      <entry key="MS100" value="1.6450023172180825" />
+      <entry key="MS500" value="3.883148727954934" />
+      <entry key="S2" value="5.322610681831443" />
+      <entry key="S5" value="5.714190609313588" />
+      <entry key="S10" value="5.854485543480687" />
+      <entry key="S30" value="5.950902196901079" />
+      <entry key="S60" value="5.9753761448256855" />
+      <entry key="M2" value="5.987669271111441" />
+      <entry key="M5" value="5.995065848173329" />
+      <entry key="M10" value="6.007833422536437" />
+      <entry key="M15" value="6.160235866742186" />
+      <entry key="M30" value="8.543488513265102" />
+      <entry key="H1" value="16.08772824503956" />
+      <entry key="H2" value="26.25288938285168" />
+      <entry key="H4" value="39.002954743131006" />
+      <entry key="D1" value="170.37547891486102" />
+      <entry key="W1" value="831.9026935862626" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
@@ -240,7 +240,31 @@
       <option name="project" value="LOCAL" />
       <updated>1782719579482</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Fix: fixed service version error">
+      <option name="closed" value="true" />
+      <created>1782868619583</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1782868619583</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Fix: mobile package version">
+      <option name="closed" value="true" />
+      <created>1782868647917</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1782868647917</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Fix: mobile package version">
+      <option name="closed" value="true" />
+      <created>1782868682754</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1782868682754</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -249,6 +273,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Feat: User-service, Payment-service" />
     <MESSAGE value="Feat: Mobile React native" />
-    <option name="LAST_COMMIT_MESSAGE" value="Feat: Mobile React native" />
+    <MESSAGE value="Fix: mobile package version" />
+    <MESSAGE value="Fix: fixed service version error" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix: fixed service version error" />
   </component>
 </project>

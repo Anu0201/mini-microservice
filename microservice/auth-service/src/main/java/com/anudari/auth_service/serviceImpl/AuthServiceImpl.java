@@ -4,10 +4,10 @@ import com.anudari.auth_service.dto.AuthHistoryResponse;
 import com.anudari.auth_service.dto.AuthResponse;
 import com.anudari.auth_service.dto.LoginRequest;
 import com.anudari.auth_service.dto.UserInternalDto;
-import com.anudari.auth_service.entity.AuthHistory;
 import com.anudari.auth_service.exception.AuthenticationException;
 import com.anudari.auth_service.feign.UserClient;
 import com.anudari.auth_service.repository.AuthHistoryRepository;
+import com.anudari.auth_service.service.AsyncHistoryService;
 import com.anudari.auth_service.service.AuthService;
 import com.anudari.auth_service.util.JwtUtil;
 import com.anudari.common.constant.AppConstants;
@@ -15,6 +15,7 @@ import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserClient userClient;
     private final AuthHistoryRepository authHistoryRepository;
+    private final AsyncHistoryService asyncHistoryService;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
@@ -42,25 +44,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.password(), userDto.credentialHash())) {
-            authHistoryRepository.save(AuthHistory.builder()
-                    .userId(userDto.id())
-                    .username(request.username())
-                    .eventType(AppConstants.EVENT.LOGIN_FAIL)
-                    .ipAddress(ipAddress)
-                    .userAgent(userAgent)
-                    .build());
+            asyncHistoryService.save(userDto.id(), request.username(),
+                    AppConstants.EVENT.LOGIN_FAIL, ipAddress, userAgent);
             throw new AuthenticationException("Invalid credentials");
         }
 
         String token = jwtUtil.generateToken(userDto.id(), userDto.username(), userDto.roles());
 
-        authHistoryRepository.save(AuthHistory.builder()
-                .userId(userDto.id())
-                .username(userDto.username())
-                .eventType(AppConstants.EVENT.LOGIN_SUCCESS)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .build());
+        asyncHistoryService.save(userDto.id(), userDto.username(),
+                AppConstants.EVENT.LOGIN_SUCCESS, ipAddress, userAgent);
 
         return new AuthResponse(token, userDto.username(), userDto.roles());
     }
@@ -81,26 +73,17 @@ public class AuthServiceImpl implements AuthService {
 
         String newToken = jwtUtil.generateToken(userId, username, roles);
 
-        authHistoryRepository.save(AuthHistory.builder()
-                .userId(userId)
-                .username(username)
-                .eventType(AppConstants.EVENT.TOKEN_REFRESH)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .build());
+        asyncHistoryService.save(userId, username,
+                AppConstants.EVENT.TOKEN_REFRESH, ipAddress, userAgent);
 
         return new AuthResponse(newToken, username, roles);
     }
 
+    @Async("asyncExecutor")
     @Override
     public void logout(Long userId, String username, String ipAddress, String userAgent) {
-        authHistoryRepository.save(AuthHistory.builder()
-                .userId(userId)
-                .username(username)
-                .eventType(AppConstants.EVENT.LOGOUT)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .build());
+        asyncHistoryService.save(userId, username,
+                AppConstants.EVENT.LOGOUT, ipAddress, userAgent);
     }
 
     @Override

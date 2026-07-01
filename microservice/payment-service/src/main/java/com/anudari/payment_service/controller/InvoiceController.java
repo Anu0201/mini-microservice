@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/payments/invoices")
@@ -35,10 +36,10 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<InvoiceResponse>> listAllInvoices(
+    public CompletableFuture<ResponseEntity<List<InvoiceResponse>>> listAllInvoices(
             @RequestHeader(value = AppConstants.HEADER.INTERNAL_SECRET, required = false) String secret) {
         requireInternalSecret(secret);
-        return ResponseEntity.ok(invoiceService.listAllInvoices());
+        return invoiceService.listAllInvoices().thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/{invoiceId}/cancel")
@@ -72,15 +73,15 @@ public class InvoiceController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<List<InvoiceResponse>> listUserInvoices(
+    public CompletableFuture<ResponseEntity<List<InvoiceResponse>>> listUserInvoices(
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId) {
-        return ResponseEntity.ok(invoiceService.listUserInvoices(userId));
+        return invoiceService.listUserInvoices(userId).thenApply(ResponseEntity::ok);
     }
 
     @GetMapping("/sent")
-    public ResponseEntity<List<InvoiceResponse>> listSentInvoices(
+    public CompletableFuture<ResponseEntity<List<InvoiceResponse>>> listSentInvoices(
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
-        return ResponseEntity.ok(invoiceService.listSentInvoices(senderId));
+        return invoiceService.listSentInvoices(senderId).thenApply(ResponseEntity::ok);
     }
 
     @PostMapping("/{invoiceId}/pay")

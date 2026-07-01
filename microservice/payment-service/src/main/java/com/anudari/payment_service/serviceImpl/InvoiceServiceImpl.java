@@ -15,6 +15,7 @@ import com.anudari.payment_service.service.InvoiceService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -100,25 +102,34 @@ public class InvoiceServiceImpl implements InvoiceService {
         return InvoiceResponse.from(invoiceRepository.save(invoice));
     }
 
+    @Async("asyncExecutor")
     @Override
-    public List<InvoiceResponse> listSentInvoices(Long senderId) {
-        return invoiceRepository.findBySenderId(senderId).stream()
-                .map(InvoiceResponse::from)
-                .toList();
+    public CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId) {
+        return CompletableFuture.completedFuture(
+                invoiceRepository.findBySenderId(senderId).stream()
+                        .map(InvoiceResponse::from)
+                        .toList()
+        );
     }
 
+    @Async("asyncExecutor")
     @Override
-    public List<InvoiceResponse> listAllInvoices() {
-        return invoiceRepository.findAll().stream()
-                .map(InvoiceResponse::from)
-                .toList();
+    public CompletableFuture<List<InvoiceResponse>> listAllInvoices() {
+        return CompletableFuture.completedFuture(
+                invoiceRepository.findAll().stream()
+                        .map(InvoiceResponse::from)
+                        .toList()
+        );
     }
 
+    @Async("asyncExecutor")
     @Override
-    public List<InvoiceResponse> listUserInvoices(Long userId) {
-        return invoiceRepository.findByUserId(userId).stream()
-                .map(InvoiceResponse::from)
-                .toList();
+    public CompletableFuture<List<InvoiceResponse>> listUserInvoices(Long userId) {
+        return CompletableFuture.completedFuture(
+                invoiceRepository.findByUserId(userId).stream()
+                        .map(InvoiceResponse::from)
+                        .toList()
+        );
     }
 
     @Override

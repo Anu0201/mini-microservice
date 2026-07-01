@@ -6,6 +6,7 @@ import com.anudari.user_service.dto.UserInternalResponse;
 import com.anudari.user_service.dto.UserResponse;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface UserService {
 
@@ -21,5 +22,5 @@ public interface UserService {
 
     UserInternalResponse internalSearchByPhone(String phoneNumber, String secretToken);
 
-    List<UserResponse> listAllUsers(String secretToken);
+    CompletableFuture<List<UserResponse>> listAllUsers(String secretToken);
 }
