@@ -8,7 +8,7 @@ COPY payment-service payment-service
 COPY auth-service/build.gradle  auth-service/build.gradle
 COPY user-service/build.gradle  user-service/build.gradle
 COPY gateway-service/build.gradle  gateway-service/build.gradle
-RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew :payment-service:bootJar -x test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew clean :payment-service:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
