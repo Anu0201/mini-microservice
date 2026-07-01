@@ -5,7 +5,7 @@ import com.anudari.user_service.entity.User;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public record UserResponse(Long id, String username, String email, Set<String> roles, LocalDateTime createdAt) {
+public record UserResponse(Long id, String username, String email, Set<String> roles, LocalDateTime createdDate) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -13,7 +13,7 @@ public record UserResponse(Long id, String username, String email, Set<String> r
                 user.getUsername(),
                 user.getEmail(),
                 user.getRoles(),
-                user.getCreatedAt()
+                user.getCreatedDate()
         );
     }
 }

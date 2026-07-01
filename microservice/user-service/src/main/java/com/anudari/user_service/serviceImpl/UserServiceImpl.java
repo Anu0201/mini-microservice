@@ -1,6 +1,7 @@
 package com.anudari.user_service.serviceImpl;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.user_service.config.AppProperties;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
@@ -9,7 +10,6 @@ import com.anudari.user_service.entity.User;
 import com.anudari.user_service.repository.UserRepository;
 import com.anudari.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,9 +25,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-
-    @Value("${app.internal-secret}")
-    private String internalSecret;
+    private final AppProperties appProperties;
 
     @Override
     public UserResponse register(RegisterRequest request) {
@@ -64,7 +62,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInternalResponse internalSearch(String username, String secretToken) {
-        if (secretToken == null || !secretToken.equals(internalSecret)) {
+        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
             throw new SecurityException("Access Denied");
         }
         return userRepository.findByUsername(username)
@@ -74,7 +72,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInternalResponse internalSearchByPhone(String phoneNumber, String secretToken) {
-        if (secretToken == null || !secretToken.equals(internalSecret)) {
+        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
             throw new SecurityException("Access Denied");
         }
         return userRepository.findByPhoneNumber(phoneNumber)
@@ -85,7 +83,7 @@ public class UserServiceImpl implements UserService {
     @Async("asyncExecutor")
     @Override
     public CompletableFuture<List<UserResponse>> listAllUsers(String secretToken) {
-        if (secretToken == null || !secretToken.equals(internalSecret)) {
+        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
             throw new SecurityException("Access Denied");
         }
         List<UserResponse> users = userRepository.findAll().stream()

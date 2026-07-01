@@ -1,5 +1,6 @@
 package com.anudari.auth_service.serviceImpl;
 
+import com.anudari.auth_service.config.AppProperties;
 import com.anudari.auth_service.dto.AuthHistoryResponse;
 import com.anudari.auth_service.dto.AuthResponse;
 import com.anudari.auth_service.dto.LoginRequest;
@@ -14,7 +15,6 @@ import com.anudari.common.constant.AppConstants;
 import feign.FeignException;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,15 +30,13 @@ public class AuthServiceImpl implements AuthService {
     private final AsyncHistoryService asyncHistoryService;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
-
-    @Value("${app.internal-secret}")
-    private String internalSecret;
+    private final AppProperties appProperties;
 
     @Override
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         UserInternalDto userDto;
         try {
-            userDto = userClient.findByUsernameInternal(request.username(), internalSecret);
+            userDto = userClient.findByUsernameInternal(request.username(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
             throw new AuthenticationException("Invalid credentials");
         }

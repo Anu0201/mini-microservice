@@ -1,5 +1,6 @@
 package com.anudari.payment_service.serviceImpl;
 
+import com.anudari.payment_service.config.AppProperties;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
@@ -14,7 +15,6 @@ import com.anudari.payment_service.repository.PaymentRepository;
 import com.anudari.payment_service.service.InvoiceService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +33,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
     private final UserServiceClient userServiceClient;
-
-    @Value("${app.internal-secret}")
-    private String internalSecret;
+    private final AppProperties appProperties;
 
     @Override
     @Transactional
@@ -80,7 +78,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId) {
         UserIdResponse receiver;
         try {
-            receiver = userServiceClient.getUserByPhone(request.receiverPhone(), internalSecret);
+            receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
             throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
         }

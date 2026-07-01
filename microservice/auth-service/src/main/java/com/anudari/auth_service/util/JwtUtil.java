@@ -1,10 +1,11 @@
 package com.anudari.auth_service.util;
 
+import com.anudari.auth_service.config.AppProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -13,16 +14,13 @@ import java.util.Date;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
 
-    @Value("${app.jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${app.jwt.expiration}")
-    private long jwtExpirationMs;
+    private final AppProperties appProperties;
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = this.jwtSecret.getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = appProperties.getJwt().getSecret().getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -41,7 +39,7 @@ public class JwtUtil {
 
     public String generateToken(Long userId, String username, List<String> roles) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+        Date expiryDate = new Date(now.getTime() + appProperties.getJwt().getExpiration());
 
         return Jwts.builder()
                 .subject(username)

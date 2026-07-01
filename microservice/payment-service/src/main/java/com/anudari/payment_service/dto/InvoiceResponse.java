@@ -25,7 +25,7 @@ public class InvoiceResponse {
     private String status;
     private String description;
     private List<InvoiceItemResponse> items;
-    private LocalDateTime createdAt;
+    private LocalDateTime createdDate;
 
     public static InvoiceResponse from(Invoice invoice) {
         return InvoiceResponse.builder()
@@ -38,7 +38,7 @@ public class InvoiceResponse {
                 .status(invoice.getStatus().value())
                 .description(invoice.getDescription())
                 .items(invoice.getItems().stream().map(InvoiceItemResponse::from).toList())
-                .createdAt(invoice.getCreatedAt())
+                .createdDate(invoice.getCreatedDate())
                 .build();
     }
 }

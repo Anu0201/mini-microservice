@@ -1,13 +1,13 @@
 package com.anudari.payment_service.controller;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.payment_service.config.AppProperties;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +21,7 @@ import java.util.concurrent.CompletableFuture;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
-
-    @Value("${app.internal-secret}")
-    private String internalSecret;
+    private final AppProperties appProperties;
 
     // Admin-service ees duudagdana
 
@@ -51,7 +49,7 @@ public class InvoiceController {
     }
 
     private void requireInternalSecret(String secret) {
-        if (secret == null || !secret.equals(internalSecret)) {
+        if (secret == null || !secret.equals(appProperties.getInternalSecret())) {
             throw new SecurityException("Access denied");
         }
     }
