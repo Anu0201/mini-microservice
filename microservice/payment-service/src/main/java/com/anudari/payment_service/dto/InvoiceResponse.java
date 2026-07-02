@@ -20,25 +20,33 @@ public class InvoiceResponse {
     private String invoiceNumber;
     private Long userId;
     private Long senderId;
+    private String senderName;
     private BigDecimal amount;
     private String currency;
     private String status;
     private String description;
+    private LocalDate dueDate;
     private List<InvoiceItemResponse> items;
-    private LocalDateTime createdDate;
+    private LocalDateTime createdAt;
 
     public static InvoiceResponse from(Invoice invoice) {
+        return from(invoice, null);
+    }
+
+    public static InvoiceResponse from(Invoice invoice, String senderName) {
         return InvoiceResponse.builder()
                 .id(invoice.getInvoiceId())
                 .invoiceNumber(invoice.getInvoiceNumber())
                 .userId(invoice.getUserId())
                 .senderId(invoice.getSenderId())
+                .senderName(senderName)
                 .amount(invoice.getAmount())
                 .currency(invoice.getCurrency())
                 .status(invoice.getStatus().value())
                 .description(invoice.getDescription())
+                .dueDate(invoice.getDueDate())
                 .items(invoice.getItems().stream().map(InvoiceItemResponse::from).toList())
-                .createdDate(invoice.getCreatedDate())
+                .createdAt(invoice.getCreatedDate())
                 .build();
     }
 }

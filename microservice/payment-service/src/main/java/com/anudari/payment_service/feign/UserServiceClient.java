@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public interface UserServiceClient {
 
     @GetMapping("/api/users/{id}")
-    Object getUserById(
+    UserIdResponse getUserById(
             @PathVariable Long id,
             @RequestHeader(AppConstants.HEADER.AUTH_IS_ADMIN) String isAdmin
     );

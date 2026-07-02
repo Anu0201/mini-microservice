@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class InvoicePaymentIntegrationTest {
 
     @Container
@@ -43,7 +43,8 @@ class InvoicePaymentIntegrationTest {
 
     @Test
     void fullInvoiceLifecycle_createListPayCancel() {
-        when(userServiceClient.getUserById(anyLong(), any())).thenReturn(new Object());
+        when(userServiceClient.getUserById(anyLong(), any()))
+                .thenReturn(new com.anudari.payment_service.feign.UserIdResponse(501L, "testuser", "hash", List.of("ROLE_USER")));
 
         Long userId = 501L;
 

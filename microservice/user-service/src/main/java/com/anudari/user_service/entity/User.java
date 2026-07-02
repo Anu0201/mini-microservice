@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Audited
@@ -30,7 +32,7 @@ public class User extends Audit {
 
     @Column(nullable = false, unique = true)
     private String email;
-
+  
     @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
@@ -38,4 +40,7 @@ public class User extends Audit {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role_name")
     private Set<String> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Account> accounts = new ArrayList<>();
 }

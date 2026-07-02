@@ -32,6 +32,12 @@ public class Invoice extends Audit {
     @Column(name = "sender_id")
     private Long senderId;
 
+    @Column(name = "sender_account_id")
+    private Long senderAccountId;
+
+    @Column(name = "receiver_account_id")
+    private Long receiverAccountId;
+
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 

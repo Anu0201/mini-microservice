@@ -105,7 +105,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId) {
         return CompletableFuture.completedFuture(
                 invoiceRepository.findBySenderId(senderId).stream()
-                        .map(InvoiceResponse::from)
+                        .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
                         .toList()
         );
     }
@@ -115,7 +115,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public CompletableFuture<List<InvoiceResponse>> listAllInvoices() {
         return CompletableFuture.completedFuture(
                 invoiceRepository.findAll().stream()
-                        .map(InvoiceResponse::from)
+                        .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
                         .toList()
         );
     }
@@ -125,7 +125,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public CompletableFuture<List<InvoiceResponse>> listUserInvoices(Long userId) {
         return CompletableFuture.completedFuture(
                 invoiceRepository.findByUserId(userId).stream()
-                        .map(InvoiceResponse::from)
+                        .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
                         .toList()
         );
     }
@@ -136,7 +136,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (userId != null && !invoice.getUserId().equals(userId) && !userId.equals(invoice.getSenderId())) {
             throw new SecurityException("Access denied");
         }
-        return InvoiceResponse.from(invoice);
+        return InvoiceResponse.from(invoice, fetchSenderName(invoice.getSenderId()));
     }
 
     @Override
@@ -199,5 +199,14 @@ public class InvoiceServiceImpl implements InvoiceService {
     private Invoice findById(Long invoiceId) {
         return invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new NoSuchElementException("Invoice not found: " + invoiceId));
+    }
+
+    private String fetchSenderName(Long senderId) {
+        if (senderId == null) return null;
+        try {
+            return userServiceClient.getUserById(senderId, "true").username();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

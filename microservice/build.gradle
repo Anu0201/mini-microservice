@@ -28,4 +28,12 @@ subprojects {
             languageVersion = JavaLanguageVersion.of(21)
         }
     }
+
+    dependencies {
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
 }

@@ -22,12 +22,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 
 @WebMvcTest(InvoiceController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
@@ -83,10 +85,14 @@ class InvoiceControllerTest {
 
     @Test
     void listAllInvoices_withValidSecret_returns200() throws Exception {
-        when(invoiceService.listAllInvoices()).thenReturn(List.of(sampleInvoiceResponse()));
+        when(invoiceService.listAllInvoices()).thenReturn(CompletableFuture.completedFuture(List.of(sampleInvoiceResponse())));
 
-        mockMvc.perform(get("/api/payments/invoices")
+        var mvcResult = mockMvc.perform(get("/api/payments/invoices")
                         .header(AppConstants.HEADER.INTERNAL_SECRET, "test-secret"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -114,10 +120,14 @@ class InvoiceControllerTest {
 
     @Test
     void listUserInvoices_withUserIdHeader_returns200() throws Exception {
-        when(invoiceService.listUserInvoices(7L)).thenReturn(List.of(sampleInvoiceResponse()));
+        when(invoiceService.listUserInvoices(7L)).thenReturn(CompletableFuture.completedFuture(List.of(sampleInvoiceResponse())));
 
-        mockMvc.perform(get("/api/payments/invoices/user")
+        var mvcResult = mockMvc.perform(get("/api/payments/invoices/user")
                         .header(AppConstants.HEADER.AUTH_USER_ID, "7"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }

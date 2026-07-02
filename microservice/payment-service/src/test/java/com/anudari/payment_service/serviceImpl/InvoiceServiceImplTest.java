@@ -102,21 +102,21 @@ class InvoiceServiceImplTest {
     }
 
     @Test
-    void listUserInvoices_mapsRepositoryResults() {
+    void listUserInvoices_mapsRepositoryResults() throws Exception {
         Invoice invoice = invoiceWithId(1L, 7L, "UNPAID");
         when(invoiceRepository.findByUserId(7L)).thenReturn(List.of(invoice));
 
-        List<InvoiceResponse> result = invoiceService.listUserInvoices(7L);
+        List<InvoiceResponse> result = invoiceService.listUserInvoices(7L).get();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getUserId()).isEqualTo(7L);
     }
 
     @Test
-    void listAllInvoices_mapsAllRepositoryResults() {
+    void listAllInvoices_mapsAllRepositoryResults() throws Exception {
         when(invoiceRepository.findAll()).thenReturn(List.of(invoiceWithId(1L, 7L, "UNPAID"), invoiceWithId(2L, 8L, "PAID")));
 
-        List<InvoiceResponse> result = invoiceService.listAllInvoices();
+        List<InvoiceResponse> result = invoiceService.listAllInvoices().get();
 
         assertThat(result).hasSize(2);
     }
