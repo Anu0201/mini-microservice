@@ -1,6 +1,6 @@
 package com.anudari.user_service.dto;
 
-import com.anudari.user_service.constant.TransactionType;
+import com.anudari.common.constant.TransactionType;
 import com.anudari.user_service.entity.AccountTransaction;
 
 import java.math.BigDecimal;

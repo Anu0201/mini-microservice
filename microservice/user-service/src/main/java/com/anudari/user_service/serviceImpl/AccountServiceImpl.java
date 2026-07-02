@@ -1,7 +1,7 @@
 package com.anudari.user_service.serviceImpl;
 
 import com.anudari.user_service.config.AppProperties;
-import com.anudari.user_service.constant.TransactionType;
+import com.anudari.common.constant.TransactionType;
 import com.anudari.user_service.dto.AccountResponse;
 import com.anudari.user_service.dto.AccountTransactionRequest;
 import com.anudari.user_service.dto.AccountTransactionResponse;

@@ -1,4 +1,4 @@
-package com.anudari.user_service.constant;
+package com.anudari.common.constant;
 
 public enum TransactionType {
     DEPOSIT,

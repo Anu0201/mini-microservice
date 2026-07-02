@@ -1,6 +1,6 @@
 package com.anudari.user_service.entity;
 
-import com.anudari.user_service.constant.TransactionType;
+import com.anudari.common.constant.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

@@ -1,12 +1,20 @@
 import { useState } from 'react';
+import { Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Alert,
-  StyleSheet,
+  Box,
   Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+  Input,
+  InputField,
+  Button,
+  ButtonText,
+  VStack,
+  HStack,
+  Heading,
+  Pressable,
+  Textarea,
+  TextareaInput,
+} from '@gluestack-ui/themed';
 import { sendInvoice } from '../api/paymentApi';
 
 export default function CreateInvoiceScreen({ onBack, onSuccess }) {
@@ -38,100 +46,92 @@ export default function CreateInvoiceScreen({ onBack, onSuccess }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={styles.back}>← Буцах</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Нэхэмжлэл илгээх</Text>
-      </View>
-
-      <View style={styles.form}>
-        <Text style={styles.label}>Хүлээн авагчийн утасны дугаар</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="+97699XXXXXX"
-          value={receiverId}
-          onChangeText={setReceiverId}
-          keyboardType="phone-pad"
-        />
-
-        <Text style={styles.label}>Үнийн дүн</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="0.00"
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
-        />
-
-        <Text style={styles.label}>Валют</Text>
-        <View style={styles.currencyRow}>
-          {['MNT', 'USD', 'EUR'].map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.currencyBtn, currency === c && styles.currencyActive]}
-              onPress={() => setCurrency(c)}
-            >
-              <Text style={[styles.currencyText, currency === c && { color: '#fff' }]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Тайлбар</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          placeholder="Нэхэмжлэлийн тайлбар"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-
-        <TouchableOpacity
-          style={[styles.submitBtn, loading && { opacity: 0.6 }]}
-          onPress={handleSend}
-          disabled={loading}
+    <Box flex={1} bg="$white">
+      <SafeAreaView edges={['top']}>
+        <HStack
+          alignItems="center"
+          px="$4"
+          pb="$3"
+          borderBottomWidth={1}
+          borderColor="$gray200"
+          space="sm"
         >
-          <Text style={styles.submitText}>{loading ? 'Илгээж байна...' : 'Илгээх'}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <Pressable onPress={onBack}>
+            <Text color="$blue600" size="md">← Буцах</Text>
+          </Pressable>
+          <Heading size="md">Нэхэмжлэл илгээх</Heading>
+        </HStack>
+      </SafeAreaView>
+
+      <VStack space="lg" p="$4" mt="$2">
+        <VStack space="xs">
+          <Text size="sm" fontWeight="$semibold" color="$gray700">
+            Хүлээн авагчийн утасны дугаар
+          </Text>
+          <Input variant="outline" size="lg">
+            <InputField
+              placeholder="+97699XXXXXX"
+              value={receiverId}
+              onChangeText={setReceiverId}
+              keyboardType="phone-pad"
+            />
+          </Input>
+        </VStack>
+
+        <VStack space="xs">
+          <Text size="sm" fontWeight="$semibold" color="$gray700">Үнийн дүн</Text>
+          <Input variant="outline" size="lg">
+            <InputField
+              placeholder="0.00"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+            />
+          </Input>
+        </VStack>
+
+        <VStack space="xs">
+          <Text size="sm" fontWeight="$semibold" color="$gray700">Валют</Text>
+          <HStack space="sm">
+            {['MNT', 'USD', 'EUR'].map((c) => (
+              <Button
+                key={c}
+                flex={1}
+                size="md"
+                variant={currency === c ? 'solid' : 'outline'}
+                bg={currency === c ? '$blue600' : '$white'}
+                borderColor={currency === c ? '$blue600' : '$gray300'}
+                onPress={() => setCurrency(c)}
+              >
+                <ButtonText color={currency === c ? '$white' : '$gray700'}>{c}</ButtonText>
+              </Button>
+            ))}
+          </HStack>
+        </VStack>
+
+        <VStack space="xs">
+          <Text size="sm" fontWeight="$semibold" color="$gray700">Тайлбар</Text>
+          <Textarea size="lg" h={100}>
+            <TextareaInput
+              placeholder="Нэхэмжлэлийн тайлбар"
+              value={description}
+              onChangeText={setDescription}
+            />
+          </Textarea>
+        </VStack>
+
+        <Button
+          size="lg"
+          bg="$blue600"
+          mt="$4"
+          isDisabled={loading}
+          onPress={handleSend}
+        >
+          <ButtonText fontWeight="$bold">
+            {loading ? 'Илгээж байна...' : 'Илгээх'}
+          </ButtonText>
+        </Button>
+      </VStack>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 56,
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
-    gap: 12,
-  },
-  back: { color: '#2563eb', fontSize: 16 },
-  title: { fontSize: 18, fontWeight: '700' },
-  form: { padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 20 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 15 },
-  textarea: { height: 100, textAlignVertical: 'top' },
-  currencyRow: { flexDirection: 'row', gap: 8 },
-  currencyBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  currencyActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  currencyText: { fontWeight: '600', color: '#374151' },
-  submitBtn: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 32,
-  },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});

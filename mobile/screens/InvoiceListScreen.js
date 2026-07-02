@@ -1,13 +1,15 @@
 import { useCallback, useState } from 'react';
+import { Alert, FlatList } from 'react-native';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StyleSheet,
+  Box,
   Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+  Button,
+  ButtonText,
+  Pressable,
+  Spinner,
+  HStack,
+  VStack,
+} from '@gluestack-ui/themed';
 import { cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice } from '../api/paymentApi';
 
 const STATUS_COLOR = {
@@ -18,30 +20,47 @@ const STATUS_COLOR = {
 
 function InvoiceCard({ item, onPay, onCancel, isSent }) {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.invoiceNumber}>{item.invoiceNumber}</Text>
-        <Text style={[styles.status, { color: STATUS_COLOR[item.status] ?? '#000' }]}>
+    <Box
+      bg="$white"
+      mx="$3"
+      mt="$3"
+      borderRadius="$xl"
+      p="$4"
+      shadowColor="$black"
+      shadowOpacity={0.05}
+      shadowRadius={4}
+      elevation={1}
+    >
+      <HStack justifyContent="space-between" mb="$1">
+        <Text size="sm" color="$gray500">{item.invoiceNumber}</Text>
+        <Text size="sm" fontWeight="$semibold" style={{ color: STATUS_COLOR[item.status] ?? '#000' }}>
           {item.status}
         </Text>
-      </View>
-      {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-      <Text style={styles.amount}>
+      </HStack>
+      {item.senderName ? (
+        <Text size="sm" color="$gray500" mb="$1">
+          {isSent ? 'Та' : `Илгээсэн: ${item.senderName}`}
+        </Text>
+      ) : null}
+      {item.description ? (
+        <Text size="sm" color="$gray700" mb="$1">{item.description}</Text>
+      ) : null}
+      <Text size="xl" fontWeight="$bold" color="$gray900">
         {Number(item.amount).toLocaleString()} {item.currency}
       </Text>
       {item.status === 'UNPAID' && (
-        <View style={styles.actions}>
+        <HStack space="sm" mt="$3">
           {!isSent && (
-            <TouchableOpacity style={styles.payButton} onPress={() => onPay(item.id)}>
-              <Text style={styles.payText}>Төлөх</Text>
-            </TouchableOpacity>
+            <Button flex={1} size="sm" bg="$green600" onPress={() => onPay(item.id)}>
+              <ButtonText>Төлөх</ButtonText>
+            </Button>
           )}
-          <TouchableOpacity style={styles.cancelButton} onPress={() => onCancel(item.id)}>
-            <Text style={styles.cancelText}>Цуцлах</Text>
-          </TouchableOpacity>
-        </View>
+          <Button flex={1} size="sm" variant="outline" borderColor="$gray300" onPress={() => onCancel(item.id)}>
+            <ButtonText color="$gray500">Цуцлах</ButtonText>
+          </Button>
+        </HStack>
       )}
-    </View>
+    </Box>
   );
 }
 
@@ -100,28 +119,33 @@ export default function InvoiceListScreen({ onCompose }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'received' && styles.activeTab]}
-          onPress={() => switchTab('received')}
-        >
-          <Text style={[styles.tabText, tab === 'received' && styles.activeTabText]}>
-            Ирсэн
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'sent' && styles.activeTab]}
-          onPress={() => switchTab('sent')}
-        >
-          <Text style={[styles.tabText, tab === 'sent' && styles.activeTabText]}>
-            Илгээсэн
-          </Text>
-        </TouchableOpacity>
-      </View>
+    <Box flex={1} bg="$backgroundLight100">
+      <HStack bg="$white" borderBottomWidth={1} borderColor="$gray200">
+        {['received', 'sent'].map((t) => (
+          <Pressable
+            key={t}
+            flex={1}
+            py="$3"
+            alignItems="center"
+            borderBottomWidth={2}
+            borderColor={tab === t ? '$blue600' : '$transparent'}
+            onPress={() => switchTab(t)}
+          >
+            <Text
+              size="sm"
+              fontWeight={tab === t ? '$semibold' : '$normal'}
+              color={tab === t ? '$blue600' : '$gray500'}
+            >
+              {t === 'received' ? 'Ирсэн' : 'Илгээсэн'}
+            </Text>
+          </Pressable>
+        ))}
+      </HStack>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 32 }} />
+        <Box flex={1} alignItems="center" justifyContent="center">
+          <Spinner size="large" color="$blue600" />
+        </Box>
       ) : (
         <FlatList
           data={invoices}
@@ -129,40 +153,20 @@ export default function InvoiceListScreen({ onCompose }) {
           renderItem={({ item }) => (
             <InvoiceCard item={item} onPay={handlePay} onCancel={handleCancel} isSent={tab === 'sent'} />
           )}
-          ListEmptyComponent={<Text style={styles.empty}>Нэхэмжлэл байхгүй байна</Text>}
+          ListEmptyComponent={
+            <Box alignItems="center" mt="$12">
+              <Text color="$gray400">Нэхэмжлэл байхгүй байна</Text>
+            </Box>
+          }
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
 
-      <View style={styles.fab}>
-        <TouchableOpacity style={[styles.fabButton, { backgroundColor: '#2563eb' }]} onPress={onCompose}>
-          <Text style={styles.fabText}>+ Нэхэмжлэл илгээх</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <Box position="absolute" bottom="$6" right="$4">
+        <Button bg="$blue600" borderRadius="$xl" onPress={onCompose}>
+          <ButtonText fontWeight="$bold">+ Нэхэмжлэл илгээх</ButtonText>
+        </Button>
+      </Box>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  tabRow: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#e5e7eb' },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-  activeTab: { borderBottomWidth: 2, borderColor: '#2563eb' },
-  tabText: { fontSize: 15, color: '#6b7280' },
-  activeTabText: { color: '#2563eb', fontWeight: '600' },
-  card: { backgroundColor: '#fff', margin: 12, marginBottom: 0, borderRadius: 10, padding: 16, elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  invoiceNumber: { fontSize: 13, color: '#6b7280' },
-  status: { fontSize: 13, fontWeight: '600' },
-  description: { fontSize: 14, color: '#374151', marginBottom: 6 },
-  amount: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  payButton: { flex: 1, backgroundColor: '#16a34a', borderRadius: 8, padding: 10, alignItems: 'center' },
-  payText: { color: '#fff', fontWeight: '600' },
-  cancelButton: { flex: 1, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, alignItems: 'center' },
-  cancelText: { color: '#6b7280', fontWeight: '600' },
-  empty: { textAlign: 'center', marginTop: 48, color: '#9ca3af' },
-  fab: { position: 'absolute', bottom: 24, right: 16, gap: 10, flexDirection: 'row' },
-  fabButton: { backgroundColor: '#059669', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 12, elevation: 3 },
-  fabText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-});
