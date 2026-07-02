@@ -42,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.password(), userDto.credentialHash())) {
-            asyncHistoryService.save(userDto.id(), request.username(),
+            asyncHistoryService.save(userDto.userId(), request.username(),
                     AppConstants.EVENT.LOGIN_FAIL, ipAddress, userAgent);
             throw new AuthenticationException("Invalid credentials");
         }
 
-        String token = jwtUtil.generateToken(userDto.id(), userDto.username(), userDto.roles());
+        String token = jwtUtil.generateToken(userDto.userId(), userDto.username(), userDto.roles());
 
-        asyncHistoryService.save(userDto.id(), userDto.username(),
+        asyncHistoryService.save(userDto.userId(), userDto.username(),
                 AppConstants.EVENT.LOGIN_SUCCESS, ipAddress, userAgent);
 
         return new AuthResponse(token, userDto.username(), userDto.roles());

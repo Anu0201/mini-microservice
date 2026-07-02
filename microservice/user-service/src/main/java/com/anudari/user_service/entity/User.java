@@ -22,7 +22,8 @@ public class User extends Audit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id")
+    private Long userId;
 
     @Column(nullable = false, unique = true)
     private String username;

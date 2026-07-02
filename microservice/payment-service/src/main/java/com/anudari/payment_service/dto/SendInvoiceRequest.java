@@ -10,5 +10,6 @@ public record SendInvoiceRequest(
         @NotBlank String receiverPhone,
         @NotNull @DecimalMin("0.01") BigDecimal amount,
         String currency,
-        String description
+        String description,
+        @NotNull(message = "receiverAccountId is required — specify which account to receive payment into") Long receiverAccountId
 ) {}

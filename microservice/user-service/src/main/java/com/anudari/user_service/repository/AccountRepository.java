@@ -11,9 +11,11 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    List<Account> findAllByUserId(Long userId);
+    List<Account> findAllByUser_UserId(Long userId);
 
-    boolean existsByUserIdAndCurrency(Long userId, CurrencyType currency);
+    boolean existsByUser_UserIdAndCurrency(Long userId, CurrencyType currency);
 
     Optional<Account> findByAccountNumber(String accountNumber);
+
+    Optional<Account> findByUser_UserIdAndCurrency(Long userId, CurrencyType currency);
 }

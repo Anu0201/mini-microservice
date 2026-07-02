@@ -30,6 +30,13 @@ spring:
                 openPaths:
                   - POST:/api/users
 
+        - id: account-route
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - AuthFilter
+
         - id: payment-route
           uri: ${PAYMENT_SERVICE_URL:http://localhost:8081}
           predicates:

@@ -1,12 +1,16 @@
 package com.anudari.payment_service.serviceImpl;
 
+import com.anudari.common.constant.CurrencyType;
 import com.anudari.common.constant.InvoiceStatus;
+import com.anudari.payment_service.config.AppProperties;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceItemRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
+import com.anudari.payment_service.exchange.ExchangeRateClient;
+import com.anudari.payment_service.feign.AccountInfo;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
@@ -42,6 +46,10 @@ class InvoiceServiceImplTest {
     private PaymentRepository paymentRepository;
     @Mock
     private UserServiceClient userServiceClient;
+    @Mock
+    private AppProperties appProperties;
+    @Mock
+    private ExchangeRateClient exchangeRateClient;
 
     @InjectMocks
     private InvoiceServiceImpl invoiceService;
@@ -160,8 +168,11 @@ class InvoiceServiceImplTest {
         Invoice invoice = invoiceWithId(1L, 7L, "UNPAID");
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoice));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userServiceClient.getAccountById(5L, "true"))
+                .thenReturn(new AccountInfo(5L, "MN0000000001", CurrencyType.MNT, BigDecimal.valueOf(100000)));
+        when(appProperties.getInternalSecret()).thenReturn("secret");
 
-        InvoiceResponse response = invoiceService.payInvoice(1L, 7L, "idem-key-1");
+        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1");
 
         assertThat(response.getStatus()).isEqualTo("PAID");
         verify(paymentRepository).save(any(Payment.class));
@@ -173,7 +184,7 @@ class InvoiceServiceImplTest {
         Payment existingPayment = Payment.builder().invoice(paidInvoice).userId(7L).amount(BigDecimal.TEN).idempotencyKey("idem-key-1").build();
         when(paymentRepository.findByIdempotencyKey("idem-key-1")).thenReturn(Optional.of(existingPayment));
 
-        InvoiceResponse response = invoiceService.payInvoice(1L, 7L, "idem-key-1");
+        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1");
 
         assertThat(response.getStatus()).isEqualTo("PAID");
         verify(invoiceRepository, never()).findById(any());
@@ -184,7 +195,7 @@ class InvoiceServiceImplTest {
     void payInvoice_throwsSecurityExceptionForOtherUser() {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "UNPAID")));
 
-        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 999L, null))
+        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 999L, null))
                 .isInstanceOf(SecurityException.class);
 
         verify(paymentRepository, never()).save(any());
@@ -194,7 +205,7 @@ class InvoiceServiceImplTest {
     void payInvoice_throwsIllegalStateWhenAlreadyPaid() {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "PAID")));
 
-        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 7L, null))
+        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 7L, null))
                 .isInstanceOf(IllegalStateException.class);
     }
 

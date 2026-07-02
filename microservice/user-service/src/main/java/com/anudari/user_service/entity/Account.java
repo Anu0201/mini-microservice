@@ -20,7 +20,8 @@ public class Account extends Audit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id")
+    private Long accountId;
 
     @Column(name = "account_number", nullable = false, unique = true)
     private String accountNumber;

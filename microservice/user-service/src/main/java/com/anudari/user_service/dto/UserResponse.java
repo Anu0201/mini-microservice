@@ -5,11 +5,11 @@ import com.anudari.user_service.entity.User;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public record UserResponse(Long id, String username, String email, Set<String> roles, LocalDateTime createdDate) {
+public record UserResponse(Long userId, String username, String email, Set<String> roles, LocalDateTime createdDate) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
-                user.getId(),
+                user.getUserId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRoles(),

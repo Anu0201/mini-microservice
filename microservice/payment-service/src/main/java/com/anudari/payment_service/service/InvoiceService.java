@@ -14,7 +14,7 @@ public interface InvoiceService {
     CompletableFuture<List<InvoiceResponse>> listUserInvoices(Long userId);
     CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId);
     InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
-    InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey);
+    InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey);
     InvoiceResponse cancelInvoice(Long invoiceId);
     InvoiceResponse cancelUserInvoice(Long invoiceId, Long senderId);
 }

@@ -140,21 +140,25 @@ class InvoiceControllerTest {
 
     @Test
     void payInvoice_passesUserIdAndIdempotencyKeyToService() throws Exception {
-        when(invoiceService.payInvoice(1L, 7L, "idem-1")).thenReturn(sampleInvoiceResponse());
+        when(invoiceService.payInvoice(1L, 5L, 7L, "idem-1")).thenReturn(sampleInvoiceResponse());
 
         mockMvc.perform(post("/api/payments/invoices/1/pay")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":5}")
                         .header(AppConstants.HEADER.AUTH_USER_ID, "7")
                         .header(AppConstants.HEADER.IDEMPOTENCY_KEY, "idem-1"))
                 .andExpect(status().isOk());
 
-        verify(invoiceService).payInvoice(1L, 7L, "idem-1");
+        verify(invoiceService).payInvoice(1L, 5L, 7L, "idem-1");
     }
 
     @Test
     void payInvoice_forbiddenForOtherUser_returns403() throws Exception {
-        when(invoiceService.payInvoice(1L, 999L, null)).thenThrow(new SecurityException("Access denied"));
+        when(invoiceService.payInvoice(1L, 5L, 999L, null)).thenThrow(new SecurityException("Access denied"));
 
         mockMvc.perform(post("/api/payments/invoices/1/pay")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":5}")
                         .header(AppConstants.HEADER.AUTH_USER_ID, "999"))
                 .andExpect(status().isForbidden());
     }

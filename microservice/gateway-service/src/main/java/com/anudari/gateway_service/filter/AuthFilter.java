@@ -86,8 +86,11 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                             "[path=" + path + "][result=invalid-token]");
                     return onError(exchange, finalRequestId);
                 }
-                builder.header(AppConstants.HEADER.AUTH_USERNAME, claims.getSubject())
-                       .header(AppConstants.HEADER.AUTH_USER_ID, String.valueOf(claims.get("userId")));
+                builder.header(AppConstants.HEADER.AUTH_USERNAME, claims.getSubject());
+                Object userId = claims.get("userId");
+                if (userId != null) {
+                    builder.header(AppConstants.HEADER.AUTH_USER_ID, String.valueOf(userId));
+                }
             } else if (isAdmin) {
                 builder.header(AppConstants.HEADER.AUTH_IS_ADMIN, "true");
             } else {

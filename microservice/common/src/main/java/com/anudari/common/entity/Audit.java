@@ -43,7 +43,7 @@ public abstract class Audit {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private LocalDateTime modifiedDate;
 
-    @Column(name = "DELETE_FLAG", length = 1, nullable = false)
+    @Column(name = "DELETE_FLAG", length = 1)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String deleteFlag;
+    private String deleteFlag = "N";
 }

@@ -1,6 +1,7 @@
 package com.anudari.payment_service.serviceImpl;
 
 import com.anudari.payment_service.config.AppProperties;
+import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
@@ -8,6 +9,9 @@ import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
+import com.anudari.payment_service.feign.AccountInfo;
+import com.anudari.payment_service.feign.CreditRequest;
+import com.anudari.payment_service.feign.DebitRequest;
 import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -34,6 +39,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final PaymentRepository paymentRepository;
     private final UserServiceClient userServiceClient;
     private final AppProperties appProperties;
+    private final ExchangeRateClient exchangeRateClient;
 
     @Override
     @Transactional
@@ -83,17 +89,18 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
         }
 
-        if (senderId.equals(receiver.id())) {
+        if (senderId.equals(receiver.userId())) {
             throw new IllegalArgumentException("Cannot send an invoice to yourself");
         }
 
         Invoice invoice = Invoice.builder()
                 .invoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .senderId(senderId)
-                .userId(receiver.id())
+                .userId(receiver.userId())
                 .amount(request.amount())
                 .currency(request.currency() != null ? request.currency() : "MNT")
                 .description(request.description())
+                .receiverAccountId(request.receiverAccountId())
                 .status(new InvoiceStatus.Unpaid())
                 .build();
 
@@ -141,7 +148,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse payInvoice(Long invoiceId, Long userId, String idempotencyKey) {
+    public InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey) {
         if (idempotencyKey != null) {
             Optional<Payment> existing = paymentRepository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) {
@@ -158,11 +165,47 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new IllegalStateException("Invoice is not payable: " + invoice.getStatus().value());
         }
 
+        AccountInfo account;
+        try {
+            account = userServiceClient.getAccountById(accountId, "true");
+        } catch (FeignException.NotFound e) {
+            throw new NoSuchElementException("Account not found: " + accountId);
+        }
+
+        // Currency conversion: invoice currency → account currency
+        BigDecimal debitAmount;
+        String invoiceCurrency = invoice.getCurrency();
+        String accountCurrency = account.currency().name();
+
+        if (invoiceCurrency.equals(accountCurrency)) {
+            debitAmount = invoice.getAmount();
+        } else {
+            BigDecimal rate = exchangeRateClient.getConversionRate(invoiceCurrency, accountCurrency);
+            debitAmount = invoice.getAmount().multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        try {
+            userServiceClient.debitAccount(
+                    new DebitRequest(accountId, userId, debitAmount),
+                    appProperties.getInternalSecret()
+            );
+        } catch (FeignException.BadRequest e) {
+            throw new IllegalStateException("Insufficient balance to pay this invoice");
+        }
+
+        // Credit the invoice sender's account if specified
+        if (invoice.getReceiverAccountId() != null && invoice.getSenderId() != null) {
+            userServiceClient.creditAccount(
+                    new CreditRequest(invoice.getReceiverAccountId(), invoice.getSenderId(), invoice.getAmount()),
+                    appProperties.getInternalSecret()
+            );
+        }
+
         invoice.setStatus(new InvoiceStatus.Paid());
         paymentRepository.save(Payment.builder()
                 .invoice(invoice)
                 .userId(userId)
-                .amount(invoice.getAmount())
+                .amount(debitAmount)
                 .idempotencyKey(idempotencyKey)
                 .build());
 

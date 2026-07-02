@@ -37,6 +37,7 @@ management:
 
 app:
   internal-secret: ${INTERNAL_SECRET}
+  exchange-rate-api-key: ${EXCHANGE_RATE_API_KEY:}
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8082}

@@ -4,6 +4,7 @@ import com.anudari.common.constant.AppConstants;
 import com.anudari.payment_service.config.AppProperties;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
+import com.anudari.payment_service.dto.PayInvoiceRequest;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
@@ -85,9 +86,10 @@ public class InvoiceController {
     @PostMapping("/{invoiceId}/pay")
     public ResponseEntity<InvoiceResponse> payInvoice(
             @PathVariable Long invoiceId,
+            @Valid @RequestBody PayInvoiceRequest request,
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId,
             @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
-        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, userId, idempotencyKey));
+        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, request.accountId(), userId, idempotencyKey));
     }
 
     //hoyulaa

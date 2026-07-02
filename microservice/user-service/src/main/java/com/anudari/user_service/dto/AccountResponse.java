@@ -5,9 +5,9 @@ import com.anudari.user_service.entity.Account;
 
 import java.math.BigDecimal;
 
-public record AccountResponse(Long id, String accountNumber, CurrencyType currency, BigDecimal balance) {
-    
+public record AccountResponse(Long accountId, String accountNumber, CurrencyType currency, BigDecimal balance) {
+
     public static AccountResponse from(Account account) {
-        return new AccountResponse(account.getId(), account.getAccountNumber(), account.getCurrency(), account.getBalance());
+        return new AccountResponse(account.getAccountId(), account.getAccountNumber(), account.getCurrency(), account.getBalance());
     }
 }
