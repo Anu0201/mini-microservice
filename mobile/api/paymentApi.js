@@ -11,7 +11,7 @@ export const createInvoice = (data) => api.post('/api/payments/invoices', data);
 // data: { receiverPhone, amount, currency, description }
 export const sendInvoice = (data) => api.post('/api/payments/invoices/send', data);
 
-export const payInvoice = (id) => api.post(`/api/payments/invoices/${id}/pay`);
+export const payInvoice = (id, accountId) => api.post(`/api/payments/invoices/${id}/pay`, { accountId });
 
 export const cancelInvoice = (id) => api.post(`/api/payments/invoices/${id}/cancel`);
 
