@@ -21,6 +21,7 @@ public class InvoiceResponse {
     private Long userId;
     private Long senderId;
     private String senderName;
+    private String receiverName;
     private BigDecimal amount;
     private String currency;
     private String status;
@@ -30,16 +31,21 @@ public class InvoiceResponse {
     private LocalDateTime createdAt;
 
     public static InvoiceResponse from(Invoice invoice) {
-        return from(invoice, null);
+        return from(invoice, null, null);
     }
 
     public static InvoiceResponse from(Invoice invoice, String senderName) {
+        return from(invoice, senderName, null);
+    }
+
+    public static InvoiceResponse from(Invoice invoice, String senderName, String receiverName) {
         return InvoiceResponse.builder()
                 .id(invoice.getInvoiceId())
                 .invoiceNumber(invoice.getInvoiceNumber())
                 .userId(invoice.getUserId())
                 .senderId(invoice.getSenderId())
                 .senderName(senderName)
+                .receiverName(receiverName)
                 .amount(invoice.getAmount())
                 .currency(invoice.getCurrency())
                 .status(invoice.getStatus().value())

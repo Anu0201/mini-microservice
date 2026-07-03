@@ -112,7 +112,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId) {
         return CompletableFuture.completedFuture(
                 invoiceRepository.findBySenderId(senderId).stream()
-                        .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
+                        .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId()), fetchSenderName(inv.getUserId())))
                         .toList()
         );
     }
@@ -121,7 +121,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public CompletableFuture<List<InvoiceResponse>> listAllInvoices() {
         return CompletableFuture.completedFuture(
-                invoiceRepository.findAll().stream()
+                invoiceRepository.findAllWithItems().stream()
                         .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
                         .toList()
         );

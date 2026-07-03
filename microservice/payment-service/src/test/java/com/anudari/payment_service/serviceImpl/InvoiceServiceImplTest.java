@@ -122,7 +122,7 @@ class InvoiceServiceImplTest {
 
     @Test
     void listAllInvoices_mapsAllRepositoryResults() throws Exception {
-        when(invoiceRepository.findAll()).thenReturn(List.of(invoiceWithId(1L, 7L, "UNPAID"), invoiceWithId(2L, 8L, "PAID")));
+        when(invoiceRepository.findAllWithItems()).thenReturn(List.of(invoiceWithId(1L, 7L, "UNPAID"), invoiceWithId(2L, 8L, "PAID")));
 
         List<InvoiceResponse> result = invoiceService.listAllInvoices().get();
 
