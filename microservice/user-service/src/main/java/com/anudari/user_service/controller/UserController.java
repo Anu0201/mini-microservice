@@ -4,6 +4,7 @@ import com.anudari.common.constant.AppConstants;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
+import com.anudari.user_service.dto.UserLookupResponse;
 import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.service.UserService;
 import jakarta.validation.Valid;
@@ -68,6 +69,11 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.updateUser(id, request));
+    }
+
+    @GetMapping("/lookup/{phoneNumber}")
+    public ResponseEntity<UserLookupResponse> lookupByPhone(@PathVariable String phoneNumber) {
+        return ResponseEntity.ok(userService.lookupByPhone(phoneNumber));
     }
 
     @GetMapping("/internal/by-username/{username}")

@@ -6,6 +6,9 @@ import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.PayInvoiceRequest;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
+import com.anudari.payment_service.dto.SendMoneyRequest;
+import com.anudari.payment_service.dto.TransferResponse;
+import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -23,6 +28,7 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
     private final AppProperties appProperties;
+    private final ExchangeRateClient exchangeRateClient;
 
     // Admin-service ees duudagdana
 
@@ -71,6 +77,13 @@ public class InvoiceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.sendUserInvoice(request, senderId));
     }
 
+    @PostMapping("/transfer")
+    public ResponseEntity<TransferResponse> sendMoney(
+            @Valid @RequestBody SendMoneyRequest request,
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
+        return ResponseEntity.ok(invoiceService.sendMoney(request, senderId));
+    }
+
     @GetMapping("/user")
     public CompletableFuture<ResponseEntity<List<InvoiceResponse>>> listUserInvoices(
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId) {
@@ -93,6 +106,14 @@ public class InvoiceController {
     }
 
     //hoyulaa
+
+    @GetMapping("/exchange-rate")
+    public ResponseEntity<Map<String, Object>> getExchangeRate(
+            @RequestParam String from,
+            @RequestParam String to) {
+        BigDecimal rate = exchangeRateClient.getConversionRate(from, to);
+        return ResponseEntity.ok(Map.of("from", from, "to", to, "rate", rate));
+    }
 
     @GetMapping("/{invoiceId}")
     public ResponseEntity<InvoiceResponse> getInvoiceById(

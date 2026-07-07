@@ -13,7 +13,8 @@ public record AccountTransactionResponse(
         BigDecimal balanceBefore,
         BigDecimal balanceAfter,
         String description,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String currency
 ) {
     public static AccountTransactionResponse from(AccountTransaction tx) {
         return new AccountTransactionResponse(
@@ -23,7 +24,8 @@ public record AccountTransactionResponse(
                 tx.getBalanceBefore(),
                 tx.getBalanceAfter(),
                 tx.getDescription(),
-                tx.getCreatedAt()
+                tx.getCreatedAt(),
+                tx.getAccount().getCurrency().name()
         );
     }
 }

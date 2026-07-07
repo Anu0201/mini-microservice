@@ -3,6 +3,7 @@ package com.anudari.user_service.service;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
+import com.anudari.user_service.dto.UserLookupResponse;
 import com.anudari.user_service.dto.UserResponse;
 
 import java.util.List;
@@ -21,6 +22,8 @@ public interface UserService {
     UserInternalResponse internalSearch(String username, String secretToken);
 
     UserInternalResponse internalSearchByPhone(String phoneNumber, String secretToken);
+
+    UserLookupResponse lookupByPhone(String phoneNumber);
 
     CompletableFuture<List<UserResponse>> listAllUsers(String secretToken);
 }

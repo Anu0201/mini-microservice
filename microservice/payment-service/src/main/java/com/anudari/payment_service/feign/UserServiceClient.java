@@ -40,4 +40,10 @@ public interface UserServiceClient {
             @RequestBody CreditRequest request,
             @RequestHeader(AppConstants.HEADER.INTERNAL_SECRET) String internalSecret
     );
+
+    @GetMapping("/api/accounts/users/{userId}")
+    java.util.List<AccountInfo> getAccountsByUserId(
+            @PathVariable Long userId,
+            @RequestHeader(AppConstants.HEADER.AUTH_IS_ADMIN) String isAdmin
+    );
 }

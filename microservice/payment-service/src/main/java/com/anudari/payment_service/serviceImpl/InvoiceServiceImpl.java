@@ -5,6 +5,8 @@ import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
+import com.anudari.payment_service.dto.SendMoneyRequest;
+import com.anudari.payment_service.dto.TransferResponse;
 import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
@@ -221,6 +223,82 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         invoice.setStatus(new InvoiceStatus.Cancelled());
         return InvoiceResponse.from(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    @Transactional
+    public TransferResponse sendMoney(SendMoneyRequest request, Long senderId) {
+        UserIdResponse receiver;
+        try {
+            receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
+        } catch (FeignException.NotFound e) {
+            throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
+        }
+
+        if (senderId.equals(receiver.userId())) {
+            throw new IllegalArgumentException("Cannot send money to yourself");
+        }
+
+        String currency = request.currency() != null ? request.currency() : "MNT";
+
+        AccountInfo receiverAccount = userServiceClient.getAccountsByUserId(receiver.userId(), "true")
+                .stream()
+                .filter(a -> a.currency().name().equals(currency))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Receiver has no " + currency + " account"));
+
+        // Convert amount to sender account's currency if they differ
+        AccountInfo senderAccount;
+        try {
+            senderAccount = userServiceClient.getAccountById(request.senderAccountId(), "true");
+        } catch (FeignException.NotFound e) {
+            throw new NoSuchElementException("Sender account not found: " + request.senderAccountId());
+        }
+
+        String senderCurrency = senderAccount.currency().name();
+        BigDecimal debitAmount;
+        if (senderCurrency.equals(currency)) {
+            debitAmount = request.amount();
+        } else {
+            BigDecimal rate = exchangeRateClient.getConversionRate(currency, senderCurrency);
+            debitAmount = request.amount().multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        try {
+            userServiceClient.debitAccount(
+                    new DebitRequest(request.senderAccountId(), senderId, debitAmount),
+                    appProperties.getInternalSecret()
+            );
+        } catch (FeignException.BadRequest e) {
+            throw new IllegalStateException("Insufficient balance");
+        }
+
+        userServiceClient.creditAccount(
+                new CreditRequest(receiverAccount.accountId(), receiver.userId(), request.amount()),
+                appProperties.getInternalSecret()
+        );
+
+        Invoice invoice = Invoice.builder()
+                .invoiceNumber("TRF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .senderId(senderId)
+                .userId(receiver.userId())
+                .amount(request.amount())
+                .currency(currency)
+                .description(request.description())
+                .receiverAccountId(receiverAccount.accountId())
+                .status(new InvoiceStatus.Paid())
+                .build();
+
+        Invoice saved = invoiceRepository.save(invoice);
+
+        paymentRepository.save(Payment.builder()
+                .invoice(saved)
+                .userId(senderId)
+                .amount(request.amount())
+                .method("DIRECT_TRANSFER")
+                .build());
+
+        return new TransferResponse(saved.getInvoiceId(), request.receiverPhone(), request.amount(), currency, request.description(), "SUCCESS");
     }
 
     @Override

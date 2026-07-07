@@ -7,6 +7,7 @@ import com.anudari.payment_service.dto.InvoiceItemRequest;
 import com.anudari.payment_service.dto.InvoiceItemResponse;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.handler.GlobalExceptionHandler;
+import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.service.InvoiceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,8 @@ class InvoiceControllerTest {
     private ObjectMapper objectMapper;
     @MockitoBean
     private InvoiceService invoiceService;
+    @MockitoBean
+    private ExchangeRateClient exchangeRateClient;
 
     @Test
     void createInvoice_withValidSecret_returns201() throws Exception {

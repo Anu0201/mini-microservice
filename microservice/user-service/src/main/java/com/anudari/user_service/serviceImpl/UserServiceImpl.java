@@ -5,6 +5,7 @@ import com.anudari.user_service.config.AppProperties;
 import com.anudari.user_service.dto.RegisterRequest;
 import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
+import com.anudari.user_service.dto.UserLookupResponse;
 import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.entity.User;
 import com.anudari.user_service.repository.UserRepository;
@@ -57,6 +58,13 @@ public class UserServiceImpl implements UserService {
     public UserResponse getUser(String username) {
         return userRepository.findByUsername(username)
                 .map(UserResponse::from)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+    }
+
+    @Override
+    public UserLookupResponse lookupByPhone(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .map(UserLookupResponse::from)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
     }
 
