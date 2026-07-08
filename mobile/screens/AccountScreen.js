@@ -5,14 +5,7 @@ import {Spinner, Text} from '@gluestack-ui/themed';
 import {createAccount, getMyAccounts} from '../api/accountApi';
 import {getMe} from '../api/userApi';
 import {CURRENCY_BG, CURRENCY_SIGN, COLORS} from '../constants';
-
-function initials(name) {
-    if (!name) return '?';
-    const parts = name.trim().split(' ');
-    return parts.length >= 2
-        ? (parts[0][0] + parts[1][0]).toUpperCase()
-        : parts[0].slice(0, 2).toUpperCase();
-}
+import {initials} from '../utils/helpers';
 
 function AccountCard({account, onPress}) {
     const color = CURRENCY_BG[account.currency] ?? COLORS.secondary;

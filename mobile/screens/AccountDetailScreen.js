@@ -12,25 +12,7 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {getAccount, deposit, withdraw, getTransactions} from '../api/accountApi';
 import {COLORS, CURRENCY_BG, CURRENCY_SIGN} from '../constants';
-import Svg, {Path} from 'react-native-svg';
-
-function DepositIcon({size = 22, color = '#fff'}) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 512 512" fill={color}>
-            <Path d="M480,224a31.991,31.991,0,0,0-32,32V448H64V256a32,32,0,0,0-64,0V480a31.991,31.991,0,0,0,32,32H480a31.991,31.991,0,0,0,32-32V256A31.991,31.991,0,0,0,480,224Z" fillRule="evenodd"/>
-            <Path d="M288,224V28.091C288,12.578,273.688,0,256,0s-32,12.578-32,28.091V224H128L256,352,384,224Z" fillRule="evenodd"/>
-        </Svg>
-    );
-}
-
-function WithdrawIcon({size = 22, color = '#fff'}) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 512 512" fill={color}>
-            <Path d="M480,224a31.991,31.991,0,0,0-32,32V448H64V256a32,32,0,0,0-64,0V480a31.991,31.991,0,0,0,32,32H480a31.991,31.991,0,0,0,32-32V256A31.991,31.991,0,0,0,480,224Z" fillRule="evenodd"/>
-            <Path d="M224,320a32,32,0,0,0,64,0V128h96L256,0,128,128h96Z" fillRule="evenodd"/>
-        </Svg>
-    );
-}
+import {DepositIcon, WithdrawIcon, BackIcon} from '../components/icons';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
@@ -55,20 +37,6 @@ const TX_COLOR = {
     WITHDRAW: COLORS.danger,
     INVOICE_DEBIT: COLORS.danger,
 };
-
-function BackIcon({size = 20, color = '#fff'}) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-            <Path
-                d="M19 12H5M5 12L12 19M5 12L12 5"
-                stroke={color}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </Svg>
-    );
-}
 
 function TxCard({item}) {
     const sign = TX_SIGN[item.type] ?? '';
@@ -129,7 +97,10 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
     if (!fetched && !loading) load();
 
-    const openModal = (type) => {setAmount(''); setModal(type);};
+    const openModal = (type) => {
+        setAmount('');
+        setModal(type);
+    };
 
     const handleTransaction = async () => {
         const parsed = parseFloat(amount);
@@ -173,7 +144,6 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
     return (
         <View style={styles.container}>
-            {/* Purple header */}
             <View style={[styles.header, {paddingTop: insets.top}]}>
                 {GLASS ? (
                     <LiquidGlassView
@@ -189,7 +159,8 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
                 {loading || !account ? null : (
                     <View style={styles.balanceArea}>
-                        <View style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
+                        <View
+                            style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
                             <Text style={styles.currencyTagText}>{account.currency}</Text>
                         </View>
                         <Text style={styles.accountNumber}>{account.accountNumber}</Text>

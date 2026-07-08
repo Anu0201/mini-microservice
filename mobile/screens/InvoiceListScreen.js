@@ -6,13 +6,7 @@ import {CURRENCY_SIGN} from '../constants';
 import { cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice } from '../api/paymentApi';
 import { getMyAccounts } from '../api/accountApi';
 import { getMe } from '../api/userApi';
-
-function initials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  return parts.length >= 2
-    ? (parts[0][0] + parts[1][0]).toUpperCase()
-    : parts[0].slice(0, 2).toUpperCase();
+import { initials } from '../utils/helpers';
 }
 
 function Avatar({ name }) {
