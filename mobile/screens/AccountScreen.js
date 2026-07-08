@@ -1,11 +1,10 @@
-import {useCallback, useState} from 'react';
-import {Alert, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useState} from 'react';
+import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {createAccount, getMyAccounts} from '../api/accountApi';
-import {getMe} from '../api/userApi';
 import {CURRENCY_BG, CURRENCY_SIGN, COLORS} from '../constants';
 import {initials} from '../utils/helpers';
+import {useAccount} from '../hooks/useAccount';
 
 function AccountCard({account, onPress}) {
     const color = CURRENCY_BG[account.currency] ?? COLORS.secondary;
@@ -35,50 +34,10 @@ function AccountCard({account, onPress}) {
 }
 
 export default function AccountScreen({onSelectAccount, onLogout}) {
-    const [userInfo, setUserInfo] = useState(null);
-    const [accounts, setAccounts] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [fetched, setFetched] = useState(false);
-    const [creating, setCreating] = useState(false);
+    const {userInfo, accounts, loading, fetched, creating, load, createNewAccount} = useAccount();
     const [newCurrency, setNewCurrency] = useState('MNT');
 
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const userRes = await getMe();
-            const me = userRes.data;
-            const accRes = await getMyAccounts(me.userId);
-            setUserInfo(me);
-            setAccounts(accRes.data);
-            setFetched(true);
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Мэдээлэл татаж чадсангүй');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     if (!fetched && !loading) load();
-
-    const handleCreate = () => {
-        Alert.alert('Данс нээх', `${newCurrency} данс нээх уу?`, [
-            {text: 'Үгүй'},
-            {
-                text: 'Тийм',
-                onPress: async () => {
-                    setCreating(true);
-                    try {
-                        await createAccount(userInfo.userId, newCurrency);
-                        load();
-                    } catch (e) {
-                        Alert.alert('Алдаа', e.response?.data?.message || 'Данс нээж чадсангүй');
-                    } finally {
-                        setCreating(false);
-                    }
-                },
-            },
-        ]);
-    };
 
     return (
         <View style={styles.container}>
@@ -125,7 +84,7 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                         </View>
                         <TouchableOpacity
                             style={[styles.openBtn, (creating || !userInfo) && styles.openBtnDisabled]}
-                            onPress={handleCreate}
+                            onPress={() => createNewAccount(newCurrency)}
                             disabled={creating || !userInfo}
                         >
                             <Text style={styles.openBtnText}>{creating ? 'Нээж байна...' : 'Данс нээх'}</Text>

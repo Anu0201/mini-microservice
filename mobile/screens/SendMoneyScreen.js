@@ -1,13 +1,11 @@
-import {useEffect, useRef, useState} from 'react';
-import {Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
+import {useState} from 'react';
+import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {sendInvoice, sendMoney, getExchangeRate} from '../api/paymentApi';
-import {getMyAccounts} from '../api/accountApi';
-import {getMe, lookupUserByPhone} from '../api/userApi';
 import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS} from '../constants';
 import {initials, maskName} from '../utils/helpers';
 import {PhoneIcon} from '../components/icons';
+import {useSendMoney} from '../hooks/useSendMoney';
 
 export default function SendMoneyScreen({
                                             action = 'send',
@@ -16,144 +14,19 @@ export default function SendMoneyScreen({
                                             onBack,
                                             onSuccess
                                         }) {
-    const [receiverPhone, setReceiverPhone] = useState('');
-    const [receiverUser, setReceiverUser] = useState(null);
-    const [lookupLoading, setLookupLoading] = useState(false);
-    const lookupTimer = useRef(null);
+    const {
+        receiverPhone, setReceiverPhone,
+        receiverUser, lookupLoading,
+        accounts, selectedId, setSelectedId, loadingAcc,
+        myAccounts, receiverAccountId, setReceiverAccountId, loadingMyAcc,
+        exchangeRate, loadingRate,
+        sending,
+        isSend, currency, selectedAccount, needsConversion,
+        handleSubmit,
+    } = useSendMoney({action, amount, filterCurrency, onSuccess});
+
     const [description, setDescription] = useState('');
-    const [accounts, setAccounts] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
-    const [loadingAcc, setLoadingAcc] = useState(action === 'send');
-    const [sending, setSending] = useState(false);
-
-    const [invoiceCurrency, setInvoiceCurrency] = useState(filterCurrency ?? 'MNT');
-    const [exchangeRate, setExchangeRate] = useState(null);
-    const [loadingRate, setLoadingRate] = useState(false);
-    const [myAccounts, setMyAccounts] = useState([]);
-    const [receiverAccountId, setReceiverAccountId] = useState(null);
-    const [loadingMyAcc, setLoadingMyAcc] = useState(action === 'invoice');
-
-    const isSend = action === 'send';
-
-    const selectedAccount = accounts.find((a) => a.accountId === selectedId);
-    const needsConversion = isSend && filterCurrency && selectedAccount && selectedAccount.currency !== filterCurrency;
-
-    const currency = isSend
-        ? (filterCurrency ?? selectedAccount?.currency ?? 'MNT')
-        : invoiceCurrency;
     const currencySign = CURRENCY_SIGN[currency] ?? currency;
-
-    useEffect(() => {
-        if (!needsConversion) {
-            setExchangeRate(null);
-            return;
-        }
-        setLoadingRate(true);
-        setExchangeRate(null);
-        getExchangeRate(filterCurrency, selectedAccount.currency)
-            .then((res) => setExchangeRate(res.data.rate))
-            .catch(() => setExchangeRate(null))
-            .finally(() => setLoadingRate(false));
-    }, [selectedId]);
-
-    useEffect(() => {
-        if (isSend) return;
-        (async () => {
-            try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
-                const invoiceCurr = filterCurrency ?? 'MNT';
-                const filtered = accRes.data.filter((a) => a.currency === invoiceCurr);
-                setMyAccounts(filtered.length > 0 ? filtered : accRes.data);
-                const preferred = filtered[0] ?? accRes.data[0];
-                if (preferred) setReceiverAccountId(preferred.accountId);
-            } catch {
-                Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
-            } finally {
-                setLoadingMyAcc(false);
-            }
-        })();
-    }, []);
-
-    useEffect(() => {
-        if (!isSend) return;
-        (async () => {
-            try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
-                setAccounts(accRes.data);
-                const preferred = filterCurrency
-                    ? (accRes.data.find((a) => a.currency === filterCurrency) ?? accRes.data[0])
-                    : accRes.data[0];
-                if (preferred) setSelectedId(preferred.accountId);
-            } catch {
-                Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
-            } finally {
-                setLoadingAcc(false);
-            }
-        })();
-    }, []);
-
-    useEffect(() => {
-        const phone = receiverPhone.trim();
-        setReceiverUser(null);
-        if (lookupTimer.current) clearTimeout(lookupTimer.current);
-        if (phone.length < 8) return;
-        setLookupLoading(true);
-        lookupTimer.current = setTimeout(async () => {
-            try {
-                const res = await lookupUserByPhone(phone);
-                setReceiverUser(res.data);
-            } catch (e) {
-                console.log('[lookup error]', e?.response?.status, e?.response?.data, e?.message);
-                setReceiverUser(null);
-            } finally {
-                setLookupLoading(false);
-            }
-        }, 600);
-        return () => clearTimeout(lookupTimer.current);
-    }, [receiverPhone]);
-
-    const doSubmit = async () => {
-        setSending(true);
-        try {
-            if (isSend) {
-                await sendMoney({receiverPhone, amount, currency, description, senderAccountId: selectedId});
-                Alert.alert('Амжилттай', 'Мөнгө амжилттай илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
-            } else {
-                await sendInvoice({receiverPhone, amount, currency, description, receiverAccountId});
-                Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
-            }
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Амжилтгүй боллоо');
-        } finally {
-            setSending(false);
-        }
-    };
-
-    const handleSubmit = () => {
-        if (!receiverPhone.trim()) {
-            Alert.alert('Алдаа', 'Утасны дугаар оруулна уу');
-            return;
-        }
-        if (amount <= 0) {
-            Alert.alert('Алдаа', 'Дүн оруулна уу');
-            return;
-        }
-        if (isSend && !selectedId) {
-            Alert.alert('Алдаа', 'Данс сонгоно уу');
-            return;
-        }
-        const sign = CURRENCY_SIGN[currency] ?? currency;
-        const amountStr = `${Number(amount).toLocaleString()} ${sign}`;
-        const msg = isSend
-            ? `${receiverPhone} дугаарт ${amountStr} илгээх үү?`
-            : `${receiverPhone} дугаараас ${amountStr} нэхэмжлэх үү?`;
-        Alert.alert('Итгэлтэй байна уу?', msg, [
-            {text: 'Үгүй', style: 'cancel'},
-            {text: 'Тийм', onPress: doSubmit},
-        ]);
-    };
 
     return (
         <View style={styles.container}>
@@ -325,7 +198,7 @@ export default function SendMoneyScreen({
                         isSend ? styles.submitSend : styles.submitInvoice,
                         sending && styles.submitDisabled,
                     ]}
-                    onPress={handleSubmit}
+                    onPress={() => handleSubmit(description)}
                     disabled={sending}
                     activeOpacity={0.85}
                 >

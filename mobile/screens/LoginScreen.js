@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import {
   Box,
   Text,
@@ -11,28 +10,13 @@ import {
   Heading,
   Pressable,
 } from '@gluestack-ui/themed';
-import { login } from '../api/authApi';
+import {useLogin} from '../hooks/useLogin';
 
 export default function LoginScreen({ onLoginSuccess, onGoRegister }) {
+  const {loading, handleLogin} = useLogin({onLoginSuccess});
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('Алдаа', 'Нэвтрэх нэр болон нууц үгээ оруулна уу.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await login(username, password);
-      onLoginSuccess(data);
-    } catch (e) {
-      Alert.alert('Алдаа', e.response?.data?.message || e.message || 'Нэвтрэх амжилтгүй');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box flex={1} bg="$white" alignItems="center" justifyContent="center" px="$6">
@@ -67,7 +51,7 @@ export default function LoginScreen({ onLoginSuccess, onGoRegister }) {
           bg="$blue600"
           mt="$2"
           isDisabled={loading}
-          onPress={handleLogin}
+          onPress={() => handleLogin({username, password})}
         >
           <ButtonText>{loading ? 'Түр хүлээнэ үү...' : 'Нэвтрэх'}</ButtonText>
         </Button>

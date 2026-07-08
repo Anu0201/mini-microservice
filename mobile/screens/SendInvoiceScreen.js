@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -15,35 +14,15 @@ import {
   Textarea,
   TextareaInput,
 } from '@gluestack-ui/themed';
-import { sendInvoice } from '../api/paymentApi';
+import {useSendInvoice} from '../hooks/useSendInvoice';
 
 export default function SendInvoiceScreen({ onBack, onSuccess }) {
+  const {loading, handleSend} = useSendInvoice({onSuccess});
+
   const [receiverId, setReceiverId] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MNT');
   const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    if (!receiverId || !amount) {
-      Alert.alert('Алдаа', 'Хүлээн авагчийн ID болон дүнг оруулна уу');
-      return;
-    }
-    setLoading(true);
-    try {
-      await sendInvoice({
-        receiverId: parseInt(receiverId),
-        amount: parseFloat(amount),
-        currency,
-        description,
-      });
-      Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{ text: 'OK', onPress: onSuccess }]);
-    } catch (e) {
-      Alert.alert('Алдаа', e.response?.data?.message || 'Илгээж чадсангүй');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box flex={1} bg="$white">
@@ -123,7 +102,7 @@ export default function SendInvoiceScreen({ onBack, onSuccess }) {
           bg="$green600"
           mt="$4"
           isDisabled={loading}
-          onPress={handleSend}
+          onPress={() => handleSend({receiverId, amount, currency, description})}
         >
           <ButtonText fontWeight="$bold">
             {loading ? 'Илгээж байна...' : 'Илгээх'}

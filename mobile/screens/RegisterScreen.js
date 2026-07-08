@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import {
   Box,
   Text,
@@ -11,32 +10,15 @@ import {
   Heading,
   Pressable,
 } from '@gluestack-ui/themed';
-import { register } from '../api/userApi';
+import {useRegister} from '../hooks/useRegister';
 
 export default function RegisterScreen({ onGoLogin }) {
+  const {loading, handleRegister} = useRegister({onGoLogin});
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleRegister = async () => {
-    if (!username || !password || !email) {
-      Alert.alert('Алдаа', 'Заавал бөглөх талбаруудыг бөглөнө үү.');
-      return;
-    }
-    setLoading(true);
-    try {
-      await register(username, password, email, phone);
-      Alert.alert('Амжилттай', 'Бүртгэл үүслээ. Нэвтэрнэ үү.', [
-        { text: 'OK', onPress: onGoLogin },
-      ]);
-    } catch (e) {
-      Alert.alert('Алдаа', e.response?.data?.message || e.message || 'Бүртгэл амжилтгүй');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box flex={1} bg="$white" alignItems="center" justifyContent="center" px="$6">
@@ -90,7 +72,7 @@ export default function RegisterScreen({ onGoLogin }) {
           bg="$blue600"
           mt="$2"
           isDisabled={loading}
-          onPress={handleRegister}
+          onPress={() => handleRegister({username, password, email, phone})}
         >
           <ButtonText>{loading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}</ButtonText>
         </Button>

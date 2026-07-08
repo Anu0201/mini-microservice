@@ -1,71 +1,21 @@
-import {useEffect, useState} from 'react';
-import {Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
+import {useState} from 'react';
+import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS} from '../constants';
-import {sendInvoice} from '../api/paymentApi';
-import {getMyAccounts} from '../api/accountApi';
-import {getMe} from '../api/userApi';
 import {PhoneIcon} from '../components/icons';
+import {useCreateInvoice} from '../hooks/useCreateInvoice';
 
 export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT', initialAmount = ''}) {
+    const {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit} =
+        useCreateInvoice({currency, initialAmount, onSuccess});
+
     const [receiverPhone, setReceiverPhone] = useState('');
     const [amount, setAmount] = useState(initialAmount ? String(initialAmount) : '');
     const [description, setDescription] = useState('');
-    const [sending, setSending] = useState(false);
-
-    const [myAccounts, setMyAccounts] = useState([]);
-    const [selectedAccountId, setSelectedAccountId] = useState(null);
-    const [loadingAccounts, setLoadingAccounts] = useState(true);
 
     const currencySign = CURRENCY_SIGN[currency] ?? currency;
     const displayAmount = initialAmount > 0 ? Number(initialAmount).toLocaleString() : (amount || '0');
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
-                setMyAccounts(accRes.data);
-                if (accRes.data.length > 0) setSelectedAccountId(accRes.data[0].accountId);
-            } catch {
-                Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
-            } finally {
-                setLoadingAccounts(false);
-            }
-        })();
-    }, []);
-
-    const handleSubmit = async () => {
-        if (!receiverPhone.trim()) {
-            Alert.alert('Алдаа', 'Утасны дугаар оруулна уу');
-            return;
-        }
-        const finalAmount = initialAmount > 0 ? initialAmount : parseFloat(amount);
-        if (!finalAmount || finalAmount <= 0) {
-            Alert.alert('Алдаа', 'Дүн оруулна уу');
-            return;
-        }
-        if (!selectedAccountId) {
-            Alert.alert('Алдаа', 'Хүлээн авах дансаа сонгоно уу');
-            return;
-        }
-        setSending(true);
-        try {
-            await sendInvoice({
-                receiverPhone,
-                amount: finalAmount,
-                currency,
-                description,
-                receiverAccountId: selectedAccountId,
-            });
-            Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Илгээж чадсангүй');
-        } finally {
-            setSending(false);
-        }
-    };
 
     return (
         <View style={styles.container}>
@@ -163,7 +113,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
             <SafeAreaView edges={['bottom']}>
                 <TouchableOpacity
                     style={[styles.submitBtn, sending && styles.submitDisabled]}
-                    onPress={handleSubmit}
+                    onPress={() => handleSubmit({receiverPhone, amount, description})}
                     disabled={sending}
                     activeOpacity={0.85}
                 >
