@@ -1,5 +1,6 @@
 package com.anudari.user_service.handler;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,6 +30,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(DataIntegrityViolationException ex) {
+        String msg = "Бүртгэл аль хэдийн байна";
+        String detail = ex.getMostSpecificCause().getMessage();
+        if (detail != null && detail.contains("(username)")) msg = "Нэвтрэх нэр аль хэдийн бүртгэлтэй байна";
+        else if (detail != null && detail.contains("(phone_number)")) msg = "Утасны дугаар аль хэдийн бүртгэлтэй байна";
+        else if (detail != null && detail.contains("(email)")) msg = "И-мэйл аль хэдийн бүртгэлтэй байна";
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(errorBody(HttpStatus.CONFLICT, msg));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

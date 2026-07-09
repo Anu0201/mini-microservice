@@ -36,13 +36,13 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         UserInternalDto userDto;
         try {
-            userDto = userClient.findByUsernameInternal(request.username(), appProperties.getInternalSecret());
+            userDto = userClient.findByPhoneInternal(request.phone(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
             throw new AuthenticationException("Invalid credentials");
         }
 
         if (!passwordEncoder.matches(request.password(), userDto.credentialHash())) {
-            asyncHistoryService.save(userDto.userId(), request.username(),
+            asyncHistoryService.save(userDto.userId(), userDto.username(),
                     AppConstants.EVENT.LOGIN_FAIL, ipAddress, userAgent);
             throw new AuthenticationException("Invalid credentials");
         }

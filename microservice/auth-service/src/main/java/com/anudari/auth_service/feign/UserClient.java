@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public interface UserClient {
     //login hiihed hereglegchiin password iig shalgahiin tuld user-service-s medeelel avah heregtei.
     //credentialHash-iig avch password shalgadag dotood internal holboosoos user-service-g shuud holbono
-    @GetMapping("/api/users/internal/by-username/{username}")
-    UserInternalDto findByUsernameInternal(
-            @PathVariable String username,
+    @GetMapping("/api/users/internal/by-phone/{phoneNumber}")
+    UserInternalDto findByPhoneInternal(
+            @PathVariable String phoneNumber,
             @RequestHeader(AppConstants.HEADER.INTERNAL_SECRET) String internalSecret
     );
 }

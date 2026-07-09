@@ -4,25 +4,50 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2ed4b8d7-1876-4765-b772-bc4e53653789" name="Changes" comment="Fix: mobile package version">
+    <list default="true" id="2ed4b8d7-1876-4765-b772-bc4e53653789" name="Changes" comment="Merge remote-tracking branch 'origin/main'">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/auth-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/common/src/main/java/com/anudari/common/entity/Audit.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/common/src/main/java/com/anudari/common/entity/Audit.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/gateway-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/gateway-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/gateway-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/gateway-service/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/payment-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/user-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/dto/LoginRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/dto/LoginRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/feign/UserClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/feign/UserClient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/handler/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/handler/GlobalExceptionHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/CreateInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/CreateInvoiceScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/InvoiceListScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/InvoiceListScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/SendInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/screens/SendInvoiceScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/api/accountApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/accountApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/api/authApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/services/authApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/api/axiosInstance.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/axiosInstance.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/api/paymentApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/paymentApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/api/userApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/userApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/components/TabBar.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/TabBar.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/components/icons.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/icons.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/constants.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAccount.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useAccount.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAccountDetail.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useAccountDetail.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAppNavigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/hooks/useAppNavigation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useCreateInvoice.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useCreateInvoice.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useInvoiceList.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useInvoiceList.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useLogin.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/hooks/useLogin.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useRegister.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/hooks/useRegister.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useSendInvoice.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useSendInvoice.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/hooks/useSendMoney.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useSendMoney.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/AccountDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/AccountScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/CreateInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/CreateInvoiceScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/HomeScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/InvoiceListScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/InvoiceListScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/LoginScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/RegisterScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/RegisterScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/SendInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/SendInvoiceScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/screens/SendMoneyScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/SendMoneyScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/utils/helpers.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/utils/helpers.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/Users/anu/mini-microservice" value="3FLOOrrHb3mBnnTPvI5mribmsY5" />
+    </persistenceIdMap>
   </component>
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
@@ -61,7 +86,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/Anu0201/mini-microservice.git&quot;,
-    &quot;accountId&quot;: &quot;d77bf152-1f3a-4222-9784-fd8133746ccf&quot;
+    &quot;accountId&quot;: &quot;7383a6ab-4f54-425d-8323-645cc15cc046&quot;
   }
 }</component>
   <component name="KubernetesApiPersistence">{}</component>
@@ -70,69 +95,69 @@
 }</component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="6.400249300385416E-5" />
-      <entry key="MS500" value="0.24979519055333296" />
-      <entry key="S2" value="1.1883738774757346" />
-      <entry key="S5" value="1.623984890050749" />
-      <entry key="S10" value="1.802200535416575" />
-      <entry key="S30" value="1.9317625665411124" />
-      <entry key="S60" value="1.9667712994486408" />
-      <entry key="M2" value="2.2428388440343716" />
-      <entry key="M5" value="11.942395431346615" />
-      <entry key="M10" value="39.21390122014313" />
-      <entry key="M15" value="61.811247922256555" />
-      <entry key="M30" value="103.71791017145708" />
-      <entry key="H1" value="143.1242390255743" />
-      <entry key="H2" value="176.36120463589745" />
-      <entry key="H4" value="203.93887960001453" />
-      <entry key="D1" value="345.9542501747931" />
-      <entry key="W1" value="1005.8820473081755" />
+      <entry key="MS100" value="1.583455569679645" />
+      <entry key="MS500" value="4.652550670164657" />
+      <entry key="S2" value="10.760835293894297" />
+      <entry key="S5" value="16.394583421444423" />
+      <entry key="S10" value="21.8109564697521" />
+      <entry key="S30" value="33.146425893129056" />
+      <entry key="S60" value="43.67166012538135" />
+      <entry key="M2" value="54.989034445279245" />
+      <entry key="M5" value="66.59136509540154" />
+      <entry key="M10" value="71.82409414255451" />
+      <entry key="M15" value="73.76827476736894" />
+      <entry key="M30" value="75.89096845555618" />
+      <entry key="H1" value="79.55642862978381" />
+      <entry key="H2" value="99.71737775746976" />
+      <entry key="H4" value="167.53848137516889" />
+      <entry key="D1" value="533.3421853873523" />
+      <entry key="W1" value="1299.6196968908896" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0" />
-      <entry key="S30" value="1.0" />
-      <entry key="S60" value="1.0000000024844666" />
-      <entry key="M2" value="1.0000498444825123" />
-      <entry key="M5" value="1.0190931660923075" />
-      <entry key="M10" value="1.146852536767844" />
-      <entry key="M15" value="1.3102183175854853" />
-      <entry key="M30" value="1.7373172485465616" />
-      <entry key="H1" value="2.288414852053173" />
-      <entry key="H2" value="2.8647947156697553" />
-      <entry key="H4" value="3.479319226363415" />
-      <entry key="D1" value="7.193306695517332" />
-      <entry key="W1" value="12.742952203214335" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="2.877666604931042E-191" />
+      <entry key="S60" value="5.364388692974284E-96" />
+      <entry key="M2" value="2.3161149999458718E-48" />
+      <entry key="M5" value="8.828848157412457E-20" />
+      <entry key="M10" value="2.971337809160563E-10" />
+      <entry key="M15" value="4.4528392019123193E-7" />
+      <entry key="M30" value="6.689791530777365E-4" />
+      <entry key="H1" value="0.02789866641671763" />
+      <entry key="H2" value="0.2631663933389962" />
+      <entry key="H4" value="1.2317441487316982" />
+      <entry key="D1" value="8.044060402571263" />
+      <entry key="W1" value="15.947235947741186" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="3.4366634145441125E-4" />
-      <entry key="MS500" value="0.44249503886608677" />
-      <entry key="S2" value="1.8500827838793925" />
-      <entry key="S5" value="2.471627030186562" />
-      <entry key="S10" value="2.722855299840082" />
-      <entry key="S30" value="2.9045772668306213" />
-      <entry key="S60" value="2.9530842559086765" />
-      <entry key="M2" value="3.2360002110757904" />
-      <entry key="M5" value="12.958299987661064" />
-      <entry key="M10" value="40.35842393162056" />
-      <entry key="M15" value="63.1194526314962" />
-      <entry key="M30" value="105.45374056452256" />
-      <entry key="H1" value="145.4116341078021" />
-      <entry key="H2" value="179.22534312852105" />
-      <entry key="H4" value="207.41779748159192" />
-      <entry key="D1" value="353.14742968264085" />
-      <entry key="W1" value="1018.6249425068085" />
+      <entry key="MS100" value="1.5506898691961835" />
+      <entry key="MS500" value="4.61719717290086" />
+      <entry key="S2" value="10.70424341199611" />
+      <entry key="S5" value="16.32471003211679" />
+      <entry key="S10" value="21.755845424373145" />
+      <entry key="S30" value="33.11677750353931" />
+      <entry key="S60" value="43.65213532988907" />
+      <entry key="M2" value="54.9771043521587" />
+      <entry key="M5" value="66.58582965760058" />
+      <entry key="M10" value="71.82116976776896" />
+      <entry key="M15" value="73.76628816636358" />
+      <entry key="M30" value="75.89062404725085" />
+      <entry key="H1" value="79.58380672910332" />
+      <entry key="H2" value="99.98023476282067" />
+      <entry key="H4" value="168.76995585263137" />
+      <entry key="D1" value="541.3860707382008" />
+      <entry key="W1" value="1315.5668636501432" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="ProjectErrors" />
   </component>
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 2,
-  &quot;fromUser&quot;: false
+  &quot;associatedIndex&quot;: 4,
+  &quot;fromUser&quot;: true
 }</component>
   <component name="ProjectId" id="3FLOOrrHb3mBnnTPvI5mribmsY5" />
   <component name="ProjectViewState">
@@ -148,6 +173,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
@@ -234,6 +260,11 @@
       <workItem from="1782349898741" duration="1097000" />
       <workItem from="1782903545907" duration="1522000" />
       <workItem from="1782955184074" duration="5091000" />
+      <workItem from="1783041349337" duration="12149000" />
+      <workItem from="1783216837087" duration="790000" />
+      <workItem from="1783299465922" duration="15415000" />
+      <workItem from="1783387640124" duration="3728000" />
+      <workItem from="1783473485268" duration="3714000" />
     </task>
     <task id="LOCAL-00001" summary="Feat: User-service, Payment-service">
       <option name="closed" value="true" />
@@ -275,7 +306,71 @@
       <option name="project" value="LOCAL" />
       <updated>1782868682754</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Fix: some name issue">
+      <option name="closed" value="true" />
+      <created>1783041632485</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041632485</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Fix: some name id issue">
+      <option name="closed" value="true" />
+      <created>1783041646881</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041646881</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041726626</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041726626</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041795466</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041795466</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041805260</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041805260</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041809175</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041809175</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041815075</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041815075</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Feat: account screen">
+      <option name="closed" value="true" />
+      <created>1783041834853</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1783041834853</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -286,7 +381,11 @@
     <MESSAGE value="Feat: Mobile React native" />
     <MESSAGE value="Fix: mobile package version" />
     <MESSAGE value="Fix: fixed service version error" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix: fixed service version error" />
+    <MESSAGE value="Fix: some name issue" />
+    <MESSAGE value="Fix: some name id issue" />
+    <MESSAGE value="Feat: account screen" />
+    <MESSAGE value="Merge remote-tracking branch 'origin/main'" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'origin/main'" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
