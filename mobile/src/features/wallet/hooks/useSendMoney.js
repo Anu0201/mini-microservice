@@ -1,9 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
-import {sendInvoice, sendMoney, getExchangeRate} from '../api/paymentApi';
-import {getMyAccounts} from '../api/accountApi';
-import {getMe, lookupUserByPhone} from '../api/userApi';
-import {CURRENCY_SIGN} from '../constants';
+import {sendInvoice, sendMoney, getExchangeRate} from '../../../services/paymentApi';
+import {getMyAccounts} from '../../../services/accountApi';
+import {getMe, lookupUserByPhone} from '../../../services/userApi';
+import {CURRENCY_SIGN, MIN_PHONE_LOOKUP_LENGTH, PHONE_LOOKUP_DEBOUNCE_MS} from '../../../constants';
 
 export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
     const isSend = action === 'send';
@@ -27,7 +27,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
 
     const [sending, setSending] = useState(false);
 
-    const selectedAccount = accounts.find((a) => a.accountId === selectedId);
+    const selectedAccount = accounts.find((account) => account.accountId === selectedId);
     const needsConversion = isSend && filterCurrency && selectedAccount && selectedAccount.currency !== filterCurrency;
     const currency = isSend
         ? (filterCurrency ?? selectedAccount?.currency ?? 'MNT')
@@ -41,7 +41,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         setLoadingRate(true);
         setExchangeRate(null);
         getExchangeRate(filterCurrency, selectedAccount.currency)
-            .then((res) => setExchangeRate(res.data.rate))
+            .then((rateResponse) => setExchangeRate(rateResponse.data.rate))
             .catch(() => setExchangeRate(null))
             .finally(() => setLoadingRate(false));
     }, [selectedId]);
@@ -50,12 +50,12 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         if (isSend) return;
         (async () => {
             try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
+                const userResponse = await getMe();
+                const accountsResponse = await getMyAccounts(userResponse.data.userId);
                 const invoiceCurr = filterCurrency ?? 'MNT';
-                const filtered = accRes.data.filter((a) => a.currency === invoiceCurr);
-                setMyAccounts(filtered.length > 0 ? filtered : accRes.data);
-                const preferred = filtered[0] ?? accRes.data[0];
+                const filtered = accountsResponse.data.filter((account) => account.currency === invoiceCurr);
+                setMyAccounts(filtered.length > 0 ? filtered : accountsResponse.data);
+                const preferred = filtered[0] ?? accountsResponse.data[0];
                 if (preferred) setReceiverAccountId(preferred.accountId);
             } catch {
                 Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
@@ -69,12 +69,12 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         if (!isSend) return;
         (async () => {
             try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
-                setAccounts(accRes.data);
+                const userResponse = await getMe();
+                const accountsResponse = await getMyAccounts(userResponse.data.userId);
+                setAccounts(accountsResponse.data);
                 const preferred = filterCurrency
-                    ? (accRes.data.find((a) => a.currency === filterCurrency) ?? accRes.data[0])
-                    : accRes.data[0];
+                    ? (accountsResponse.data.find((account) => account.currency === filterCurrency) ?? accountsResponse.data[0])
+                    : accountsResponse.data[0];
                 if (preferred) setSelectedId(preferred.accountId);
             } catch {
                 Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
@@ -88,18 +88,18 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         const phone = receiverPhone.trim();
         setReceiverUser(null);
         if (lookupTimer.current) clearTimeout(lookupTimer.current);
-        if (phone.length < 8) return;
+        if (phone.length < MIN_PHONE_LOOKUP_LENGTH) return;
         setLookupLoading(true);
         lookupTimer.current = setTimeout(async () => {
             try {
-                const res = await lookupUserByPhone(phone);
-                setReceiverUser(res.data);
+                const lookupResponse = await lookupUserByPhone(phone);
+                setReceiverUser(lookupResponse.data);
             } catch {
                 setReceiverUser(null);
             } finally {
                 setLookupLoading(false);
             }
-        }, 600);
+        }, PHONE_LOOKUP_DEBOUNCE_MS);
         return () => clearTimeout(lookupTimer.current);
     }, [receiverPhone]);
 
@@ -113,8 +113,8 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
                 await sendInvoice({receiverPhone, amount, currency, description, receiverAccountId});
                 Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
             }
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Амжилтгүй боллоо');
+        } catch (error) {
+            Alert.alert('Алдаа', error.response?.data?.message || 'Амжилтгүй боллоо');
         } finally {
             setSending(false);
         }
@@ -125,8 +125,8 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         if (amount <= 0) return Alert.alert('Алдаа', 'Дүн оруулна уу');
         if (isSend && !selectedId) return Alert.alert('Алдаа', 'Данс сонгоно уу');
 
-        const sign = CURRENCY_SIGN[currency] ?? currency;
-        const amountStr = `${Number(amount).toLocaleString()} ${sign}`;
+        const currencySymbol = CURRENCY_SIGN[currency] ?? currency;
+        const amountStr = `${Number(amount).toLocaleString()} ${currencySymbol}`;
         const msg = isSend
             ? `${receiverPhone} дугаарт ${amountStr} илгээх үү?`
             : `${receiverPhone} дугаараас ${amountStr} нэхэмжлэх үү?`;

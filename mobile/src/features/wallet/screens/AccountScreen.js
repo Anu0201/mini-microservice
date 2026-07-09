@@ -1,15 +1,15 @@
 import {useState} from 'react';
-import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, COLORS} from '../constants';
-import {initials} from '../utils/helpers';
+import {CURRENCY_BG, CURRENCY_SIGN, COLORS, CURRENCIES} from '../../../constants';
+import {initials, isPrefixCurrency} from '../../../utils/helpers';
 import {useAccount} from '../hooks/useAccount';
 
 function AccountCard({account, onPress}) {
     const color = CURRENCY_BG[account.currency] ?? COLORS.secondary;
-    const sign = CURRENCY_SIGN[account.currency] ?? account.currency;
-    const isPrefix = account.currency === 'USD' || account.currency === 'EUR';
+    const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
+    const isPrefix = isPrefixCurrency(account.currency);
     return (
         <TouchableOpacity style={styles.accountCard} onPress={() => onPress(account)} activeOpacity={0.8}>
             <View style={styles.accountCardTop}>
@@ -23,9 +23,9 @@ function AccountCard({account, onPress}) {
                 <Text style={styles.balanceAmount}>
                     {isPrefix
                         ? <><Text
-                            style={styles.balanceCurrency}>{sign} </Text>{Number(account.balance).toLocaleString()}</>
+                            style={styles.balanceCurrency}>{currencySymbol} </Text>{Number(account.balance).toLocaleString()}</>
                         : <>{Number(account.balance).toLocaleString()} <Text
-                            style={styles.balanceCurrency}>{sign}</Text></>
+                            style={styles.balanceCurrency}>{currencySymbol}</Text></>
                     }
                 </Text>
             </View>
@@ -50,7 +50,15 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                         <Text style={styles.userName}>{userInfo?.username ?? '...'}</Text>
                         {userInfo?.email ? <Text style={styles.userEmail}>{userInfo.email}</Text> : null}
                         {onLogout && (
-                            <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
+                            <TouchableOpacity
+                                onPress={() =>
+                                    Alert.alert('Гарах', 'Системээс гарахдаа итгэлтэй байна уу?', [
+                                        {text: 'Болих', style: 'cancel'},
+                                        {text: 'Гарах', style: 'destructive', onPress: onLogout},
+                                    ])
+                                }
+                                style={styles.logoutBtn}
+                            >
                                 <Text style={styles.logoutText}>Гарах</Text>
                             </TouchableOpacity>
                         )}
@@ -64,21 +72,21 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                 </View>
             ) : (
                 <ScrollView contentContainerStyle={styles.body}>
-                    {accounts.map((acc) => (
-                        <AccountCard key={acc.accountId} account={acc} onPress={onSelectAccount}/>
+                    {accounts.map((account) => (
+                        <AccountCard key={account.accountId} account={account} onPress={onSelectAccount}/>
                     ))}
 
                     <View style={styles.newAccountCard}>
                         <Text style={styles.newAccountTitle}>Шинэ данс нээх</Text>
                         <View style={styles.currencyRow}>
-                            {['MNT', 'USD', 'EUR'].map((c) => (
+                            {CURRENCIES.map((currencyCode) => (
                                 <TouchableOpacity
-                                    key={c}
-                                    style={[styles.currencyBtn, newCurrency === c && styles.currencyBtnActive]}
-                                    onPress={() => setNewCurrency(c)}
+                                    key={currencyCode}
+                                    style={[styles.currencyBtn, newCurrency === currencyCode && styles.currencyBtnActive]}
+                                    onPress={() => setNewCurrency(currencyCode)}
                                 >
                                     <Text
-                                        style={[styles.currencyBtnText, newCurrency === c && styles.currencyBtnTextActive]}>{c}</Text>
+                                        style={[styles.currencyBtnText, newCurrency === currencyCode && styles.currencyBtnTextActive]}>{currencyCode}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>

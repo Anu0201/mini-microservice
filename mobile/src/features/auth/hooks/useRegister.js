@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {Alert} from 'react-native';
-import {register} from '../api/userApi';
+import {register} from '../../../services/userApi';
 
 export const useRegister = ({onGoLogin}) => {
     const [loading, setLoading] = useState(false);

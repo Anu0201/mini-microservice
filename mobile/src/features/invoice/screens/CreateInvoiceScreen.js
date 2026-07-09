@@ -2,15 +2,18 @@ import {useState} from 'react';
 import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS} from '../constants';
-import {PhoneIcon} from '../components/icons';
+import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS, MIN_PHONE_LOOKUP_LENGTH} from '../../../constants';
+import {PhoneIcon} from '../../../components/icons';
 import {useCreateInvoice} from '../hooks/useCreateInvoice';
+import {initials, maskName} from '../../../utils/helpers';
 
 export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT', initialAmount = ''}) {
-    const {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit} =
+    const {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit,
+        receiverUser, lookupLoading, lookupPhone} =
         useCreateInvoice({currency, initialAmount, onSuccess});
 
     const [receiverPhone, setReceiverPhone] = useState('');
+    const handlePhoneChange = (text) => { setReceiverPhone(text); lookupPhone(text); };
     const [amount, setAmount] = useState(initialAmount ? String(initialAmount) : '');
     const [description, setDescription] = useState('');
 
@@ -39,10 +42,32 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                         placeholder="Утасны дугаар оруулах"
                         placeholderTextColor={COLORS.muted}
                         value={receiverPhone}
-                        onChangeText={setReceiverPhone}
+                        onChangeText={handlePhoneChange}
                         keyboardType="phone-pad"
                     />
                 </View>
+
+                {lookupLoading && (
+                    <View style={styles.userCard}>
+                        <Spinner size="small" color={COLORS.accent}/>
+                    </View>
+                )}
+                {!lookupLoading && receiverUser && (
+                    <View style={styles.userCard}>
+                        <View style={{flex: 1}}>
+                            <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
+                            <Text style={styles.userCardName}>{maskName(receiverUser.username)}</Text>
+                        </View>
+                        <View style={styles.userAvatar}>
+                            <Text style={styles.userAvatarText}>{initials(receiverUser.username)}</Text>
+                        </View>
+                    </View>
+                )}
+                {!lookupLoading && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
+                    <View style={[styles.userCard, styles.userCardNotFound]}>
+                        <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
+                    </View>
+                )}
 
                 {!initialAmount && (
                     <View style={styles.inputCard}>
@@ -67,24 +92,24 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                             <Text style={styles.emptyText}>Данс байхгүй байна</Text>
                         </View>
                     ) : (
-                        myAccounts.map((acc) => {
-                            const active = selectedAccountId === acc.accountId;
-                            const sign = CURRENCY_SIGN[acc.currency] ?? acc.currency;
+                        myAccounts.map((account) => {
+                            const active = selectedAccountId === account.accountId;
+                            const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
                             return (
                                 <TouchableOpacity
-                                    key={acc.accountId}
+                                    key={account.accountId}
                                     style={[styles.accountRow, active && styles.accountRowActive]}
-                                    onPress={() => setSelectedAccountId(acc.accountId)}
+                                    onPress={() => setSelectedAccountId(account.accountId)}
                                     activeOpacity={0.7}
                                 >
                                     <View
-                                        style={[styles.badge, {backgroundColor: CURRENCY_BG[acc.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                                        <Text style={styles.badgeText}>{acc.currency}</Text>
+                                        style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+                                        <Text style={styles.badgeText}>{account.currency}</Text>
                                     </View>
                                     <View style={{flex: 1}}>
-                                        <Text style={styles.accNum}>{acc.accountNumber}</Text>
+                                        <Text style={styles.accNum}>{account.accountNumber}</Text>
                                         <Text style={styles.accBal}>
-                                            {Number(acc.balance).toLocaleString()} {sign}
+                                            {Number(account.balance).toLocaleString()} {currencySymbol}
                                         </Text>
                                     </View>
                                     <View style={[styles.radio, active && styles.radioActive]}>
@@ -209,4 +234,24 @@ const styles = StyleSheet.create({
     },
     submitDisabled: {backgroundColor: COLORS.muted},
     submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    userCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f1f5f9',
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        marginBottom: 20,
+        minHeight: 64,
+    },
+    userCardPhone: {fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 2},
+    userCardName: {fontSize: 14, color: COLORS.secondary},
+    userAvatar: {
+        width: 48, height: 48, borderRadius: 24,
+        backgroundColor: COLORS.accent,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    userAvatarText: {color: '#fff', fontWeight: '700', fontSize: 16},
+    userCardNotFound: {justifyContent: 'center'},
+    userCardNotFoundText: {color: COLORS.muted, fontSize: 14},
 });

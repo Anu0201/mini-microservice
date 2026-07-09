@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {Alert} from 'react-native';
-import {sendInvoice} from '../api/paymentApi';
+import {sendInvoice} from '../../../services/paymentApi';
 
 export const useSendInvoice = ({onSuccess}) => {
     const [loading, setLoading] = useState(false);

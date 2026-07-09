@@ -1,7 +1,7 @@
 import {useCallback, useState} from 'react';
 import {Alert} from 'react-native';
-import {createAccount, getMyAccounts} from '../api/accountApi';
-import {getMe} from '../api/userApi';
+import {createAccount, getMyAccounts} from '../../../services/accountApi';
+import {getMe} from '../../../services/userApi';
 
 export const useAccount = () => {
     const [userInfo, setUserInfo] = useState(null);
@@ -13,14 +13,14 @@ export const useAccount = () => {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const userRes = await getMe();
-            const me = userRes.data;
-            const accRes = await getMyAccounts(me.userId);
+            const userResponse = await getMe();
+            const me = userResponse.data;
+            const accountsResponse = await getMyAccounts(me.userId);
             setUserInfo(me);
-            setAccounts(accRes.data);
+            setAccounts(accountsResponse.data);
             setFetched(true);
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Мэдээлэл татаж чадсангүй');
+        } catch (error) {
+            Alert.alert('Алдаа', error.response?.data?.message || 'Мэдээлэл татаж чадсангүй');
         } finally {
             setLoading(false);
         }
@@ -36,8 +36,8 @@ export const useAccount = () => {
                     try {
                         await createAccount(userInfo.userId, currency);
                         await load();
-                    } catch (e) {
-                        Alert.alert('Алдаа', e.response?.data?.message || 'Данс нээж чадсангүй');
+                    } catch (error) {
+                        Alert.alert('Алдаа', error.response?.data?.message || 'Данс нээж чадсангүй');
                     } finally {
                         setCreating(false);
                     }

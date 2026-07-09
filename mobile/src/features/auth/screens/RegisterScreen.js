@@ -1,91 +1,105 @@
-import { useState } from 'react';
-import {
-  Box,
-  Text,
-  Input,
-  InputField,
-  Button,
-  ButtonText,
-  VStack,
-  Heading,
-  Pressable,
-} from '@gluestack-ui/themed';
+import {useState} from 'react';
+import {ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {COLORS} from '../../../constants';
 import {useRegister} from '../hooks/useRegister';
 
-export default function RegisterScreen({ onGoLogin }) {
-  const {loading, handleRegister} = useRegister({onGoLogin});
+export default function RegisterScreen({onGoLogin}) {
+    const {loading, handleRegister} = useRegister({onGoLogin});
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
 
-  return (
-    <Box flex={1} bg="$white" alignItems="center" justifyContent="center" px="$6">
-      <VStack space="md" w="$full">
-        <Heading size="2xl" textAlign="center" mb="$2" color="$gray900">
-          Бүртгүүлэх
-        </Heading>
-        <Text size="sm" textAlign="center" color="$gray500" mb="$4">
-          Шинэ бүртгэл үүсгэхийн тулд мэдээллээ оруулна уу
-        </Text>
+    return (
+        <View style={styles.container}>
+            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                <Text style={styles.title}>Бүртгүүлэх</Text>
 
-        <Input variant="outline" size="lg">
-          <InputField
-            placeholder="Нэвтрэх нэр *"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-        </Input>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Нэвтрэх нэр"
+                    placeholderTextColor={COLORS.muted}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                />
 
-        <Input variant="outline" size="lg">
-          <InputField
-            placeholder="И-мэйл *"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-        </Input>
+                <TextInput
+                    style={styles.input}
+                    placeholder="И-мэйл"
+                    placeholderTextColor={COLORS.muted}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                />
 
-        <Input variant="outline" size="lg">
-          <InputField
-            placeholder="Утасны дугаар"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-        </Input>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Утасны дугаар"
+                    placeholderTextColor={COLORS.muted}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                />
 
-        <Input variant="outline" size="lg">
-          <InputField
-            placeholder="Нууц үг *"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </Input>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Нууц үг"
+                    placeholderTextColor={COLORS.muted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                />
 
-        <Button
-          size="lg"
-          bg="$blue600"
-          mt="$2"
-          isDisabled={loading}
-          onPress={() => handleRegister({username, password, email, phone})}
-        >
-          <ButtonText>{loading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}</ButtonText>
-        </Button>
+                <TouchableOpacity
+                    style={[styles.submitBtn, loading && styles.submitDisabled]}
+                    onPress={() => handleRegister({username, password, email, phone})}
+                    disabled={loading}
+                    activeOpacity={0.85}
+                >
+                    <Text style={styles.submitText}>
+                        {loading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
+                    </Text>
+                </TouchableOpacity>
 
-        <Pressable onPress={onGoLogin} mt="$2" alignItems="center">
-          <Text size="sm" color="$blue600">
-            Бүртгэлтэй юу?{' '}
-            <Text size="sm" color="$blue600" fontWeight="$bold">
-              Нэвтрэх
-            </Text>
-          </Text>
-        </Pressable>
-      </VStack>
-    </Box>
-  );
+                <TouchableOpacity onPress={onGoLogin} style={styles.linkRow}>
+                    <Text style={styles.linkText}>Бүртгэлтэй юу? </Text>
+                    <Text style={styles.linkBold}>Нэвтрэх</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </View>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {flex: 1, backgroundColor: '#f8fafc'},
+    body: {padding: 24, paddingBottom: 40, flexGrow: 1, justifyContent: 'center'},
+    title: {fontSize: 22, fontWeight: '700', color: '#0f172a', marginTop: 8, marginBottom: 24},
+    input: {
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        fontSize: 16,
+        color: '#0f172a',
+        marginBottom: 12,
+    },
+    submitBtn: {
+        backgroundColor: COLORS.accent,
+        borderRadius: 28,
+        height: 56,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+        marginBottom: 16,
+    },
+    submitDisabled: {backgroundColor: COLORS.muted},
+    submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    linkRow: {flexDirection: 'row', justifyContent: 'center'},
+    linkText: {fontSize: 14, color: COLORS.secondary},
+    linkBold: {fontSize: 14, color: COLORS.accent, fontWeight: '700'},
+});

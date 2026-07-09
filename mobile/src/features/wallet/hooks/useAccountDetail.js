@@ -1,6 +1,6 @@
 import {useCallback, useState} from 'react';
 import {Alert} from 'react-native';
-import {getAccount, deposit, withdraw, getTransactions} from '../api/accountApi';
+import {getAccount, deposit, withdraw, getTransactions} from '../../../services/accountApi';
 
 export const useAccountDetail = (accountId) => {
     const [account, setAccount] = useState(null);
@@ -14,12 +14,12 @@ export const useAccountDetail = (accountId) => {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const [accRes, txRes] = await Promise.all([
+            const [accountResponse, transactionsResponse] = await Promise.all([
                 getAccount(accountId),
                 getTransactions(accountId),
             ]);
-            setAccount(accRes.data);
-            setTransactions(txRes.data);
+            setAccount(accountResponse.data);
+            setTransactions(transactionsResponse.data);
             setFetched(true);
         } catch {
             Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
@@ -46,8 +46,8 @@ export const useAccountDetail = (accountId) => {
             setModal(null);
             setAmount('');
             await load();
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Гүйлгээ амжилтгүй');
+        } catch (error) {
+            Alert.alert('Алдаа', error.response?.data?.message || 'Гүйлгээ амжилтгүй');
         } finally {
             setTxLoading(false);
         }

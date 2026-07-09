@@ -1,8 +1,8 @@
 import {useCallback, useState} from 'react';
 import {Alert} from 'react-native';
-import {cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice} from '../api/paymentApi';
-import {getMyAccounts} from '../api/accountApi';
-import {getMe} from '../api/userApi';
+import {cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice} from '../../../services/paymentApi';
+import {getMyAccounts} from '../../../services/accountApi';
+import {getMe} from '../../../services/userApi';
 
 export const useInvoiceList = () => {
     const [received, setReceived] = useState([]);

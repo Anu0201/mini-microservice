@@ -1,9 +1,7 @@
 import {TouchableOpacity, View, StyleSheet} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
 import {MoneyIcon, MenuIcon, ProfileIcon} from './icons';
-
-const TAB_CONTENT_H = 64;
+import {TAB_CONTENT_HEIGHT, TAB_BAR_FALLBACK_PADDING} from '../constants';
 
 const TABS = [
     {key: 'profile', label: 'Профайл', Icon: ProfileIcon, size: 24},
@@ -18,7 +16,7 @@ export default function TabBar({activeTab, onSwitch, glass, liquidGlassView, ins
         return active ? '#B771E5' : '#94a3b8';
     };
 
-    const tabBarH = TAB_CONTENT_H + (insets.bottom > 0 ? insets.bottom : 12);
+    const tabBarH = TAB_CONTENT_HEIGHT + (insets.bottom > 0 ? insets.bottom : TAB_BAR_FALLBACK_PADDING);
 
     const tabItems = (
         <View style={styles.tabRow}>
@@ -38,7 +36,7 @@ export default function TabBar({activeTab, onSwitch, glass, liquidGlassView, ins
         return (
             <View style={[styles.tabBarFloat, {height: tabBarH}]}>
                 <LiquidGlassView
-                    style={[styles.glassBar, {paddingBottom: insets.bottom > 0 ? insets.bottom : 12}]}
+                    style={[styles.glassBar, {paddingBottom: insets.bottom > 0 ? insets.bottom : TAB_BAR_FALLBACK_PADDING}]}
                     effect="regular"
                     colorScheme="system"
                 >
@@ -49,25 +47,16 @@ export default function TabBar({activeTab, onSwitch, glass, liquidGlassView, ins
     }
 
     return (
-        <SafeAreaView edges={['bottom']} style={styles.tabBarWrapper}>
-            <View style={styles.tabBar}>{tabItems}</View>
-        </SafeAreaView>
+        <View style={[styles.tabBarFloat, {paddingBottom: insets.bottom > 0 ? insets.bottom : TAB_BAR_FALLBACK_PADDING}]}>
+            {tabItems}
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    tabBarFloat: {position: 'absolute', bottom: 0, left: 0, right: 0},
+    tabBarFloat: {position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#f1f5f9'},
     glassBar: {flex: 1, paddingTop: 10, paddingHorizontal: 8},
-    tabRow: {flexDirection: 'row', alignItems: 'center', height: TAB_CONTENT_H - 10},
-    tabBarWrapper: {backgroundColor: '#fff'},
-    tabBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderTopWidth: 1,
-        borderColor: '#f1f5f9',
-        backgroundColor: '#fff',
-        paddingVertical: 8,
-    },
+    tabRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: 10},
     tabItem: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4},
     tabLabel: {fontSize: 11, color: '#94a3b8', marginTop: 2},
     tabLabelActive: {color: '#B771E5', fontWeight: '600'},

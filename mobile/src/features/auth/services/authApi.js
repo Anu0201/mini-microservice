@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from './axiosInstance';
+import api from '../../../services/axiosInstance';
 
-export const login = async (username, password) => {
-  const { data } = await api.post('/api/auth/login', { username, password });
+export const login = async ({phone, password}) => {
+  const { data } = await api.post('/api/auth/login', { phone, password });
   await AsyncStorage.multiSet([
     ['token', data.token],
     ['username', data.username],

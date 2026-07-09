@@ -8,16 +8,17 @@ import {
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {COLORS, CURRENCY_BG, CURRENCY_SIGN} from '../constants';
-import {DepositIcon, WithdrawIcon, BackIcon} from '../components/icons';
+import {COLORS, CURRENCY_BG, CURRENCY_SIGN} from '../../../constants';
+import {DepositIcon, WithdrawIcon, BackIcon} from '../../../components/icons';
+import {isPrefixCurrency} from '../../../utils/helpers';
 import {useAccountDetail} from '../hooks/useAccountDetail';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
 try {
-    const lg = require('@callstack/liquid-glass');
-    LiquidGlassView = lg.LiquidGlassView;
-    isLiquidGlassSupported = lg.isLiquidGlassSupported;
+    const liquidGlassModule = require('@callstack/liquid-glass');
+    LiquidGlassView = liquidGlassModule.LiquidGlassView;
+    isLiquidGlassSupported = liquidGlassModule.isLiquidGlassSupported;
 } catch (_) {}
 
 const GLASS = isLiquidGlassSupported;
@@ -37,14 +38,14 @@ const TX_COLOR = {
 };
 
 function TxCard({item}) {
-    const sign = TX_SIGN[item.type] ?? '';
+    const amountSign = TX_SIGN[item.type] ?? '';
     const color = TX_COLOR[item.type] ?? COLORS.secondary;
     const label = TX_LABEL[item.type] ?? item.type;
-    const currSign = CURRENCY_SIGN[item.currency] ?? item.currency ?? '';
-    const isPrefix = item.currency === 'USD' || item.currency === 'EUR';
+    const currencySymbol = CURRENCY_SIGN[item.currency] ?? item.currency ?? '';
+    const isPrefix = isPrefixCurrency(item.currency);
     const amountDisplay = isPrefix
-        ? `${sign}${currSign}${Number(item.amount).toLocaleString()}`
-        : `${sign}${Number(item.amount).toLocaleString()}${currSign}`;
+        ? `${amountSign}${currencySymbol}${Number(item.amount).toLocaleString()}`
+        : `${amountSign}${Number(item.amount).toLocaleString()}${currencySymbol}`;
     const date = item.createdAt
         ? new Date(item.createdAt).toLocaleString('mn-MN', {
             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -76,12 +77,12 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
     if (!fetched && !loading) load();
 
-    const currSign = account ? (CURRENCY_SIGN[account.currency] ?? account.currency) : '';
-    const isPrefix = account?.currency === 'USD' || account?.currency === 'EUR';
+    const currencySymbol = account ? (CURRENCY_SIGN[account.currency] ?? account.currency) : '';
+    const isPrefix = isPrefixCurrency(account?.currency);
     const balanceDisplay = account
         ? (isPrefix
-            ? `${currSign} ${Number(account.balance).toLocaleString()}`
-            : `${Number(account.balance).toLocaleString()} ${currSign}`)
+            ? `${currencySymbol} ${Number(account.balance).toLocaleString()}`
+            : `${Number(account.balance).toLocaleString()} ${currencySymbol}`)
         : '';
 
     const headerContent = (

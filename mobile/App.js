@@ -4,31 +4,32 @@ import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-contex
 import {GluestackUIProvider} from '@gluestack-ui/themed';
 import {config} from '@gluestack-ui/config';
 
-import {useAppNavigation} from './hooks/useAppNavigation';
-import TabBar from './components/TabBar';
+import {useAppNavigation} from './src/hooks/useAppNavigation';
+import TabBar from './src/components/TabBar';
+import {TAB_CONTENT_HEIGHT, TAB_BAR_FALLBACK_PADDING} from './src/constants';
 
-import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
-import HomeScreen from './screens/HomeScreen';
-import InvoiceListScreen from './screens/InvoiceListScreen';
-import AccountScreen from './screens/AccountScreen';
-import AccountDetailScreen from './screens/AccountDetailScreen';
-import SendMoneyScreen from './screens/SendMoneyScreen';
-import CreateInvoiceScreen from './screens/CreateInvoiceScreen';
+import LoginScreen from './src/features/auth/screens/LoginScreen';
+import RegisterScreen from './src/features/auth/screens/RegisterScreen';
+import HomeScreen from './src/features/wallet/screens/HomeScreen';
+import InvoiceListScreen from './src/features/invoice/screens/InvoiceListScreen';
+import AccountScreen from './src/features/wallet/screens/AccountScreen';
+import AccountDetailScreen from './src/features/wallet/screens/AccountDetailScreen';
+import SendMoneyScreen from './src/features/wallet/screens/SendMoneyScreen';
+import CreateInvoiceScreen from './src/features/invoice/screens/CreateInvoiceScreen';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
 try {
-    const lg = require('@callstack/liquid-glass');
-    LiquidGlassView = lg.LiquidGlassView;
-    isLiquidGlassSupported = lg.isLiquidGlassSupported;
+    const liquidGlassModule = require('@callstack/liquid-glass');
+    LiquidGlassView = liquidGlassModule.LiquidGlassView;
+    isLiquidGlassSupported = liquidGlassModule.isLiquidGlassSupported;
 } catch (_) {}
 
 const GLASS = isLiquidGlassSupported;
 
 function AppContent() {
     const insets = useSafeAreaInsets();
-    const tabBarH = 64 + (insets.bottom > 0 ? insets.bottom : 12);
+    const tabBarH = TAB_CONTENT_HEIGHT + (insets.bottom > 0 ? insets.bottom : TAB_BAR_FALLBACK_PADDING);
 
     const {
         screen, setScreen,
@@ -101,7 +102,7 @@ function AppContent() {
 
     return (
         <View style={styles.root}>
-            <View style={[styles.content, GLASS && showTabBar && {paddingBottom: tabBarH}]}>
+            <View style={[styles.content, showTabBar && {paddingBottom: tabBarH}]}>
                 {renderContent()}
             </View>
 

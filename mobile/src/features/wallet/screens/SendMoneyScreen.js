@@ -2,9 +2,9 @@ import {useState} from 'react';
 import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS} from '../constants';
-import {initials, maskName} from '../utils/helpers';
-import {PhoneIcon} from '../components/icons';
+import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS, MIN_PHONE_LOOKUP_LENGTH, EXCHANGE_RATE_FRACTION_DIGITS, AMOUNT_FRACTION_DIGITS} from '../../../constants';
+import {initials, maskName} from '../../../utils/helpers';
+import {PhoneIcon} from '../../../components/icons';
 import {useSendMoney} from '../hooks/useSendMoney';
 
 export default function SendMoneyScreen({
@@ -72,7 +72,7 @@ export default function SendMoneyScreen({
                         </View>
                     </View>
                 )}
-                {!lookupLoading && receiverPhone.trim().length >= 8 && !receiverUser && (
+                {!lookupLoading && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
                     <View style={[styles.userCard, styles.userCardNotFound]}>
                         <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
                     </View>
@@ -88,24 +88,24 @@ export default function SendMoneyScreen({
                                 <Text style={styles.emptyText}>Данс байхгүй байна</Text>
                             </View>
                         ) : (
-                            accounts.map((acc) => {
-                                const active = selectedId === acc.accountId;
-                                const sign = CURRENCY_SIGN[acc.currency] ?? acc.currency;
+                            accounts.map((account) => {
+                                const active = selectedId === account.accountId;
+                                const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
                                 return (
                                     <TouchableOpacity
-                                        key={acc.accountId}
+                                        key={account.accountId}
                                         style={[styles.accountRow, active && styles.accountRowActive]}
-                                        onPress={() => setSelectedId(acc.accountId)}
+                                        onPress={() => setSelectedId(account.accountId)}
                                         activeOpacity={0.7}
                                     >
                                         <View
-                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[acc.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                                            <Text style={styles.badgeText}>{acc.currency}</Text>
+                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+                                            <Text style={styles.badgeText}>{account.currency}</Text>
                                         </View>
                                         <View style={{flex: 1}}>
-                                            <Text style={styles.accNum}>{acc.accountNumber}</Text>
+                                            <Text style={styles.accNum}>{account.accountNumber}</Text>
                                             <Text style={styles.accBal}>
-                                                {Number(acc.balance).toLocaleString()} {sign}
+                                                {Number(account.balance).toLocaleString()} {currencySymbol}
                                             </Text>
                                         </View>
                                         <View style={[styles.radio, active && styles.radioActive]}>
@@ -126,24 +126,24 @@ export default function SendMoneyScreen({
                                 <Text style={styles.emptyText}>Данс байхгүй байна</Text>
                             </View>
                         ) : (
-                            myAccounts.map((acc) => {
-                                const active = receiverAccountId === acc.accountId;
-                                const sign = CURRENCY_SIGN[acc.currency] ?? acc.currency;
+                            myAccounts.map((account) => {
+                                const active = receiverAccountId === account.accountId;
+                                const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
                                 return (
                                     <TouchableOpacity
-                                        key={acc.accountId}
+                                        key={account.accountId}
                                         style={[styles.accountRow, active && styles.accountRowActive]}
-                                        onPress={() => setReceiverAccountId(acc.accountId)}
+                                        onPress={() => setReceiverAccountId(account.accountId)}
                                         activeOpacity={0.7}
                                     >
                                         <View
-                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[acc.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                                            <Text style={styles.badgeText}>{acc.currency}</Text>
+                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+                                            <Text style={styles.badgeText}>{account.currency}</Text>
                                         </View>
                                         <View style={{flex: 1}}>
-                                            <Text style={styles.accNum}>{acc.accountNumber}</Text>
+                                            <Text style={styles.accNum}>{account.accountNumber}</Text>
                                             <Text style={styles.accBal}>
-                                                {Number(acc.balance).toLocaleString()} {sign}
+                                                {Number(account.balance).toLocaleString()} {currencySymbol}
                                             </Text>
                                         </View>
                                         <View style={[styles.radio, active && styles.radioActive]}>
@@ -164,10 +164,10 @@ export default function SendMoneyScreen({
                         ) : exchangeRate ? (
                             <>
                                 <Text style={styles.conversionText}>
-                                    1 {filterCurrency} = {CURRENCY_SIGN[selectedAccount.currency]}{Number(exchangeRate).toLocaleString(undefined, {maximumFractionDigits: 4})} {selectedAccount.currency}
+                                    1 {filterCurrency} = {CURRENCY_SIGN[selectedAccount.currency]}{Number(exchangeRate).toLocaleString(undefined, {maximumFractionDigits: EXCHANGE_RATE_FRACTION_DIGITS})} {selectedAccount.currency}
                                 </Text>
                                 <Text style={[styles.conversionText, {marginTop: 4, fontWeight: '700'}]}>
-                                    {CURRENCY_SIGN[filterCurrency]}{Number(amount).toLocaleString()} {filterCurrency} → {CURRENCY_SIGN[selectedAccount.currency]}{Number(amount * exchangeRate).toLocaleString(undefined, {maximumFractionDigits: 2})} {selectedAccount.currency}
+                                    {CURRENCY_SIGN[filterCurrency]}{Number(amount).toLocaleString()} {filterCurrency} → {CURRENCY_SIGN[selectedAccount.currency]}{Number(amount * exchangeRate).toLocaleString(undefined, {maximumFractionDigits: AMOUNT_FRACTION_DIGITS})} {selectedAccount.currency}
                                 </Text>
                             </>
                         ) : (

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spinner, Text } from '@gluestack-ui/themed';
-import { CURRENCY_SIGN } from '../constants';
-import { initials } from '../utils/helpers';
+import { CURRENCY_SIGN } from '../../../constants';
+import { initials } from '../../../utils/helpers';
 import { useInvoiceList } from '../hooks/useInvoiceList';
 
 function Avatar({ name }) {

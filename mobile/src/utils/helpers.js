@@ -1,3 +1,5 @@
+export const isPrefixCurrency = (currency) => currency === 'USD' || currency === 'EUR';
+
 export const maskName = (name) => {
     if (!name || name.length <= 3) return name ?? '';
     return name[0] + name[1] + '•••' + name[name.length - 1];

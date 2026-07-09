@@ -1,8 +1,9 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
-import {sendInvoice} from '../api/paymentApi';
-import {getMyAccounts} from '../api/accountApi';
-import {getMe} from '../api/userApi';
+import {sendInvoice} from '../../../services/paymentApi';
+import {getMyAccounts} from '../../../services/accountApi';
+import {getMe, lookupUserByPhone} from '../../../services/userApi';
+import {MIN_PHONE_LOOKUP_LENGTH, PHONE_LOOKUP_DEBOUNCE_MS} from '../../../constants';
 
 export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
     const [myAccounts, setMyAccounts] = useState([]);
@@ -10,13 +11,17 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
     const [loadingAccounts, setLoadingAccounts] = useState(true);
     const [sending, setSending] = useState(false);
 
+    const [receiverUser, setReceiverUser] = useState(null);
+    const [lookupLoading, setLookupLoading] = useState(false);
+    const lookupTimer = useRef(null);
+
     useEffect(() => {
         (async () => {
             try {
-                const userRes = await getMe();
-                const accRes = await getMyAccounts(userRes.data.userId);
-                setMyAccounts(accRes.data);
-                if (accRes.data.length > 0) setSelectedAccountId(accRes.data[0].accountId);
+                const userResponse = await getMe();
+                const accountsResponse = await getMyAccounts(userResponse.data.userId);
+                setMyAccounts(accountsResponse.data);
+                if (accountsResponse.data.length > 0) setSelectedAccountId(accountsResponse.data[0].accountId);
             } catch {
                 Alert.alert('Алдаа', 'Дансны мэдээлэл татаж чадсангүй');
             } finally {
@@ -24,6 +29,23 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
             }
         })();
     }, []);
+
+    const lookupPhone = (phone) => {
+        setReceiverUser(null);
+        if (lookupTimer.current) clearTimeout(lookupTimer.current);
+        if (phone.trim().length < MIN_PHONE_LOOKUP_LENGTH) return;
+        setLookupLoading(true);
+        lookupTimer.current = setTimeout(async () => {
+            try {
+                const lookupResponse = await lookupUserByPhone(phone.trim());
+                setReceiverUser(lookupResponse.data);
+            } catch {
+                setReceiverUser(null);
+            } finally {
+                setLookupLoading(false);
+            }
+        }, PHONE_LOOKUP_DEBOUNCE_MS);
+    };
 
     const handleSubmit = async ({receiverPhone, amount, description}) => {
         if (!receiverPhone.trim()) return Alert.alert('Алдаа', 'Утасны дугаар оруулна уу');
@@ -35,12 +57,12 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
         try {
             await sendInvoice({receiverPhone, amount: finalAmount, currency, description, receiverAccountId: selectedAccountId});
             Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
-        } catch (e) {
-            Alert.alert('Алдаа', e.response?.data?.message || 'Илгээж чадсангүй');
+        } catch (error) {
+            Alert.alert('Алдаа', error.response?.data?.message || 'Илгээж чадсангүй');
         } finally {
             setSending(false);
         }
     };
 
-    return {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit};
+    return {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit, receiverUser, lookupLoading, lookupPhone};
 };

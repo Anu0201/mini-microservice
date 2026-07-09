@@ -2,8 +2,8 @@ import {useState} from 'react';
 import {Alert, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
-import {CURRENCIES, CURRENCY_SIGN, CURRENCY_BG, COLORS} from '../constants';
-import {ClockIcon} from '../components/icons';
+import {CURRENCIES, CURRENCY_SIGN, CURRENCY_BG, COLORS, MAX_AMOUNT_DIGITS} from '../../../constants';
+import {ClockIcon} from '../../../components/icons';
 
 const KEYS = [
     ['1', '2', '3'],
@@ -14,20 +14,20 @@ const KEYS = [
 
 
 export default function HomeScreen({onInvoice, onSend, onHistory}) {
-    const [raw, setRaw] = useState('0');
+    const [rawAmount, setRawAmount] = useState('0');
     const [currency, setCurrency] = useState('MNT');
     const press = (key) => {
-        setRaw((prev) => {
+        setRawAmount((prev) => {
             if (key === '⌫') return prev.length <= 1 ? '0' : prev.slice(0, -1);
             if (key === '000') return prev === '0' ? '0' : prev + '000';
             if (prev === '0') return key;
-            if (prev.length >= 12) return prev;
+            if (prev.length >= MAX_AMOUNT_DIGITS) return prev;
             return prev + key;
         });
     };
 
     const validate = () => {
-        const hasAmount = Number(raw) > 0;
+        const hasAmount = Number(rawAmount) > 0;
         const hasCurrency = !!currency;
         if (!hasAmount && !hasCurrency) {
             Alert.alert('Анхааруулга', 'Дүн оруулж, валют сонгоно уу', [{text: 'За'}]);
@@ -44,10 +44,10 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
         return true;
     };
 
-    const handleInvoice = () => { if (validate()) onInvoice(Number(raw), currency); };
-    const handleSend = () => { if (validate()) onSend(Number(raw), currency); };
+    const handleInvoice = () => { if (validate()) onInvoice(Number(rawAmount), currency); };
+    const handleSend = () => { if (validate()) onSend(Number(rawAmount), currency); };
 
-    const display = Number(raw).toLocaleString();
+    const display = Number(rawAmount).toLocaleString();
     const sign = currency ? CURRENCY_SIGN[currency] : '';
 
     return (
@@ -62,17 +62,17 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
             </SafeAreaView>
 
             <View style={styles.currencyRow}>
-                {CURRENCIES.map((c) => {
-                    const active = currency === c;
+                {CURRENCIES.map((currencyCode) => {
+                    const active = currency === currencyCode;
                     return (
                         <TouchableOpacity
-                            key={c}
-                            style={[styles.currencyBtn, active && {backgroundColor: CURRENCY_BG[c]}]}
-                            onPress={() => setCurrency((prev) => (prev === c ? null : c))}
+                            key={currencyCode}
+                            style={[styles.currencyBtn, active && {backgroundColor: CURRENCY_BG[currencyCode]}]}
+                            onPress={() => setCurrency((prev) => (prev === currencyCode ? null : currencyCode))}
                             activeOpacity={0.75}
                         >
                             <Text style={[styles.currencyText, active && styles.currencyTextActive]}>
-                                {CURRENCY_SIGN[c]} {c}
+                                {CURRENCY_SIGN[currencyCode]} {currencyCode}
                             </Text>
                         </TouchableOpacity>
                     );
@@ -87,11 +87,11 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
 
 
 <View style={styles.numpad}>
-                {KEYS.map((row, ri) => (
-                    <View key={ri} style={styles.row}>
-                        {row.map((k) => (
-                            <TouchableOpacity key={k} style={styles.key} onPress={() => press(k)} activeOpacity={0.6}>
-                                <Text style={k === '⌫' ? styles.backKey : styles.keyText}>{k}</Text>
+                {KEYS.map((row, rowIndex) => (
+                    <View key={rowIndex} style={styles.row}>
+                        {row.map((keyLabel) => (
+                            <TouchableOpacity key={keyLabel} style={styles.key} onPress={() => press(keyLabel)} activeOpacity={0.6}>
+                                <Text style={keyLabel === '⌫' ? styles.backKey : styles.keyText}>{keyLabel}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>

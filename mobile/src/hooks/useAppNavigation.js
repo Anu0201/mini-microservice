@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {logout} from '../api/authApi';
+import {logout} from '../features/auth/services/authApi';
 
 export const useAppNavigation = () => {
     const [screen, setScreen] = useState('login');
