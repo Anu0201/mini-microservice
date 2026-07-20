@@ -76,8 +76,11 @@ export const useInvoiceList = () => {
     const pendingInvoices = received.filter((i) => i.status === 'UNPAID');
 
     const transactions = [
-        ...sent.map((i) => ({...i, _isSent: true})),
-        ...received.filter((i) => i.status !== 'UNPAID').map((i) => ({...i, _isSent: false})),
+        ...sent
+            .map((i) => ({...i, _isSent: true, _isDeclined: i.status === 'CANCELLED'})),
+        ...received
+            .filter((i) => i.status !== 'UNPAID')
+            .map((i) => ({...i, _isSent: false, _isDeclined: i.status === 'CANCELLED'})),
     ].sort((a, b) => {
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -89,6 +92,9 @@ export const useInvoiceList = () => {
         pendingInvoices, transactions,
         payModalVisible, payAccounts, loadingAcc,
         handlePay, executePay, handleCancel,
-        closePayModal: () => {setPayModalVisible(false); setPayingId(null);},
+        closePayModal: () => {
+            setPayModalVisible(false);
+            setPayingId(null);
+        },
     };
 };

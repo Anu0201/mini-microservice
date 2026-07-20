@@ -1,9 +1,10 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Alert, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
 import {CURRENCIES, CURRENCY_SIGN, CURRENCY_BG, COLORS, MAX_AMOUNT_DIGITS} from '../../../constants';
 import {ClockIcon} from '../../../components/icons';
+import {useInvoiceList} from '../../invoice/hooks/useInvoiceList'; // өөрийн зам руу тохируулна
 
 const KEYS = [
     ['1', '2', '3'],
@@ -12,10 +13,15 @@ const KEYS = [
     ['000', '0', '⌫'],
 ];
 
-
 export default function HomeScreen({onInvoice, onSend, onHistory}) {
     const [rawAmount, setRawAmount] = useState('0');
     const [currency, setCurrency] = useState('MNT');
+    const {pendingInvoices, load} = useInvoiceList();
+
+    useEffect(() => {
+        load();
+    }, [load]);
+
     const press = (key) => {
         setRawAmount((prev) => {
             if (key === '⌫') return prev.length <= 1 ? '0' : prev.slice(0, -1);
@@ -44,19 +50,27 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
         return true;
     };
 
-    const handleInvoice = () => { if (validate()) onInvoice(Number(rawAmount), currency); };
-    const handleSend = () => { if (validate()) onSend(Number(rawAmount), currency); };
+    const handleInvoice = () => {
+        if (validate()) onInvoice(Number(rawAmount), currency);
+    };
+    const handleSend = () => {
+        if (validate()) onSend(Number(rawAmount), currency);
+    };
 
     const display = Number(rawAmount).toLocaleString();
     const sign = currency ? CURRENCY_SIGN[currency] : '';
+    const hasPending = pendingInvoices.length > 0;
 
     return (
         <View style={styles.container}>
             <SafeAreaView edges={['top']}>
                 <View style={styles.topBar}>
                     <View style={{flex: 1}}/>
-                    <TouchableOpacity style={styles.iconBtn} onPress={onHistory}>
-                        <ClockIcon size={22} color="#0284c7"/>
+                    <TouchableOpacity
+                        style={[styles.iconBtn, hasPending && styles.iconBtnActive]}
+                        onPress={onHistory}
+                    >
+                        <ClockIcon size={22} color={hasPending ? '#d97706' : '#0284c7'}/>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -86,11 +100,12 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
             </View>
 
 
-<View style={styles.numpad}>
+            <View style={styles.numpad}>
                 {KEYS.map((row, rowIndex) => (
                     <View key={rowIndex} style={styles.row}>
                         {row.map((keyLabel) => (
-                            <TouchableOpacity key={keyLabel} style={styles.key} onPress={() => press(keyLabel)} activeOpacity={0.6}>
+                            <TouchableOpacity key={keyLabel} style={styles.key} onPress={() => press(keyLabel)}
+                                              activeOpacity={0.6}>
                                 <Text style={keyLabel === '⌫' ? styles.backKey : styles.keyText}>{keyLabel}</Text>
                             </TouchableOpacity>
                         ))}
@@ -134,6 +149,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f9ff',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    iconBtnActive: {
+        backgroundColor: '#fffbeb',
     },
     iconEmoji: {fontSize: 18},
     currencyRow: {
