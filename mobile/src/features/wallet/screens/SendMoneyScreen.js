@@ -3,7 +3,7 @@ import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-n
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS, MIN_PHONE_LOOKUP_LENGTH, EXCHANGE_RATE_FRACTION_DIGITS, AMOUNT_FRACTION_DIGITS} from '../../../constants';
-import {initials, maskName} from '../../../utils/helpers';
+import {initials, maskName, avatarColor} from '../../../utils/helpers';
 import {PhoneIcon} from '../../../components/icons';
 import {useSendMoney} from '../hooks/useSendMoney';
 
@@ -67,7 +67,7 @@ export default function SendMoneyScreen({
                             <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
                             <Text style={styles.userCardName}>{maskName(receiverUser.username)}</Text>
                         </View>
-                        <View style={styles.userAvatar}>
+                        <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username)}]}>
                             <Text style={styles.userAvatarText}>{initials(receiverUser.username)}</Text>
                         </View>
                     </View>

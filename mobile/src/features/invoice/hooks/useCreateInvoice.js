@@ -64,5 +64,28 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
         }
     };
 
-    return {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit, receiverUser, lookupLoading, lookupPhone};
+    const handleSplitSubmit = async ({totalAmount, peopleCount, phones, description}) => {
+        if (!totalAmount || totalAmount <= 0) return Alert.alert('Алдаа', 'Нийт дүн оруулна уу');
+        if (!peopleCount || peopleCount < 2) return Alert.alert('Алдаа', 'Хүний тоо оруулна уу');
+        if (!selectedAccountId) return Alert.alert('Алдаа', 'Хүлээн авах дансаа сонгоно уу');
+        const filledPhones = phones.filter(p => p.trim());
+        if (filledPhones.length === 0) return Alert.alert('Алдаа', 'Утасны дугаар оруулна уу');
+
+        const perPerson = Math.ceil(totalAmount / peopleCount);
+        setSending(true);
+        try {
+            await Promise.all(
+                filledPhones.map(phone =>
+                    sendInvoice({receiverPhone: phone.trim(), amount: perPerson, currency, description, receiverAccountId: selectedAccountId})
+                )
+            );
+            Alert.alert('Амжилттай', `${filledPhones.length} хүнд ${perPerson.toLocaleString()} ${currency} нэхэмжлэгдлээ`, [{text: 'OK', onPress: onSuccess}]);
+        } catch (error) {
+            Alert.alert('Алдаа', error.response?.data?.message || 'Илгээж чадсангүй');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit, handleSplitSubmit, receiverUser, lookupLoading, lookupPhone};
 };

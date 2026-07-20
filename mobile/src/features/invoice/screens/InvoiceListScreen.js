@@ -3,14 +3,12 @@ import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spinner, Text } from '@gluestack-ui/themed';
 import { CURRENCY_SIGN } from '../../../constants';
-import { initials } from '../../../utils/helpers';
+import { initials, avatarColor } from '../../../utils/helpers';
 import { useInvoiceList } from '../hooks/useInvoiceList';
 
 function Avatar({ name }) {
-  const colors = ['#7c3aed', '#0891b2', '#16a34a', '#dc2626', '#d97706', '#0284c7'];
-  const idx = name ? name.charCodeAt(0) % colors.length : 0;
   return (
-    <View style={[styles.avatar, { backgroundColor: colors[idx] }]}>
+    <View style={[styles.avatar, { backgroundColor: avatarColor(name) }]}>
       <Text style={styles.avatarText}>{initials(name)}</Text>
     </View>
   );
@@ -27,11 +25,11 @@ function formatDate(str) {
   return `${yy}/${mm}/${dd} ${hh}:${mi}`;
 }
 
-function InvoiceRow({ item, onPay, onCancel }) {
+function InvoiceRow({ item, onSelect }) {
   const name = item.senderName || 'Илгээгч';
   const sign = CURRENCY_SIGN[item.currency] ?? item.currency;
   return (
-    <View style={styles.invoiceHighlightRow}>
+    <TouchableOpacity style={styles.invoiceHighlightRow} onPress={() => onSelect(item)} activeOpacity={0.7}>
       <Avatar name={name} />
       <View style={styles.txInfo}>
         <Text style={styles.txName}>{name}</Text>
@@ -40,34 +38,66 @@ function InvoiceRow({ item, onPay, onCancel }) {
       </View>
       <View style={styles.txRight}>
         <Text style={styles.invoiceAmount}>{Number(item.amount).toLocaleString()}{sign}</Text>
-        <View style={styles.invoiceActions}>
-          <TouchableOpacity style={styles.payChip} onPress={() => onPay(item.id)}>
-            <Text style={styles.payChipText}>Төлөх</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onCancel(item.id)}>
-            <Text style={styles.cancelLink}>Цуцлах</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.invoiceChevron}>›</Text>
       </View>
-    </View>
+    </TouchableOpacity>
+  );
+}
+
+function InvoiceDetailModal({ item, onClose, onPay, onCancel }) {
+  if (!item) return null;
+  const name = item.senderName || 'Илгээгч';
+  const sign = CURRENCY_SIGN[item.currency] ?? item.currency;
+  return (
+    <Modal visible={!!item} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.detailHeader}>
+          <Avatar name={name} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.detailName}>{name}</Text>
+            <Text style={styles.detailMeta}>{formatDate(item.createdAt)}</Text>
+          </View>
+        </View>
+        <Text style={styles.detailAmount}>{Number(item.amount).toLocaleString()} {sign}</Text>
+        {item.description ? <Text style={styles.detailDesc}>{item.description}</Text> : null}
+        <TouchableOpacity
+          style={styles.detailPayBtn}
+          onPress={() => { onClose(); onPay(item.id); }}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnPayText}>Төлөх</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btnCancelInline} onPress={() => { onClose(); onCancel(item.id); }}>
+          <Text style={styles.btnCancelText}>Цуцлах</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 }
 
 function TransactionRow({ item }) {
-  const isSent = item._isSent;
-  const name   = isSent ? (item.receiverName || 'Хүлээн авагч') : (item.senderName || 'Илгээгч');
-  const sign   = CURRENCY_SIGN[item.currency] ?? item.currency;
-  const color  = isSent ? '#ef4444' : '#16a34a';
-  const prefix = isSent ? '-' : '+';
-  const label  = item.invoiceNumber?.startsWith('INV-') ? 'нэхэмжлэл' : 'гүйлгээ';
+  const isSent    = item._isSent;
+  const isPending = isSent && item.status === 'UNPAID';
+  const name      = isSent ? (item.receiverName || 'Хүлээн авагч') : (item.senderName || 'Илгээгч');
+  const sign      = CURRENCY_SIGN[item.currency] ?? item.currency;
+  const isInvoice = item.invoiceNumber?.startsWith('INV-');
+  const label     = isInvoice ? 'нэхэмжлэл' : 'гүйлгээ';
+  const prefix    = isPending ? ''
+      : isSent && isInvoice ? '+'
+      : !isSent && isInvoice ? '-'
+      : isSent ? '-' : '+';
+  const color     = isPending ? '#94a3b8' : prefix === '+' ? '#16a34a' : '#ef4444';
 
   return (
     <View style={styles.txRow}>
       <Avatar name={name} />
       <View style={styles.txInfo}>
-        <Text style={styles.txName}>{name}</Text>
+        <Text style={[styles.txName, isPending && styles.txNameMuted]}>{name}</Text>
         <Text style={styles.txMeta}>{formatDate(item.createdAt)} - SocialPay {label}</Text>
         {item.description ? <Text style={styles.txDesc}>{item.description}</Text> : null}
+        {isPending && <Text style={styles.pendingLabel}>Хүлээгдэж байна</Text>}
       </View>
       <Text style={[styles.txAmount, { color }]}>
         {prefix}{Number(item.amount).toLocaleString()}{sign}
@@ -148,6 +178,8 @@ export default function InvoiceListScreen({ onBack }) {
     handlePay, executePay, handleCancel, closePayModal,
   } = useInvoiceList();
 
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
   if (!fetched && !loading) load();
 
   return (
@@ -175,7 +207,7 @@ export default function InvoiceListScreen({ onBack }) {
             <>
               <Text style={styles.sectionLabel}>Ирсэн нэхэмжлэл</Text>
               {pendingInvoices.map((item) => (
-                <InvoiceRow key={item.id} item={item} onPay={handlePay} onCancel={handleCancel} />
+                <InvoiceRow key={item.id} item={item} onSelect={setSelectedInvoice} />
               ))}
             </>
           )}
@@ -197,6 +229,12 @@ export default function InvoiceListScreen({ onBack }) {
         </ScrollView>
       )}
 
+      <InvoiceDetailModal
+        item={selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+        onPay={handlePay}
+        onCancel={handleCancel}
+      />
       <PayModal
         visible={payModalVisible}
         accounts={payAccounts}
@@ -242,15 +280,14 @@ const styles = StyleSheet.create({
     borderColor: '#fef3c7',
   },
   invoiceAmount: { fontSize: 15, fontWeight: '700', color: '#d97706' },
-  invoiceActions: { flexDirection: 'row', gap: 8, marginTop: 6, alignItems: 'center' },
-  payChip: {
-    backgroundColor: '#0891b2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  payChipText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  cancelLink: { fontSize: 11, color: '#94a3b8' },
+  invoiceChevron: { fontSize: 20, color: '#cbd5e1', marginTop: 4 },
+  detailHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  detailName: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
+  detailMeta: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  detailAmount: { fontSize: 32, fontWeight: '800', color: '#0f172a', marginBottom: 8 },
+  detailDesc: { fontSize: 14, color: '#64748b', marginBottom: 20 },
+  detailPayBtn: { backgroundColor: '#0891b2', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
+  btnCancelInline: { alignItems: 'center', paddingVertical: 14 },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -269,6 +306,8 @@ const styles = StyleSheet.create({
   txName: { fontSize: 15, fontWeight: '600', color: '#0f172a', marginBottom: 2 },
   txMeta: { fontSize: 12, color: '#94a3b8' },
   txDesc: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  txNameMuted: { color: '#94a3b8' },
+  pendingLabel: { fontSize: 11, color: '#94a3b8', marginTop: 3 },
   txRight: { alignItems: 'flex-end' },
   txAmount: { fontSize: 15, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: 80 },
