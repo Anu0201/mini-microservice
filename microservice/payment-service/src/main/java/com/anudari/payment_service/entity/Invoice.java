@@ -38,6 +38,9 @@ public class Invoice extends Audit {
     @Column(name = "receiver_account_id")
     private Long receiverAccountId;
 
+    @Column(name = "idempotency_key", length = 128)
+    private String idempotencyKey;
+
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 

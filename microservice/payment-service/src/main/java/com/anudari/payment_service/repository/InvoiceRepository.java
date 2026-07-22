@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
@@ -17,4 +18,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.items")
     List<Invoice> findAllWithItems();
+
+    Optional<Invoice> findFirstBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(Long senderId, String idempotencyKey);
+
+    List<Invoice> findBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(Long senderId, String idempotencyKey);
 }

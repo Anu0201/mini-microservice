@@ -8,6 +8,7 @@ import com.anudari.payment_service.dto.PayInvoiceRequest;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.payment_service.dto.SendMoneyRequest;
 import com.anudari.payment_service.dto.TransferResponse;
+import com.anudari.payment_service.dto.SendSplitInvoiceRequest;
 import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.service.InvoiceService;
 import jakarta.validation.Valid;
@@ -73,8 +74,9 @@ public class InvoiceController {
     @PostMapping("/send")
     public ResponseEntity<InvoiceResponse> sendUserInvoice(
             @Valid @RequestBody SendInvoiceRequest request,
-            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.sendUserInvoice(request, senderId));
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId,
+            @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.sendUserInvoice(request, senderId, idempotencyKey));
     }
 
     @PostMapping("/transfer")
@@ -82,6 +84,14 @@ public class InvoiceController {
             @Valid @RequestBody SendMoneyRequest request,
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
         return ResponseEntity.ok(invoiceService.sendMoney(request, senderId));
+    }
+
+    @PostMapping("/split")
+    public ResponseEntity<List<InvoiceResponse>> splitInvoice(
+            @Valid @RequestBody SendSplitInvoiceRequest request,
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId,
+            @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.splitInvoice(request, senderId, idempotencyKey));
     }
 
     @GetMapping("/user")

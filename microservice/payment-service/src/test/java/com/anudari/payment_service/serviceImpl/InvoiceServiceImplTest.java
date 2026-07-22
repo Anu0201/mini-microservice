@@ -6,11 +6,13 @@ import com.anudari.payment_service.config.AppProperties;
 import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceItemRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
+import com.anudari.payment_service.dto.SendSplitInvoiceRequest;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
 import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.feign.AccountInfo;
+import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
@@ -227,6 +229,92 @@ class InvoiceServiceImplTest {
                 .isInstanceOf(IllegalStateException.class);
 
         verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void sendUserInvoice_returnsExistingInvoiceForRepeatedIdempotencyKey() {
+        Invoice existing = invoiceWithId(99L, 101L, "UNPAID");
+        existing.setSenderId(7L);
+        existing.setIdempotencyKey("send-key-1");
+        when(invoiceRepository.findFirstBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(7L, "send-key-1"))
+                .thenReturn(Optional.of(existing));
+
+        InvoiceResponse response = invoiceService.sendUserInvoice(
+                new com.anudari.payment_service.dto.SendInvoiceRequest(
+                        "99112233",
+                        BigDecimal.TEN,
+                        "MNT",
+                        "desc",
+                        555L
+                ),
+                7L,
+                "send-key-1"
+        );
+
+        assertThat(response.getId()).isEqualTo(99L);
+        verify(invoiceRepository, never()).save(any(Invoice.class));
+        verify(userServiceClient, never()).getUserByPhone(any(), any());
+    }
+
+    @Test
+    void splitInvoice_splitsTotalAcrossReceiversAndSavesEachInvoice() {
+        when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(userServiceClient.getUserByPhone("99110011", "secret"))
+                .thenReturn(new UserIdResponse(101L, "u1", null, List.of("USER")));
+        when(userServiceClient.getUserByPhone("99110022", "secret"))
+                .thenReturn(new UserIdResponse(102L, "u2", null, List.of("USER")));
+        when(userServiceClient.getUserByPhone("99110033", "secret"))
+                .thenReturn(new UserIdResponse(103L, "u3", null, List.of("USER")));
+        when(invoiceRepository.save(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<InvoiceResponse> responses = invoiceService.splitInvoice(
+                new SendSplitInvoiceRequest(
+                        List.of("99110011", "99110022", "99110033"),
+                        new BigDecimal("10.00"),
+                        "MNT",
+                        "split",
+                        555L
+                ),
+                7L,
+                "split-key-1"
+        );
+
+        assertThat(responses).hasSize(3);
+        assertThat(responses).extracting(InvoiceResponse::getAmount)
+                .containsExactly(new BigDecimal("3.34"), new BigDecimal("3.33"), new BigDecimal("3.33"));
+        verify(invoiceRepository, times(3)).save(any(Invoice.class));
+    }
+
+    @Test
+    void splitInvoice_returnsExistingInvoicesForRepeatedIdempotencyKey() {
+        Invoice existingA = invoiceWithId(11L, 1001L, "UNPAID");
+        existingA.setSenderId(7L);
+        existingA.setIdempotencyKey("split-key-1");
+        existingA.setAmount(new BigDecimal("3.34"));
+
+        Invoice existingB = invoiceWithId(12L, 1002L, "UNPAID");
+        existingB.setSenderId(7L);
+        existingB.setIdempotencyKey("split-key-1");
+        existingB.setAmount(new BigDecimal("3.33"));
+
+        when(invoiceRepository.findBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(7L, "split-key-1"))
+                .thenReturn(List.of(existingA, existingB));
+
+        List<InvoiceResponse> responses = invoiceService.splitInvoice(
+                new SendSplitInvoiceRequest(
+                        List.of("99110011", "99110022"),
+                        new BigDecimal("6.67"),
+                        "MNT",
+                        "split",
+                        555L
+                ),
+                7L,
+                "split-key-1"
+        );
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses).extracting(InvoiceResponse::getId).containsExactly(11L, 12L);
+        verify(invoiceRepository, never()).save(any(Invoice.class));
     }
 
     private Invoice invoiceWithId(Long id, Long userId, String status) {

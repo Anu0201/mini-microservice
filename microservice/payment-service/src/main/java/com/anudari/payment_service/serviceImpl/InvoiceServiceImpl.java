@@ -6,6 +6,7 @@ import com.anudari.payment_service.dto.CreateInvoiceRequest;
 import com.anudari.payment_service.dto.InvoiceResponse;
 import com.anudari.payment_service.dto.SendInvoiceRequest;
 import com.anudari.payment_service.dto.SendMoneyRequest;
+import com.anudari.payment_service.dto.SendSplitInvoiceRequest;
 import com.anudari.payment_service.dto.TransferResponse;
 import com.anudari.common.constant.InvoiceStatus;
 import com.anudari.payment_service.entity.Invoice;
@@ -83,7 +84,62 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId) {
+    public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId, String idempotencyKey) {
+        String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+        if (normalizedIdempotencyKey != null) {
+            Optional<Invoice> existing = invoiceRepository.findFirstBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(senderId, normalizedIdempotencyKey);
+            if (existing.isPresent()) {
+                return InvoiceResponse.from(existing.get());
+            }
+        }
+        Invoice invoice = buildUserInvoice(request, senderId, normalizedIdempotencyKey);
+        return InvoiceResponse.from(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    @Transactional
+    public List<InvoiceResponse> splitInvoice(SendSplitInvoiceRequest request, Long senderId, String idempotencyKey) {
+        String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+        if (normalizedIdempotencyKey != null) {
+            List<Invoice> existing = invoiceRepository.findBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(senderId, normalizedIdempotencyKey);
+            if (!existing.isEmpty()) {
+                return existing.stream().map(InvoiceResponse::from).toList();
+            }
+        }
+
+        List<String> phones = request.phones().stream()
+                .map(String::trim)
+                .filter(phone -> !phone.isEmpty())
+                .toList();
+
+        if (phones.isEmpty()) {
+            throw new IllegalArgumentException("At least one receiver phone is required");
+        }
+
+        BigDecimal totalAmount = request.totalAmount().setScale(2, RoundingMode.HALF_UP);
+        long totalCents = totalAmount.movePointRight(2).longValueExact();
+        int receiversCount = phones.size();
+        long baseCents = totalCents / receiversCount;
+        long remainderCents = totalCents % receiversCount;
+
+        return java.util.stream.IntStream.range(0, receiversCount)
+                .mapToObj(index -> {
+                    long amountCents = baseCents + (index < remainderCents ? 1 : 0);
+                    BigDecimal splitAmount = BigDecimal.valueOf(amountCents, 2);
+                    SendInvoiceRequest splitRequest = new SendInvoiceRequest(
+                            phones.get(index),
+                            splitAmount,
+                            request.currency(),
+                            request.description(),
+                            request.receiverAccountId()
+                    );
+                    Invoice invoice = buildUserInvoice(splitRequest, senderId, normalizedIdempotencyKey);
+                    return InvoiceResponse.from(invoiceRepository.save(invoice));
+                })
+                .toList();
+    }
+
+    private Invoice buildUserInvoice(SendInvoiceRequest request, Long senderId, String idempotencyKey) {
         UserIdResponse receiver;
         try {
             receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
@@ -103,10 +159,19 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .currency(request.currency() != null ? request.currency() : "MNT")
                 .description(request.description())
                 .receiverAccountId(request.receiverAccountId())
+                .idempotencyKey(idempotencyKey)
                 .status(new InvoiceStatus.Unpaid())
                 .build();
 
-        return InvoiceResponse.from(invoiceRepository.save(invoice));
+        return invoice;
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null) {
+            return null;
+        }
+        String trimmed = idempotencyKey.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Async("asyncExecutor")
@@ -174,7 +239,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new NoSuchElementException("Account not found: " + accountId);
         }
 
-        // Currency conversion: invoice currency → account currency
         BigDecimal debitAmount;
         String invoiceCurrency = invoice.getCurrency();
         String accountCurrency = account.currency().name();
@@ -195,7 +259,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new IllegalStateException("Insufficient balance to pay this invoice");
         }
 
-        // Credit the invoice sender's account if specified
         if (invoice.getReceiverAccountId() != null && invoice.getSenderId() != null) {
             userServiceClient.creditAccount(
                     new CreditRequest(invoice.getReceiverAccountId(), invoice.getSenderId(), invoice.getAmount()),
@@ -247,7 +310,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Receiver has no " + currency + " account"));
 
-        // Convert amount to sender account's currency if they differ
         AccountInfo senderAccount;
         try {
             senderAccount = userServiceClient.getAccountById(request.senderAccountId(), "true");
