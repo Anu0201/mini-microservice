@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     submitBtn: {
-        backgroundColor: COLORS.accent,
+        backgroundColor: COLORS.primary,
         borderRadius: 28,
         height: 56,
         alignItems: 'center',
@@ -101,5 +101,5 @@ const styles = StyleSheet.create({
     submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
     linkRow: {flexDirection: 'row', justifyContent: 'center'},
     linkText: {fontSize: 14, color: COLORS.secondary},
-    linkBold: {fontSize: 14, color: COLORS.accent, fontWeight: '700'},
+    linkBold: {fontSize: 14, color: COLORS.primaryLight, fontWeight: '700'},
 });

@@ -142,7 +142,7 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
 const styles = StyleSheet.create({
     container: {flex: 1, backgroundColor: '#f8fafc'},
     profileHeader: {
-        backgroundColor: COLORS.accent,
+        backgroundColor: COLORS.primary,
         paddingBottom: 28,
     },
     profileHeaderContent: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 1,
     },
-    newAccountTitle: {fontSize: 15, fontWeight: '600', color: '#0f172a', marginBottom: 14},
+    newAccountTitle: {fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 14},
     currencyRow: {
         justifyContent: 'center',
         alignItems: 'center',
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     },
     currencyBtnText: {fontSize: 13, fontWeight: '600', color: COLORS.secondary},
     currencyBtnTextActive: {color: '#fff'},
-    openBtn: {backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 14, alignItems: 'center'},
+    openBtn: {backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center'},
     openBtnDisabled: {backgroundColor: '#cbd5e1'},
     openBtnText: {color: '#fff', fontWeight: '700', fontSize: 15},
 });

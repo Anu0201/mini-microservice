@@ -1,6 +1,10 @@
+import {useMemo, useRef, useState} from 'react';
 import {
     FlatList,
+    Animated,
+    Dimensions,
     Modal,
+    PanResponder,
     StyleSheet,
     TextInput,
     TouchableOpacity,
@@ -70,12 +74,62 @@ function TxCard({item}) {
 export default function AccountDetailScreen({accountId, onBack}) {
     const insets = useSafeAreaInsets();
     const {
-        account, transactions, loading, fetched, load,
+        account, accounts, activeIndex, canGoPrev, canGoNext, goToPrevAccount, goToNextAccount,
+        transactions, loading,
         modal, setModal, amount, setAmount, txLoading,
         openModal, handleTransaction,
     } = useAccountDetail(accountId);
+    const translateX = useRef(new Animated.Value(0)).current;
+    const screenWidth = Dimensions.get('window').width;
+    const swipeThreshold = screenWidth * 0.18;
 
-    if (!fetched && !loading) load();
+    const panResponder = useMemo(() => PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+            Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        onPanResponderMove: (_, gestureState) => {
+            translateX.setValue(gestureState.dx);
+        },
+        onPanResponderRelease: (_, gestureState) => {
+            if (Math.abs(gestureState.dx) < swipeThreshold) {
+                Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
+                return;
+            }
+
+            if (gestureState.dx < 0) {
+                if (!canGoNext) {
+                    Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
+                    return;
+                }
+                Animated.timing(translateX, {
+                    toValue: -screenWidth,
+                    duration: 180,
+                    useNativeDriver: true,
+                }).start(({finished}) => {
+                    if (!finished) return;
+                    goToNextAccount();
+                    translateX.setValue(0);
+                });
+                return;
+            }
+
+            if (!canGoPrev) {
+                Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
+                return;
+            }
+            Animated.timing(translateX, {
+                toValue: screenWidth,
+                duration: 180,
+                useNativeDriver: true,
+            }).start(({finished}) => {
+                if (!finished) return;
+                goToPrevAccount();
+                translateX.setValue(0);
+            });
+        },
+        onPanResponderTerminate: () => {
+            Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
+        },
+    }), [canGoNext, canGoPrev, goToNextAccount, goToPrevAccount, screenWidth, swipeThreshold, translateX]);
 
     const currencySymbol = account ? (CURRENCY_SIGN[account.currency] ?? account.currency) : '';
     const isPrefix = isPrefixCurrency(account?.currency);
@@ -99,72 +153,74 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
     return (
         <View style={styles.container}>
-            <View style={[styles.header, {paddingTop: insets.top}]}>
-                {GLASS ? (
-                    <LiquidGlassView
-                        style={styles.glassNav}
-                        effect="regular"
-                        colorScheme="system"
-                    >
-                        {headerContent}
-                    </LiquidGlassView>
-                ) : (
-                    headerContent
-                )}
+            <Animated.View style={[styles.contentWrap, {transform: [{translateX}]}]} {...panResponder.panHandlers}>
+                <View style={[styles.header, {paddingTop: insets.top}]}>
+                    {GLASS ? (
+                        <LiquidGlassView
+                            style={styles.glassNav}
+                            effect="regular"
+                            colorScheme="system"
+                        >
+                            {headerContent}
+                        </LiquidGlassView>
+                    ) : (
+                        headerContent
+                    )}
 
-                {loading || !account ? null : (
-                    <View style={styles.balanceArea}>
-                        <View
-                            style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
-                            <Text style={styles.currencyTagText}>{account.currency}</Text>
-                        </View>
-                        <Text style={styles.accountNumber}>{account.accountNumber}</Text>
-                        <Text style={styles.balanceText}>{balanceDisplay}</Text>
-
-                        <View style={styles.actionRow}>
-                            <TouchableOpacity
-                                style={styles.actionBtn}
-                                onPress={() => openModal('deposit')}
-                                activeOpacity={0.85}
-                            >
-                                <DepositIcon size={20} color={COLORS.primary}/>
-                                <Text style={styles.actionBtnText}>Орлого</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.actionBtn, styles.actionBtnOutline]}
-                                onPress={() => openModal('withdraw')}
-                                activeOpacity={0.85}
-                            >
-                                <WithdrawIcon size={20} color="#fff"/>
-                                <Text style={[styles.actionBtnText, styles.actionBtnTextOutline]}>
-                                    Зарлага
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-            </View>
-
-            {loading || !account ? (
-                <View style={styles.center}>
-                    <Spinner size="large" color={COLORS.primary}/>
-                </View>
-            ) : (
-                <>
-                    <Text style={styles.sectionLabel}>ГҮЙЛГЭЭНИЙ ТҮҮХ</Text>
-                    <FlatList
-                        data={transactions}
-                        keyExtractor={(item) => String(item.transactionId)}
-                        renderItem={({item}) => <TxCard item={item}/>}
-                        ListEmptyComponent={
-                            <View style={styles.emptyWrap}>
-                                <Text style={styles.emptyText}>Гүйлгээний түүх байхгүй байна</Text>
+                    {loading || !account ? null : (
+                        <View style={styles.balanceArea}>
+                            <View
+                                style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
+                                <Text style={styles.currencyTagText}>{account.currency}</Text>
                             </View>
-                        }
-                        contentContainerStyle={{paddingBottom: 24}}
-                    />
-                </>
-            )}
+                            <Text style={styles.accountNumber}>{account.accountNumber}</Text>
+                            <Text style={styles.balanceText}>{balanceDisplay}</Text>
+
+                            <View style={styles.actionRow}>
+                                <TouchableOpacity
+                                    style={styles.actionBtn}
+                                    onPress={() => openModal('deposit')}
+                                    activeOpacity={0.85}
+                                >
+                                    <DepositIcon size={20} color={COLORS.primary}/>
+                                    <Text style={styles.actionBtnText}>Орлого</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, styles.actionBtnOutline]}
+                                    onPress={() => openModal('withdraw')}
+                                    activeOpacity={0.85}
+                                >
+                                    <WithdrawIcon size={20} color="#fff"/>
+                                    <Text style={[styles.actionBtnText, styles.actionBtnTextOutline]}>
+                                        Зарлага
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+                </View>
+
+                {loading || !account ? (
+                    <View style={styles.center}>
+                        <Spinner size="large" color={COLORS.primary}/>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.sectionLabel}>ГҮЙЛГЭЭНИЙ ТҮҮХ</Text>
+                        <FlatList
+                            data={transactions}
+                            keyExtractor={(item) => String(item.transactionId)}
+                            renderItem={({item}) => <TxCard item={item}/>}
+                            ListEmptyComponent={
+                                <View style={styles.emptyWrap}>
+                                    <Text style={styles.emptyText}>Гүйлгээний түүх байхгүй байна</Text>
+                                </View>
+                            }
+                            contentContainerStyle={{paddingBottom: 24}}
+                        />
+                    </>
+                )}
+            </Animated.View>
 
             <Modal
                 visible={!!modal}
@@ -224,6 +280,7 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
 const styles = StyleSheet.create({
     container: {flex: 1, backgroundColor: '#f8fafc'},
+    contentWrap: {flex: 1},
 
     header: {backgroundColor: COLORS.primary, paddingBottom: 28},
     glassNav: {marginHorizontal: 12, marginTop: 8, borderRadius: 16, overflow: 'hidden'},
@@ -239,6 +296,15 @@ const styles = StyleSheet.create({
     headerTitleGlass: {color: 'rgba(255,255,255,0.95)'},
 
     balanceArea: {alignItems: 'center', paddingHorizontal: 20, paddingTop: 8},
+    accountSwipeMeta: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    accountSwipeHint: {fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500'},
+    accountSwipeCounter: {fontSize: 12, color: '#fff', fontWeight: '700'},
     currencyTag: {
         paddingHorizontal: 12, paddingVertical: 4,
         borderRadius: 12, marginBottom: 8,

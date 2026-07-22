@@ -16,7 +16,8 @@ export const CURRENCY_FALLBACK_BG = '#6b7280';
 
 export const COLORS = {
     primary: '#4635B1',
-    accent: '#B771E5',
+    primaryLight: '#7A73D1',
+    accent: '#B771E1',
     accentLight: '#f0f9ff',
     muted: '#94a3b8',
     secondary: '#64748b',

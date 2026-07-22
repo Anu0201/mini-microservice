@@ -322,7 +322,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                     <Text style={styles.sectionLabel}>Тайлбар</Text>
                     <TextInput
                         style={styles.descInput}
-                        placeholder="Нэхэмжлэлийн тайлбар (заавал биш)"
+                        placeholder="Тайлбар"
                         placeholderTextColor={COLORS.muted}
                         value={description}
                         onChangeText={setDescription}

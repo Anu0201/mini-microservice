@@ -1,9 +1,12 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
-import {getAccount, deposit, withdraw, getTransactions} from '../../../services/accountApi';
+import {getAccount, deposit, withdraw, getTransactions, getMyAccounts} from '../../../services/accountApi';
+import {getMe} from '../../../services/userApi';
 
 export const useAccountDetail = (accountId) => {
     const [account, setAccount] = useState(null);
+    const [accounts, setAccounts] = useState([]);
+    const [activeAccountId, setActiveAccountId] = useState(accountId);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
@@ -11,12 +14,33 @@ export const useAccountDetail = (accountId) => {
     const [amount, setAmount] = useState('');
     const [txLoading, setTxLoading] = useState(false);
 
-    const load = useCallback(async () => {
+    useEffect(() => {
+        setActiveAccountId(accountId);
+    }, [accountId]);
+
+    const loadAccounts = useCallback(async () => {
+        try {
+            const meResponse = await getMe();
+            const accountsResponse = await getMyAccounts(meResponse.data.userId);
+            setAccounts(accountsResponse.data);
+            setActiveAccountId((current) => {
+                if (current && accountsResponse.data.some((item) => item.accountId === current)) {
+                    return current;
+                }
+                return accountsResponse.data[0]?.accountId ?? current;
+            });
+        } catch {
+            Alert.alert('Алдаа', 'Дансны жагсаалт татаж чадсангүй');
+        }
+    }, []);
+
+    const load = useCallback(async (targetAccountId = activeAccountId) => {
+        if (!targetAccountId) return;
         setLoading(true);
         try {
             const [accountResponse, transactionsResponse] = await Promise.all([
-                getAccount(accountId),
-                getTransactions(accountId),
+                getAccount(targetAccountId),
+                getTransactions(targetAccountId),
             ]);
             setAccount(accountResponse.data);
             setTransactions(transactionsResponse.data);
@@ -26,7 +50,15 @@ export const useAccountDetail = (accountId) => {
         } finally {
             setLoading(false);
         }
-    }, [accountId]);
+    }, [activeAccountId]);
+
+    useEffect(() => {
+        loadAccounts();
+    }, [loadAccounts]);
+
+    useEffect(() => {
+        load();
+    }, [load]);
 
     const openModal = (type) => {
         setAmount('');
@@ -41,8 +73,8 @@ export const useAccountDetail = (accountId) => {
         }
         setTxLoading(true);
         try {
-            if (modal === 'deposit') await deposit(accountId, parsed);
-            else await withdraw(accountId, parsed);
+            if (modal === 'deposit') await deposit(activeAccountId, parsed);
+            else await withdraw(activeAccountId, parsed);
             setModal(null);
             setAmount('');
             await load();
@@ -53,8 +85,27 @@ export const useAccountDetail = (accountId) => {
         }
     };
 
+    const activeIndex = useMemo(
+        () => accounts.findIndex((item) => item.accountId === activeAccountId),
+        [accounts, activeAccountId]
+    );
+
+    const goToIndex = useCallback((nextIndex) => {
+        if (accounts.length === 0) return false;
+        const wrappedIndex = ((nextIndex % accounts.length) + accounts.length) % accounts.length;
+        setModal(null);
+        setAmount('');
+        setActiveAccountId(accounts[wrappedIndex].accountId);
+        return true;
+    }, [accounts]);
+
     return {
-        account, transactions, loading, fetched, load,
+        account, accounts, activeIndex,
+        canGoPrev: accounts.length > 1,
+        canGoNext: accounts.length > 1,
+        goToPrevAccount: () => goToIndex(activeIndex - 1),
+        goToNextAccount: () => goToIndex(activeIndex + 1),
+        transactions, loading, fetched, load,
         modal, setModal, amount, setAmount, txLoading,
         openModal, handleTransaction,
     };
