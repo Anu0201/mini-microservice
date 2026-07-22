@@ -34,7 +34,7 @@ export const useAppNavigation = () => {
     const openInvoice = (amount, currency) => setActionScreen({action: 'invoice', amount, currency});
     const closeAction = () => setActionScreen(null);
 
-    const isSubScreen = !!actionScreen || !!selectedAccount || showHistory;
+    const isSubScreen = !!actionScreen || showHistory;
     const showTabBar = !!user && !isSubScreen;
 
     return {

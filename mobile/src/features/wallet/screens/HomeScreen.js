@@ -1,8 +1,8 @@
-import {useEffect, useState} from 'react';
-import {Alert, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useEffect, useRef, useState} from 'react';
+import {Alert, Animated, Easing, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
-import {CURRENCIES, CURRENCY_SIGN, CURRENCY_BG, COLORS, MAX_AMOUNT_DIGITS} from '../../../constants';
+import {CURRENCIES, CURRENCY_SIGN, COLORS, MAX_AMOUNT_DIGITS} from '../../../constants';
 import {ClockIcon} from '../../../components/icons';
 import {useInvoiceList} from '../../invoice/hooks/useInvoiceList'; // өөрийн зам руу тохируулна
 
@@ -16,11 +16,28 @@ const KEYS = [
 export default function HomeScreen({onInvoice, onSend, onHistory}) {
     const [rawAmount, setRawAmount] = useState('0');
     const [currency, setCurrency] = useState('MNT');
+    const [currencyTrackWidth, setCurrencyTrackWidth] = useState(0);
     const {pendingInvoices, load} = useInvoiceList();
+    const indicatorX = useRef(new Animated.Value(0)).current;
+
+    const selectedCurrencyIndex = Math.max(0, CURRENCIES.indexOf(currency));
+    const indicatorWidth = currencyTrackWidth > 0
+        ? (currencyTrackWidth - 6) / CURRENCIES.length
+        : 0;
 
     useEffect(() => {
         load();
     }, [load]);
+
+    useEffect(() => {
+        if (!indicatorWidth) return;
+        Animated.timing(indicatorX, {
+            toValue: selectedCurrencyIndex * indicatorWidth,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+        }).start();
+    }, [indicatorWidth, selectedCurrencyIndex, indicatorX]);
 
     const press = (key) => {
         setRawAmount((prev) => {
@@ -76,21 +93,37 @@ export default function HomeScreen({onInvoice, onSend, onHistory}) {
             </SafeAreaView>
 
             <View style={styles.currencyRow}>
-                {CURRENCIES.map((currencyCode) => {
-                    const active = currency === currencyCode;
-                    return (
-                        <TouchableOpacity
-                            key={currencyCode}
-                            style={[styles.currencyBtn, active && {backgroundColor: CURRENCY_BG[currencyCode]}]}
-                            onPress={() => setCurrency((prev) => (prev === currencyCode ? null : currencyCode))}
-                            activeOpacity={0.75}
-                        >
-                            <Text style={[styles.currencyText, active && styles.currencyTextActive]}>
-                                {CURRENCY_SIGN[currencyCode]} {currencyCode}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
+                <View
+                    style={styles.currencyTrack}
+                    onLayout={(event) => setCurrencyTrackWidth(event.nativeEvent.layout.width)}
+                >
+                    {indicatorWidth > 0 && (
+                        <Animated.View
+                            style={[
+                                styles.currencyIndicator,
+                                {
+                                    width: indicatorWidth,
+                                    transform: [{translateX: indicatorX}],
+                                },
+                            ]}
+                        />
+                    )}
+                    {CURRENCIES.map((currencyCode) => {
+                        const active = currency === currencyCode;
+                        return (
+                            <TouchableOpacity
+                                key={currencyCode}
+                                style={styles.currencyBtn}
+                                onPress={() => setCurrency(currencyCode)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.currencyText, active && styles.currencyTextActive]}>
+                                    {CURRENCY_SIGN[currencyCode]} {currencyCode}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
             </View>
 
             <View style={styles.amountArea}>
@@ -155,17 +188,33 @@ const styles = StyleSheet.create({
     },
     iconEmoji: {fontSize: 18},
     currencyRow: {
-        flexDirection: 'row',
         justifyContent: 'center',
-        gap: 8,
-        paddingHorizontal: 20,
+        alignItems: 'center',
         paddingBottom: 4,
     },
-    currencyBtn: {
-        paddingHorizontal: 18,
-        paddingVertical: 8,
-        borderRadius: 20,
+    currencyTrack: {
+        flexDirection: 'row',
+        width: '84%',
+        maxWidth: 360,
+        borderRadius: 22,
         backgroundColor: '#f1f5f9',
+        padding: 3,
+        position: 'relative',
+    },
+    currencyIndicator: {
+        position: 'absolute',
+        left: 3,
+        top: 3,
+        bottom: 3,
+        borderRadius: 18,
+        backgroundColor: COLORS.primary,
+    },
+    currencyBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     currencyText: {fontSize: 13, fontWeight: '600', color: '#64748b'},
     currencyTextActive: {color: '#fff'},

@@ -1,4 +1,9 @@
 import api from './axiosInstance';
+import {createIdempotencyKey} from '../utils/idempotency';
+
+const withIdempotencyHeader = (idempotencyKey) => ({
+    headers: {'Idempotency-Key': idempotencyKey}
+});
 
 export const getMyInvoices = () => api.get('/api/payments/invoices/user');
 
@@ -9,7 +14,10 @@ export const getInvoice = (id) => api.get(`/api/payments/invoices/${id}`);
 export const createInvoice = (data) => api.post('/api/payments/invoices', data);
 
 // data: { receiverPhone, amount, currency, description }
-export const sendInvoice = (data) => api.post('/api/payments/invoices/send', data);
+export const sendInvoice = (data, idempotencyKey = createIdempotencyKey('invoice-send')) =>
+    api.post('/api/payments/invoices/send', data, withIdempotencyHeader(idempotencyKey));
+export const sendSplitInvoice = (data, idempotencyKey = createIdempotencyKey('invoice-split')) =>
+    api.post('/api/payments/invoices/split', data, withIdempotencyHeader(idempotencyKey));
 
 export const payInvoice = (id, accountId) => api.post(`/api/payments/invoices/${id}/pay`, { accountId });
 

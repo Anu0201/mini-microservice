@@ -1,9 +1,10 @@
 import {useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
-import {sendInvoice} from '../../../services/paymentApi';
+import {sendInvoice, sendSplitInvoice} from '../../../services/paymentApi';
 import {getMyAccounts} from '../../../services/accountApi';
 import {getMe, lookupUserByPhone} from '../../../services/userApi';
 import {MIN_PHONE_LOOKUP_LENGTH, PHONE_LOOKUP_DEBOUNCE_MS} from '../../../constants';
+import {createIdempotencyKey} from '../../../utils/idempotency';
 
 export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
     const [myAccounts, setMyAccounts] = useState([]);
@@ -14,6 +15,8 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
     const [receiverUser, setReceiverUser] = useState(null);
     const [lookupLoading, setLookupLoading] = useState(false);
     const lookupTimer = useRef(null);
+    const sendInvoiceKeyRef = useRef(null);
+    const splitInvoiceKeyRef = useRef(null);
 
     useEffect(() => {
         (async () => {
@@ -55,7 +58,14 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
 
         setSending(true);
         try {
-            await sendInvoice({receiverPhone, amount: finalAmount, currency, description, receiverAccountId: selectedAccountId});
+            if (!sendInvoiceKeyRef.current) {
+                sendInvoiceKeyRef.current = createIdempotencyKey('invoice-send');
+            }
+            await sendInvoice(
+                {receiverPhone, amount: finalAmount, currency, description, receiverAccountId: selectedAccountId},
+                sendInvoiceKeyRef.current
+            );
+            sendInvoiceKeyRef.current = null;
             Alert.alert('Амжилттай', 'Нэхэмжлэл илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
         } catch (error) {
             Alert.alert('Алдаа', error.response?.data?.message || 'Илгээж чадсангүй');
@@ -64,22 +74,29 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
         }
     };
 
-    const handleSplitSubmit = async ({totalAmount, peopleCount, phones, description}) => {
+    const handleSplitSubmit = async ({totalAmount, phones, description}) => {
         if (!totalAmount || totalAmount <= 0) return Alert.alert('Алдаа', 'Нийт дүн оруулна уу');
-        if (!peopleCount || peopleCount < 2) return Alert.alert('Алдаа', 'Хүний тоо оруулна уу');
         if (!selectedAccountId) return Alert.alert('Алдаа', 'Хүлээн авах дансаа сонгоно уу');
         const filledPhones = phones.filter(p => p.trim());
         if (filledPhones.length === 0) return Alert.alert('Алдаа', 'Утасны дугаар оруулна уу');
 
-        const perPerson = Math.ceil(totalAmount / peopleCount);
         setSending(true);
         try {
-            await Promise.all(
-                filledPhones.map(phone =>
-                    sendInvoice({receiverPhone: phone.trim(), amount: perPerson, currency, description, receiverAccountId: selectedAccountId})
-                )
+            if (!splitInvoiceKeyRef.current) {
+                splitInvoiceKeyRef.current = createIdempotencyKey('invoice-split');
+            }
+            await sendSplitInvoice(
+                {
+                    phones: filledPhones,
+                    totalAmount,
+                    currency,
+                    description,
+                    receiverAccountId: selectedAccountId
+                },
+                splitInvoiceKeyRef.current
             );
-            Alert.alert('Амжилттай', `${filledPhones.length} хүнд ${perPerson.toLocaleString()} ${currency} нэхэмжлэгдлээ`, [{text: 'OK', onPress: onSuccess}]);
+            splitInvoiceKeyRef.current = null;
+            Alert.alert('Амжилттай', `${filledPhones.length} хүнд нэхэмжлэл илгээгдлээ`, [{text: 'OK', onPress: onSuccess}]);
         } catch (error) {
             Alert.alert('Алдаа', error.response?.data?.message || 'Илгээж чадсангүй');
         } finally {

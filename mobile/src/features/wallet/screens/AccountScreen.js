@@ -1,5 +1,5 @@
-import {useState} from 'react';
-import {Alert, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useEffect, useRef, useState} from 'react';
+import {Alert, Animated, Easing, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_BG, CURRENCY_SIGN, COLORS, CURRENCIES} from '../../../constants';
@@ -36,6 +36,20 @@ function AccountCard({account, onPress}) {
 export default function AccountScreen({onSelectAccount, onLogout}) {
     const {userInfo, accounts, loading, fetched, creating, load, createNewAccount} = useAccount();
     const [newCurrency, setNewCurrency] = useState('MNT');
+    const [currencyTrackWidth, setCurrencyTrackWidth] = useState(0);
+    const indicatorX = useRef(new Animated.Value(0)).current;
+    const selectedCurrencyIndex = Math.max(0, CURRENCIES.indexOf(newCurrency));
+    const indicatorWidth = currencyTrackWidth > 0 ? (currencyTrackWidth - 6) / CURRENCIES.length : 0;
+
+    useEffect(() => {
+        if (!indicatorWidth) return;
+        Animated.timing(indicatorX, {
+            toValue: selectedCurrencyIndex * indicatorWidth,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+        }).start();
+    }, [indicatorWidth, indicatorX, selectedCurrencyIndex]);
 
     if (!fetched && !loading) load();
 
@@ -79,16 +93,37 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                     <View style={styles.newAccountCard}>
                         <Text style={styles.newAccountTitle}>Шинэ данс нээх</Text>
                         <View style={styles.currencyRow}>
-                            {CURRENCIES.map((currencyCode) => (
-                                <TouchableOpacity
-                                    key={currencyCode}
-                                    style={[styles.currencyBtn, newCurrency === currencyCode && styles.currencyBtnActive]}
-                                    onPress={() => setNewCurrency(currencyCode)}
-                                >
-                                    <Text
-                                        style={[styles.currencyBtnText, newCurrency === currencyCode && styles.currencyBtnTextActive]}>{currencyCode}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            <View
+                                style={styles.currencyTrack}
+                                onLayout={(event) => setCurrencyTrackWidth(event.nativeEvent.layout.width)}
+                            >
+                                {indicatorWidth > 0 && (
+                                    <Animated.View
+                                        style={[
+                                            styles.currencyIndicator,
+                                            {
+                                                width: indicatorWidth,
+                                                transform: [{translateX: indicatorX}],
+                                            },
+                                        ]}
+                                    />
+                                )}
+                                {CURRENCIES.map((currencyCode) => {
+                                    const active = newCurrency === currencyCode;
+                                    return (
+                                        <TouchableOpacity
+                                            key={currencyCode}
+                                            style={styles.currencyBtn}
+                                            onPress={() => setNewCurrency(currencyCode)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text style={[styles.currencyBtnText, active && styles.currencyBtnTextActive]}>
+                                                {currencyCode}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
                         <TouchableOpacity
                             style={[styles.openBtn, (creating || !userInfo) && styles.openBtnDisabled]}
@@ -184,14 +219,37 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     newAccountTitle: {fontSize: 15, fontWeight: '600', color: '#0f172a', marginBottom: 14},
-    currencyRow: {flexDirection: 'row', gap: 10, marginBottom: 14},
-    currencyBtn: {
-        flex: 1, paddingVertical: 10, borderRadius: 12,
-        borderWidth: 1.5, borderColor: '#e2e8f0', alignItems: 'center', backgroundColor: '#fff',
+    currencyRow: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 14,
     },
-    currencyBtnActive: {borderColor: COLORS.accent, backgroundColor: '#f0f9ff'},
+    currencyTrack: {
+        flexDirection: 'row',
+        width: '100%',
+        maxWidth: 370,
+        borderRadius: 22,
+        backgroundColor: '#f1f5f9',
+        padding: 3,
+        position: 'relative',
+    },
+    currencyIndicator: {
+        position: 'absolute',
+        left: 3,
+        top: 3,
+        bottom: 3,
+        borderRadius: 18,
+        backgroundColor: COLORS.primary,
+    },
+    currencyBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     currencyBtnText: {fontSize: 13, fontWeight: '600', color: COLORS.secondary},
-    currencyBtnTextActive: {color: COLORS.accent},
+    currencyBtnTextActive: {color: '#fff'},
     openBtn: {backgroundColor: COLORS.accent, borderRadius: 14, paddingVertical: 14, alignItems: 'center'},
     openBtnDisabled: {backgroundColor: '#cbd5e1'},
     openBtnText: {color: '#fff', fontWeight: '700', fontSize: 15},
