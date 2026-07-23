@@ -1,4 +1,4 @@
-package com.anudari.payment_service.util;
+package com.anudari.gateway_service.utility;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
