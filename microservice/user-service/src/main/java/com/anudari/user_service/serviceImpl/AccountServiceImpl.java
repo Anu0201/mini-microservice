@@ -2,6 +2,8 @@ package com.anudari.user_service.serviceImpl;
 
 import com.anudari.user_service.config.AppProperties;
 import com.anudari.common.constant.TransactionType;
+import com.anudari.common.utility.LogUtility;
+import com.anudari.common.utility.JSONUtility;
 import com.anudari.user_service.dto.AccountResponse;
 import com.anudari.user_service.dto.AccountTransactionRequest;
 import com.anudari.user_service.dto.AccountTransactionResponse;
@@ -15,6 +17,7 @@ import com.anudari.user_service.repository.AccountRepository;
 import com.anudari.user_service.repository.AccountTransactionRepository;
 import com.anudari.user_service.repository.UserRepository;
 import com.anudari.user_service.service.AccountService;
+import com.anudari.user_service.util.MessageUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +26,6 @@ import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,30 +39,42 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public AccountResponse createAccount(Long userId, CreateAccountRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        LogUtility.info(this.getClass().getName(), String.valueOf(userId), "ACCOUNT",
+                "[create.account] " + JSONUtility.toJSON(request));
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("user.not.found")));
 
-        // Edge case: нэг currency-д зөвхөн нэг данс
-        if (accountRepository.existsByUser_UserIdAndCurrency(userId, request.currency())) {
-            throw new IllegalStateException(
-                    "Account with currency " + request.currency() + " already exists for this user"
-            );
+            if (accountRepository.existsByUser_UserIdAndCurrency(userId, request.currency())) {
+                throw new IllegalStateException(
+                        MessageUtility.getMessage("account.exists", new Object[]{request.currency()})
+                );
+            }
+
+            Account account = Account.builder()
+                    .accountNumber(generateUniqueAccountNumber())
+                    .currency(request.currency())
+                    .user(user)
+                    .build();
+
+            AccountResponse response = AccountResponse.from(accountRepository.save(account));
+
+            LogUtility.info(this.getClass().getName(), String.valueOf(userId), "ACCOUNT",
+                    "[create.account] " + JSONUtility.toJSON(response));
+
+            return response;
+        } catch (Exception ex) {
+            LogUtility.error(this.getClass().getName(), String.valueOf(userId), "ACCOUNT",
+                    "[create.account] Exception: " + ex.getMessage());
+            throw ex;
         }
-
-        Account account = Account.builder()
-                .accountNumber(generateUniqueAccountNumber())
-                .currency(request.currency())
-                .user(user)
-                .build();
-
-        return AccountResponse.from(accountRepository.save(account));
     }
 
     @Override
     public List<AccountResponse> getAccountsByUser(Long userId, Long requesterId, String isAdmin) {
         checkAccess(userId, requesterId, isAdmin);
         if (!userRepository.existsById(userId)) {
-            throw new NoSuchElementException("User not found");
+            throw new NoSuchElementException(MessageUtility.getMessage("user.not.found"));
         }
         return accountRepository.findAllByUser_UserId(userId).stream()
                 .map(AccountResponse::from)
@@ -94,11 +108,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = findAccount(accountId);
         checkAccess(account.getUser().getUserId(), requesterId, isAdmin);
 
-        if (account.getBalance().compareTo(request.amount()) < 0) {
-            throw new IllegalArgumentException(
-                    "Insufficient balance. Available: " + account.getBalance() + ", requested: " + request.amount()
-            );
-        }
+        checkSufficientBalance(account, request.amount());
 
         BigDecimal before = account.getBalance();
         account.setBalance(before.subtract(request.amount()));
@@ -108,37 +118,32 @@ public class AccountServiceImpl implements AccountService {
         return AccountResponse.from(account);
     }
 
-    private Account findAccount(Long accountId) {
-        return accountRepository.findById(accountId)
-                .orElseThrow(() -> new NoSuchElementException("Account not found"));
+    private void checkSufficientBalance(Account account, BigDecimal requestedAmount) {
+        if (account.getBalance().compareTo(requestedAmount) < 0) {
+            throw new IllegalArgumentException(
+                    MessageUtility.getMessage("balance.insufficient.detail",
+                            new Object[]{account.getBalance(), requestedAmount})
+            );
+        }
     }
 
-    // Edge case: зөвхөн эзэн эсвэл admin хандах боломжтой
+    private Account findAccount(Long accountId) {
+        return accountRepository.findById(accountId)
+                .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("account.not.found")));
+    }
+
     private void checkAccess(Long ownerId, Long requesterId, String isAdmin) {
         if (!"true".equals(isAdmin) && !ownerId.equals(requesterId)) {
-            throw new SecurityException("Access denied");
+            throw new SecurityException(MessageUtility.getMessage("access.denied"));
         }
     }
 
     @Override
     @Transactional
     public void debitForInvoice(DebitRequest request, String secretToken) {
-        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-            throw new SecurityException("Invalid internal secret");
-        }
+        Account account = validateAndGetAccount(request.accountId(), request.userId(), secretToken);
 
-        Account account = accountRepository.findById(request.accountId())
-                .orElseThrow(() -> new NoSuchElementException("Account not found: " + request.accountId()));
-
-        if (!account.getUser().getUserId().equals(request.userId())) {
-            throw new SecurityException("Account does not belong to user");
-        }
-
-        if (account.getBalance().compareTo(request.amount()) < 0) {
-            throw new IllegalArgumentException(
-                    "Insufficient balance. Available: " + account.getBalance() + ", required: " + request.amount()
-            );
-        }
+        checkSufficientBalance(account, request.amount());
 
         BigDecimal before = account.getBalance();
         account.setBalance(before.subtract(request.amount()));
@@ -150,22 +155,28 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public void creditForInvoice(CreditRequest request, String secretToken) {
-        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-            throw new SecurityException("Invalid internal secret");
-        }
-
-        Account account = accountRepository.findById(request.accountId())
-                .orElseThrow(() -> new NoSuchElementException("Account not found: " + request.accountId()));
-
-        if (!account.getUser().getUserId().equals(request.userId())) {
-            throw new SecurityException("Account does not belong to user");
-        }
+        Account account = validateAndGetAccount(request.accountId(), request.userId(), secretToken);
 
         BigDecimal before = account.getBalance();
         account.setBalance(before.add(request.amount()));
         accountRepository.save(account);
 
-        recordTransaction(account, TransactionType.INVOICE_CREDIT, request.amount(), before, account.getBalance(), "Invoice received");
+        recordTransaction(account, TransactionType.INVOICE_CREDIT, request.amount(), before, account.getBalance(), "Invoice payment");
+    }
+
+    private Account validateAndGetAccount(Long accountId, Long userId, String secretToken) {
+        if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
+            throw new SecurityException(MessageUtility.getMessage("secret.invalid"));
+        }
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("account.not.found", new Object[]{accountId})));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw new SecurityException(MessageUtility.getMessage("account.ownership.mismatch"));
+        }
+
+        return account;
     }
 
     @Override
