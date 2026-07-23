@@ -1,8 +1,8 @@
 package com.anudari.gateway_service.filter;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.common.utility.LogUtility;
 import com.anudari.gateway_service.constants.LogCategory;
-import com.anudari.gateway_service.utility.LogUtility;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -34,10 +34,10 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 public class GatewayLoggingFilter implements GlobalFilter, Ordered {
 
     public static final String REQUEST_ID_HEADER = AppConstants.HEADER.REQUEST_ID;
+    private static final String CLASS_NAME = GatewayLoggingFilter.class.getName();
 
     @Override
     public int getOrder() {
-        // Run before route-specific filters so every request, including rejected ones, is logged.
         return Ordered.HIGHEST_PRECEDENCE;
     }
 
@@ -47,7 +47,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
         long startTime = System.currentTimeMillis();
         ByteArrayOutputStream responseBody = new ByteArrayOutputStream();
 
-        // Propagate one correlation ID downstream and return the same ID to the client.
         ServerWebExchange tracedExchange = exchange.mutate()
                 .request(exchange.getRequest().mutate()
                         .headers(headers -> headers.set(REQUEST_ID_HEADER, requestId))
@@ -61,8 +60,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 .flatMap(requestBody -> {
                     logRequest(tracedExchange, requestBody, requestId);
 
-                    // A reactive request body can only be consumed once. Replay the buffered bytes
-                    // so AuthFilter and the downstream service can still read the original body.
                     ServerWebExchange replayableExchange = tracedExchange.mutate()
                             .request(replayRequest(tracedExchange, requestBody))
                             .build();
@@ -86,7 +83,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<byte[]> readBody(ServerHttpRequest request) {
-        // Join all incoming chunks into one byte array for logging and replay.
         return DataBufferUtils.join(request.getBody())
                 .map(buffer -> {
                     byte[] body = new byte[buffer.readableByteCount()];
@@ -101,7 +97,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
         return new ServerHttpRequestDecorator(exchange.getRequest()) {
             @Override
             public HttpHeaders getHeaders() {
-                // The replayed body is a single known-size buffer, so update its transport headers.
                 HttpHeaders headers = new HttpHeaders();
                 headers.putAll(super.getHeaders());
                 headers.remove(HttpHeaders.TRANSFER_ENCODING);
@@ -125,7 +120,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
         return new ServerHttpResponseDecorator(exchange.getResponse()) {
             @Override
             public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
-                // Copy each response chunk for logging while forwarding the same buffer unchanged.
                 return super.writeWith(Flux.from(body)
                         .doOnNext(buffer -> copy(buffer, capturedBody)));
             }
@@ -134,7 +128,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
             public Mono<Void> writeAndFlushWith(
                     Publisher<? extends Publisher<? extends DataBuffer>> body
             ) {
-                // Streaming responses use nested publishers, so capture their inner chunks too.
                 return super.writeAndFlushWith(Flux.from(body)
                         .map(chunks -> Flux.from(chunks)
                                 .doOnNext(buffer -> copy(buffer, capturedBody))));
@@ -143,7 +136,6 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
     }
 
     private void copy(DataBuffer buffer, ByteArrayOutputStream target) {
-        // Read through a view of the buffer so its reader index is not changed.
         ByteBuffer bytes = buffer.toByteBuffer().asReadOnlyBuffer();
         byte[] chunk = new byte[bytes.remaining()];
         bytes.get(chunk);
@@ -162,7 +154,7 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 + "[headers=" + request.getHeaders() + "]"
                 + "[body=" + formatBody(body, request.getHeaders().getContentType()) + "]";
 
-        logInfo(requestId, LogCategory.REQUEST, "gateway.request.in", message);
+        LogUtility.info(requestId, CLASS_NAME, "gateway.request.in", LogCategory.REQUEST.name(), message);
     }
 
     private void logResponse(
@@ -183,9 +175,9 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 + "[durationMs=" + durationMs + "]"
                 + "[headers=" + exchange.getResponse().getHeaders() + "]"
                 + "[body=" + formatBody(
-                        body, exchange.getResponse().getHeaders().getContentType()) + "]";
+                body, exchange.getResponse().getHeaders().getContentType()) + "]";
 
-        logInfo(requestId, LogCategory.RESPONSE, "gateway.response.out", message);
+        LogUtility.info(requestId, CLASS_NAME, "gateway.response.out", LogCategory.RESPONSE.name(), message);
     }
 
     private void logError(ServerWebExchange exchange, Throwable error, String requestId) {
@@ -196,9 +188,7 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 + "[exception=" + error.getClass().getName() + "]"
                 + "[message=" + error.getMessage() + "]";
 
-        LogUtility.withRequestId(requestId,
-                () -> LogUtility.error(
-                        LogCategory.ERROR, "gateway.error", message, error));
+        LogUtility.error(requestId, CLASS_NAME, "gateway.error", LogCategory.ERROR.name(), message, error);
     }
 
     private String routeDetails(Route route) {
@@ -206,23 +196,11 @@ public class GatewayLoggingFilter implements GlobalFilter, Ordered {
                 + "[destination=" + (route == null ? null : route.getUri()) + "]";
     }
 
-    private void logInfo(
-            String requestId,
-            LogCategory category,
-            String tag,
-            String message
-    ) {
-        // Reactor may switch threads; scope ThreadContext only around the actual log statement.
-        LogUtility.withRequestId(requestId,
-                () -> LogUtility.info(category, tag, message));
-    }
-
     static String formatBody(byte[] body, MediaType contentType) {
         if (body.length == 0) {
             return "<empty>";
         }
 
-        // Keep human-readable payloads readable; encode binary data safely as text.
         if (isText(contentType)) {
             Charset charset = contentType != null && contentType.getCharset() != null
                     ? contentType.getCharset()

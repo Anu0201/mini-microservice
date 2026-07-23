@@ -1,9 +1,9 @@
 package com.anudari.gateway_service.filter;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.common.utility.LogUtility;
 import com.anudari.gateway_service.constants.LogCategory;
 import com.anudari.gateway_service.utility.JwtUtility;
-import com.anudari.gateway_service.utility.LogUtility;
 import io.jsonwebtoken.Claims;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +24,8 @@ import java.util.UUID;
 
 @Component
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
+
+    private static final String CLASS_NAME = AuthFilter.class.getName();
 
     private final JwtUtility jwtUtility;
 
@@ -65,8 +67,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             });
 
             if (isOpen) {
-                logAuth(finalRequestId,
-                        "[path=" + path + "][result=open-path]");
+                logAuth(finalRequestId, "[path=" + path + "][result=open-path]");
                 return chain.filter(exchange.mutate().request(builder.build()).build())
                         .doFinally(s -> exchange.getResponse().getHeaders()
                                 .set(AppConstants.HEADER.REQUEST_ID, finalRequestId));
@@ -82,8 +83,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                 Claims claims = jwtUtility.extractValidClaims(
                         request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
                 if (claims == null) {
-                    logAuth(finalRequestId,
-                            "[path=" + path + "][result=invalid-token]");
+                    logAuth(finalRequestId, "[path=" + path + "][result=invalid-token]");
                     return onError(exchange, finalRequestId);
                 }
                 builder.header(AppConstants.HEADER.AUTH_USERNAME, claims.getSubject());
@@ -94,8 +94,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             } else if (isAdmin) {
                 builder.header(AppConstants.HEADER.AUTH_IS_ADMIN, "true");
             } else {
-                logAuth(finalRequestId,
-                        "[path=" + path + "][result=unauthorized]");
+                logAuth(finalRequestId, "[path=" + path + "][result=unauthorized]");
                 return onError(exchange, finalRequestId);
             }
 
@@ -106,9 +105,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
     }
 
     private void logAuth(String requestId, String message) {
-        LogUtility.withRequestId(requestId,
-                () -> LogUtility.info(
-                        LogCategory.AUTHENTICATION, "gateway.auth", message));
+        LogUtility.info(requestId, CLASS_NAME, "gateway.auth", LogCategory.AUTHENTICATION.name(), message);
     }
 
     private boolean isAdminOrigin(ServerHttpRequest request) {
