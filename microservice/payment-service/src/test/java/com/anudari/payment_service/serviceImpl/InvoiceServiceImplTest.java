@@ -16,6 +16,7 @@ import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
+import com.anudari.payment_service.util.MessageUtility;
 import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,8 @@ class InvoiceServiceImplTest {
     private AppProperties appProperties;
     @Mock
     private ExchangeRateClient exchangeRateClient;
+    @Mock
+    private MessageUtility messageUtility;
 
     @InjectMocks
     private InvoiceServiceImpl invoiceService;
@@ -63,6 +67,16 @@ class InvoiceServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(messageUtility.getMessage(anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        lenient().when(messageUtility.getMessage(anyString(), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    String key = invocation.getArgument(0);
+                    Object[] args = invocation.getArgument(1);
+                    return key + ": " + java.util.Arrays.toString(args);
+                });
+
         createRequest = new CreateInvoiceRequest(
                 42L, "desc", LocalDate.now().plusDays(7), null,
                 List.of(new InvoiceItemRequest("Widget", 2, BigDecimal.valueOf(10))));

@@ -20,6 +20,7 @@ import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
 import com.anudari.payment_service.service.InvoiceService;
+import com.anudari.payment_service.util.MessageUtility;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -43,6 +44,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final UserServiceClient userServiceClient;
     private final AppProperties appProperties;
     private final ExchangeRateClient exchangeRateClient;
+    private final MessageUtility MessageUtility;
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             userServiceClient.getUserById(request.userId(), "true");
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("User not found: " + request.userId());
+            throw new NoSuchElementException(MessageUtility.getMessage("user.not.found", new Object[]{request.userId()}));
         }
 
         List<InvoiceItem> items = request.items().stream()
@@ -85,6 +87,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId, String idempotencyKey) {
+        validateSendInvoiceRequest(request);
+
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
         if (normalizedIdempotencyKey != null) {
             Optional<Invoice> existing = invoiceRepository.findFirstBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(senderId, normalizedIdempotencyKey);
@@ -99,6 +103,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public List<InvoiceResponse> splitInvoice(SendSplitInvoiceRequest request, Long senderId, String idempotencyKey) {
+        validateSplitInvoiceRequest(request);
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
         if (normalizedIdempotencyKey != null) {
             List<Invoice> existing = invoiceRepository.findBySenderIdAndIdempotencyKeyOrderByInvoiceIdAsc(senderId, normalizedIdempotencyKey);
@@ -113,7 +118,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .toList();
 
         if (phones.isEmpty()) {
-            throw new IllegalArgumentException("At least one receiver phone is required");
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phone.required"));
         }
 
         BigDecimal totalAmount = request.totalAmount().setScale(2, RoundingMode.HALF_UP);
@@ -139,19 +144,48 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .toList();
     }
 
+    private void validateSplitInvoiceRequest(SendSplitInvoiceRequest request) {
+        if (request.phones() == null || request.phones().isEmpty()) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phones.notempty"));
+        }
+        boolean hasBlankPhone = request.phones().stream()
+                .anyMatch(phone -> phone == null || phone.trim().isEmpty());
+        if (hasBlankPhone) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phone.notblank"));
+        }
+        if (request.totalAmount() == null || request.totalAmount().compareTo(new BigDecimal("0.01")) < 0) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.amount.min"));
+        }
+        if (request.receiverAccountId() == null) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.receiverAccountId.notnull"));
+        }
+    }
+
+    private void validateSendInvoiceRequest(SendInvoiceRequest request) {
+        if (request.receiverPhone() == null || request.receiverPhone().trim().isEmpty()) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.receiverPhone.required"));
+        }
+        if (request.amount() == null || request.amount().compareTo(new BigDecimal("0.01")) < 0) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.amount.min"));
+        }
+        if (request.receiverAccountId() == null) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.receiverAccountId.required"));
+        }
+    }
+
     private Invoice buildUserInvoice(SendInvoiceRequest request, Long senderId, String idempotencyKey) {
         UserIdResponse receiver;
         try {
             receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
+            throw new NoSuchElementException(MessageUtility.getMessage("user.not.found.phone", new Object[]{request.receiverPhone()}));
         }
 
         if (senderId.equals(receiver.userId())) {
-            throw new IllegalArgumentException("Cannot send an invoice to yourself");
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.self.send.forbidden"));
         }
 
-        Invoice invoice = Invoice.builder()
+        return Invoice.builder()
                 .invoiceNumber("INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .senderId(senderId)
                 .userId(receiver.userId())
@@ -162,8 +196,6 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .idempotencyKey(idempotencyKey)
                 .status(new InvoiceStatus.Unpaid())
                 .build();
-
-        return invoice;
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {
@@ -208,7 +240,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceResponse getInvoiceById(Long invoiceId, Long userId) {
         Invoice invoice = findById(invoiceId);
         if (userId != null && !invoice.getUserId().equals(userId) && !userId.equals(invoice.getSenderId())) {
-            throw new SecurityException("Access denied");
+            throw new SecurityException(MessageUtility.getMessage("invoice.access.denied"));
         }
         return InvoiceResponse.from(invoice, fetchSenderName(invoice.getSenderId()));
     }
@@ -216,6 +248,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey) {
+        if (accountId == null) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.pay.accountId.required"));
+        }
         if (idempotencyKey != null) {
             Optional<Payment> existing = paymentRepository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) {
@@ -226,17 +261,17 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = findById(invoiceId);
 
         if (!invoice.getUserId().equals(userId)) {
-            throw new SecurityException("Access denied");
+            throw new SecurityException(MessageUtility.getMessage("invoice.access.denied"));
         }
         if (!(invoice.getStatus() instanceof InvoiceStatus.Unpaid)) {
-            throw new IllegalStateException("Invoice is not payable: " + invoice.getStatus().value());
+            throw new IllegalStateException(MessageUtility.getMessage("invoice.not.payable", new Object[]{invoice.getStatus().value()}));
         }
 
         AccountInfo account;
         try {
             account = userServiceClient.getAccountById(accountId, "true");
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("Account not found: " + accountId);
+            throw new NoSuchElementException(MessageUtility.getMessage("account.not.found", new Object[]{accountId}));
         }
 
         BigDecimal debitAmount;
@@ -256,7 +291,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                     appProperties.getInternalSecret()
             );
         } catch (FeignException.BadRequest e) {
-            throw new IllegalStateException("Insufficient balance to pay this invoice");
+            throw new IllegalStateException(MessageUtility.getMessage("invoice.balance.insufficient"));
         }
 
         if (invoice.getReceiverAccountId() != null && invoice.getSenderId() != null) {
@@ -282,7 +317,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     public InvoiceResponse cancelInvoice(Long invoiceId) {
         Invoice invoice = findById(invoiceId);
         if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
-            throw new IllegalStateException("Cannot cancel a paid invoice");
+            throw new IllegalStateException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
         }
         invoice.setStatus(new InvoiceStatus.Cancelled());
         return InvoiceResponse.from(invoiceRepository.save(invoice));
@@ -295,11 +330,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("User not found with phone: " + request.receiverPhone());
+            throw new NoSuchElementException(MessageUtility.getMessage("user.not.found.phone", new Object[]{request.receiverPhone()}));
         }
 
         if (senderId.equals(receiver.userId())) {
-            throw new IllegalArgumentException("Cannot send money to yourself");
+            throw new IllegalArgumentException(MessageUtility.getMessage("money.self.send.forbidden"));
         }
 
         String currency = request.currency() != null ? request.currency() : "MNT";
@@ -308,13 +343,13 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .stream()
                 .filter(a -> a.currency().name().equals(currency))
                 .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Receiver has no " + currency + " account"));
+                .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("account.currency.not.found", new Object[]{currency})));
 
         AccountInfo senderAccount;
         try {
             senderAccount = userServiceClient.getAccountById(request.senderAccountId(), "true");
         } catch (FeignException.NotFound e) {
-            throw new NoSuchElementException("Sender account not found: " + request.senderAccountId());
+            throw new NoSuchElementException(MessageUtility.getMessage("account.sender.not.found", new Object[]{request.senderAccountId()}));
         }
 
         String senderCurrency = senderAccount.currency().name();
@@ -332,7 +367,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                     appProperties.getInternalSecret()
             );
         } catch (FeignException.BadRequest e) {
-            throw new IllegalStateException("Insufficient balance");
+            throw new IllegalStateException(MessageUtility.getMessage("balance.insufficient"));
         }
 
         userServiceClient.creditAccount(
@@ -370,10 +405,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         boolean isSender = userId.equals(invoice.getSenderId());
         boolean isReceiver = userId.equals(invoice.getUserId());
         if (!isSender && !isReceiver) {
-            throw new SecurityException("You can only cancel your own invoices");
+            throw new SecurityException(MessageUtility.getMessage("invoice.cancel.access.denied"));
         }
         if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
-            throw new IllegalStateException("Cannot cancel a paid invoice");
+            throw new IllegalStateException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
         }
         invoice.setStatus(new InvoiceStatus.Cancelled());
         return InvoiceResponse.from(invoiceRepository.save(invoice));
@@ -381,7 +416,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private Invoice findById(Long invoiceId) {
         return invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new NoSuchElementException("Invoice not found: " + invoiceId));
+                .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("invoice.not.found", new Object[]{invoiceId})));
     }
 
     private String fetchSenderName(Long senderId) {
