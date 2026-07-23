@@ -1,6 +1,7 @@
 package com.anudari.auth_service.handler;
 
 import com.anudari.auth_service.exception.AuthenticationException;
+import com.anudari.auth_service.util.MessageUtility;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -23,7 +24,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
-                .findFirst().orElse("Validation failed");
+                .findFirst().orElse(MessageUtility.getMessage("validation.failed"));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(errorBody(HttpStatus.BAD_REQUEST, message));
     }

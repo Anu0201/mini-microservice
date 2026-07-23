@@ -11,6 +11,7 @@ import com.anudari.auth_service.repository.AuthHistoryRepository;
 import com.anudari.auth_service.service.AsyncHistoryService;
 import com.anudari.auth_service.service.AuthService;
 import com.anudari.auth_service.util.JwtUtil;
+import com.anudari.auth_service.util.MessageUtility;
 import com.anudari.common.constant.AppConstants;
 import feign.FeignException;
 import io.jsonwebtoken.Claims;
@@ -38,13 +39,13 @@ public class AuthServiceImpl implements AuthService {
         try {
             userDto = userClient.findByPhoneInternal(request.phone(), appProperties.getInternalSecret());
         } catch (FeignException.NotFound e) {
-            throw new AuthenticationException("Invalid credentials");
+            throw new AuthenticationException(MessageUtility.getMessage("invalid.credentials"));
         }
 
         if (!passwordEncoder.matches(request.password(), userDto.credentialHash())) {
             asyncHistoryService.save(userDto.userId(), userDto.username(),
                     AppConstants.EVENT.LOGIN_FAIL, ipAddress, userAgent);
-            throw new AuthenticationException("Invalid credentials");
+            throw new AuthenticationException(MessageUtility.getMessage("invalid.credentials"));
         }
 
         String token = jwtUtil.generateToken(userDto.userId(), userDto.username(), userDto.roles());
@@ -59,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refresh(String bearerToken, String ipAddress, String userAgent) {
         Claims claims = jwtUtil.parseToken(bearerToken);
         if (claims == null) {
-            throw new AuthenticationException("Invalid or expired token");
+            throw new AuthenticationException(MessageUtility.getMessage("invalid.or.expired.token"));
         }
 
         Long userId = ((Number) claims.get("userId")).longValue();
