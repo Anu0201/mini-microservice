@@ -14,6 +14,7 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
 
     const [receiverUser, setReceiverUser] = useState(null);
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [currentUserPhone, setCurrentUserPhone] = useState(null); // <-- нэмэгдэв
     const lookupTimer = useRef(null);
     const sendInvoiceKeyRef = useRef(null);
     const splitInvoiceKeyRef = useRef(null);
@@ -22,6 +23,7 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
         (async () => {
             try {
                 const userResponse = await getMe();
+                setCurrentUserPhone(userResponse.data.phoneNumber); // <-- нэмэгдэв
                 const accountsResponse = await getMyAccounts(userResponse.data.userId);
                 setMyAccounts(accountsResponse.data);
                 if (accountsResponse.data.length > 0) setSelectedAccountId(accountsResponse.data[0].accountId);
@@ -74,7 +76,7 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
         }
     };
 
-    const handleSplitSubmit = async ({totalAmount, phones, description}) => {
+    const handleSplitSubmit = async ({totalAmount, phones, peopleCount, description}) => {
         if (!totalAmount || totalAmount <= 0) return Alert.alert('Алдаа', 'Нийт дүн оруулна уу');
         if (!selectedAccountId) return Alert.alert('Алдаа', 'Хүлээн авах дансаа сонгоно уу');
         const filledPhones = phones.filter(p => p.trim());
@@ -88,6 +90,7 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
             await sendSplitInvoice(
                 {
                     phones: filledPhones,
+                    participantCount: peopleCount,
                     totalAmount,
                     currency,
                     description,
@@ -96,13 +99,26 @@ export const useCreateInvoice = ({currency, initialAmount, onSuccess}) => {
                 splitInvoiceKeyRef.current
             );
             splitInvoiceKeyRef.current = null;
-            Alert.alert('Амжилттай', `${filledPhones.length} хүнд нэхэмжлэл илгээгдлээ`, [{text: 'OK', onPress: onSuccess}]);
+            Alert.alert('Амжилттай', `${filledPhones.length} хүнд нэхэмжлэл илгээгдлээ`, [{
+                text: 'OK',
+                onPress: onSuccess
+            }]);
         } catch (error) {
+            console.log('=== Split Invoice Error ===');
+            console.log('Message:', error.message);
+            console.log('Status:', error.response?.status);
+            console.log('Response data:', JSON.stringify(error.response?.data, null, 2));
+            console.log('Request config data:', error.config?.data);
+            console.log('===========================');
             Alert.alert('Алдаа', error.response?.data?.message || 'Илгээж чадсангүй');
         } finally {
             setSending(false);
         }
     };
 
-    return {myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit, handleSplitSubmit, receiverUser, lookupLoading, lookupPhone};
+    return {
+        myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending,
+        handleSubmit, handleSplitSubmit, receiverUser, lookupLoading, lookupPhone,
+        currentUserPhone
+    };
 };
