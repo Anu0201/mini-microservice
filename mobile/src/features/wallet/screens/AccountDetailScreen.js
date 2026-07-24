@@ -1,16 +1,17 @@
-import {useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import {
-    FlatList,
+    Alert,
     Animated,
     Dimensions,
+    FlatList,
     Modal,
     PanResponder,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {COLORS, CURRENCY_BG, CURRENCY_SIGN} from '../../../constants';
 import {DepositIcon, WithdrawIcon, BackIcon} from '../../../components/icons';
@@ -23,9 +24,11 @@ try {
     const liquidGlassModule = require('@callstack/liquid-glass');
     LiquidGlassView = liquidGlassModule.LiquidGlassView;
     isLiquidGlassSupported = liquidGlassModule.isLiquidGlassSupported;
-} catch (_) {}
+} catch (_) {
+}
 
 const GLASS = isLiquidGlassSupported;
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const TX_LABEL = {
     DEPOSIT: 'Орлого',
@@ -71,73 +74,135 @@ function TxCard({item}) {
     );
 }
 
-export default function AccountDetailScreen({accountId, onBack}) {
-    const insets = useSafeAreaInsets();
-    const {
-        account, accounts, activeIndex, canGoPrev, canGoNext, goToPrevAccount, goToNextAccount,
-        transactions, loading,
-        modal, setModal, amount, setAmount, txLoading,
-        openModal, handleTransaction,
-    } = useAccountDetail(accountId);
-    const translateX = useRef(new Animated.Value(0)).current;
-    const screenWidth = Dimensions.get('window').width;
-    const swipeThreshold = screenWidth * 0.18;
+function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
+    const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+    const len = accounts.length;
+
+    useEffect(() => {
+        translateX.setValue(-SCREEN_WIDTH);
+    }, [index, len]);
 
     const panResponder = useMemo(() => PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) =>
-            Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
-        onPanResponderMove: (_, gestureState) => {
-            translateX.setValue(gestureState.dx);
+        onMoveShouldSetPanResponder: (_, g) =>
+            Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onPanResponderMove: (_, g) => {
+            translateX.setValue(-SCREEN_WIDTH + g.dx);
         },
-        onPanResponderRelease: (_, gestureState) => {
-            if (Math.abs(gestureState.dx) < swipeThreshold) {
-                Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
-                return;
-            }
+        onPanResponderRelease: (_, g) => {
+            const DISTANCE_THRESHOLD = SCREEN_WIDTH * 0.25;
+            const VELOCITY_THRESHOLD = 0.35;
+            const MIN_FLICK_DISTANCE = 24;
 
-            if (gestureState.dx < 0) {
-                if (!canGoNext) {
-                    Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
-                    return;
-                }
+            const goNext = len > 1 && (
+                g.dx <= -DISTANCE_THRESHOLD ||
+                (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
+            );
+            const goPrev = len > 1 && (
+                g.dx >= DISTANCE_THRESHOLD ||
+                (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
+            );
+
+            if (goNext) {
                 Animated.timing(translateX, {
-                    toValue: -screenWidth,
-                    duration: 180,
+                    toValue: -SCREEN_WIDTH * 2,
+                    duration: 220,
                     useNativeDriver: true,
                 }).start(({finished}) => {
                     if (!finished) return;
-                    goToNextAccount();
-                    translateX.setValue(0);
+                    onIndexChange((index + 1) % len);
+                    translateX.setValue(-SCREEN_WIDTH);
                 });
-                return;
+            } else if (goPrev) {
+                Animated.timing(translateX, {
+                    toValue: 0,
+                    duration: 220,
+                    useNativeDriver: true,
+                }).start(({finished}) => {
+                    if (!finished) return;
+                    onIndexChange((index - 1 + len) % len);
+                    translateX.setValue(-SCREEN_WIDTH);
+                });
+            } else {
+                Animated.spring(translateX, {
+                    toValue: -SCREEN_WIDTH,
+                    useNativeDriver: true,
+                    bounciness: 6,
+                }).start();
             }
-
-            if (!canGoPrev) {
-                Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
-                return;
-            }
-            Animated.timing(translateX, {
-                toValue: screenWidth,
-                duration: 180,
-                useNativeDriver: true,
-            }).start(({finished}) => {
-                if (!finished) return;
-                goToPrevAccount();
-                translateX.setValue(0);
-            });
         },
         onPanResponderTerminate: () => {
-            Animated.spring(translateX, {toValue: 0, useNativeDriver: true}).start();
+            Animated.spring(translateX, {
+                toValue: -SCREEN_WIDTH,
+                useNativeDriver: true,
+                bounciness: 6,
+            }).start();
         },
-    }), [canGoNext, canGoPrev, goToNextAccount, goToPrevAccount, screenWidth, swipeThreshold, translateX]);
+    }), [index, len, onIndexChange, translateX]);
 
-    const currencySymbol = account ? (CURRENCY_SIGN[account.currency] ?? account.currency) : '';
-    const isPrefix = isPrefixCurrency(account?.currency);
-    const balanceDisplay = account
-        ? (isPrefix
+    if (len === 0) return null;
+
+    const prevAccount = accounts[(index - 1 + len) % len];
+    const currentAccount = accounts[index];
+    const nextAccount = accounts[(index + 1) % len];
+
+    const renderBalance = (account, key) => {
+        const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
+        const isPrefix = isPrefixCurrency(account.currency);
+        const balanceDisplay = isPrefix
             ? `${currencySymbol} ${Number(account.balance).toLocaleString()}`
-            : `${Number(account.balance).toLocaleString()} ${currencySymbol}`)
-        : '';
+            : `${Number(account.balance).toLocaleString()} ${currencySymbol}`;
+
+        return (
+            <View key={key} style={[styles.balanceArea, {width: SCREEN_WIDTH}]}>
+                <View style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
+                    <Text style={styles.currencyTagText}>{account.currency}</Text>
+                </View>
+                <Text style={styles.accountNumber}>{account.accountNumber}</Text>
+                <Text style={styles.balanceText}>{balanceDisplay}</Text>
+
+                <View style={styles.actionRow}>
+                    <TouchableOpacity
+                        style={styles.actionBtn}
+                        onPress={() => onOpenModal('deposit')}
+                        activeOpacity={0.85}
+                    >
+                        <DepositIcon size={20} color={COLORS.primary}/>
+                        <Text style={styles.actionBtnText}>Орлого</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.actionBtnOutline]}
+                        onPress={() => onOpenModal('withdraw')}
+                        activeOpacity={0.85}
+                    >
+                        <WithdrawIcon size={20} color="#fff"/>
+                        <Text style={[styles.actionBtnText, styles.actionBtnTextOutline]}>
+                            Зарлага
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
+    return (
+        <View style={styles.carouselViewport} {...panResponder.panHandlers}>
+            <Animated.View style={[styles.carouselTrack, {transform: [{translateX}]}]}>
+                {renderBalance(prevAccount, 'prev')}
+                {renderBalance(currentAccount, 'current')}
+                {renderBalance(nextAccount, 'next')}
+            </Animated.View>
+        </View>
+    );
+}
+
+export default function AccountDetailScreen({accountId, onBack}) {
+    const insets = useSafeAreaInsets();
+    const {
+        account, accounts, activeIndex, goToIndex,
+        transactions, loading, transactionsLoading,
+        modal, setModal, amount, setAmount, txLoading,
+        openModal, handleTransaction,
+    } = useAccountDetail(accountId);
 
     const headerContent = (
         <View style={styles.headerContent}>
@@ -153,60 +218,41 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[styles.contentWrap, {transform: [{translateX}]}]} {...panResponder.panHandlers}>
-                <View style={[styles.header, {paddingTop: insets.top}]}>
-                    {GLASS ? (
-                        <LiquidGlassView
-                            style={styles.glassNav}
-                            effect="regular"
-                            colorScheme="system"
-                        >
-                            {headerContent}
-                        </LiquidGlassView>
-                    ) : (
-                        headerContent
-                    )}
+            <View style={[styles.header, {paddingTop: insets.top}]}>
+                           {GLASS ? (
+                               <LiquidGlassView style={styles.glassNav} effect="regular" colorScheme="system">
+                                   {headerContent}
+                               </LiquidGlassView>
+                           ) : (
+                               headerContent
+                           )}
 
-                    {loading || !account ? null : (
-                        <View style={styles.balanceArea}>
-                            <View
-                                style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
-                                <Text style={styles.currencyTagText}>{account.currency}</Text>
-                            </View>
-                            <Text style={styles.accountNumber}>{account.accountNumber}</Text>
-                            <Text style={styles.balanceText}>{balanceDisplay}</Text>
+                               {loading || !account ? (
+                                   <View style={styles.balancePlaceholder}>
+                                       <Spinner size="large" color="#fff"/>
+                                   </View>
+                               ) : (
+                                   <BalanceCarousel
+                                       accounts={accounts}
+                                       index={activeIndex}
+                                       onIndexChange={goToIndex}
+                                       onOpenModal={openModal}
+                                   />
+                               )}
+            </View>
 
-                            <View style={styles.actionRow}>
-                                <TouchableOpacity
-                                    style={styles.actionBtn}
-                                    onPress={() => openModal('deposit')}
-                                    activeOpacity={0.85}
-                                >
-                                    <DepositIcon size={20} color={COLORS.primary}/>
-                                    <Text style={styles.actionBtnText}>Орлого</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.actionBtn, styles.actionBtnOutline]}
-                                    onPress={() => openModal('withdraw')}
-                                    activeOpacity={0.85}
-                                >
-                                    <WithdrawIcon size={20} color="#fff"/>
-                                    <Text style={[styles.actionBtnText, styles.actionBtnTextOutline]}>
-                                        Зарлага
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
+            {loading || !account ? (
+                <View style={styles.center}>
+                    <Spinner size="large" color={COLORS.primary}/>
                 </View>
-
-                {loading || !account ? (
-                    <View style={styles.center}>
-                        <Spinner size="large" color={COLORS.primary}/>
-                    </View>
-                ) : (
-                    <>
-                        <Text style={styles.sectionLabel}>ГҮЙЛГЭЭНИЙ ТҮҮХ</Text>
+            ) : (
+                <>
+                    <Text style={styles.sectionLabel}>ГҮЙЛГЭЭНИЙ ТҮҮХ</Text>
+                    {transactionsLoading ? (
+                        <View style={styles.center}>
+                            <Spinner size="small" color={COLORS.primary}/>
+                        </View>
+                    ) : (
                         <FlatList
                             data={transactions}
                             keyExtractor={(item) => String(item.transactionId)}
@@ -218,9 +264,9 @@ export default function AccountDetailScreen({accountId, onBack}) {
                             }
                             contentContainerStyle={{paddingBottom: 24}}
                         />
-                    </>
-                )}
-            </Animated.View>
+                    )}
+                </>
+            )}
 
             <Modal
                 visible={!!modal}
@@ -280,7 +326,6 @@ export default function AccountDetailScreen({accountId, onBack}) {
 
 const styles = StyleSheet.create({
     container: {flex: 1, backgroundColor: '#f8fafc'},
-    contentWrap: {flex: 1},
 
     header: {backgroundColor: COLORS.primary, paddingBottom: 28},
     glassNav: {marginHorizontal: 12, marginTop: 8, borderRadius: 16, overflow: 'hidden'},
@@ -295,16 +340,11 @@ const styles = StyleSheet.create({
     headerTitle: {fontSize: 17, fontWeight: '700', color: '#fff'},
     headerTitleGlass: {color: 'rgba(255,255,255,0.95)'},
 
+    carouselViewport: {overflow: 'hidden', width: SCREEN_WIDTH},
+    carouselTrack: {flexDirection: 'row'},
+
+    balancePlaceholder: {height: 220, alignItems: 'center', justifyContent: 'center'},
     balanceArea: {alignItems: 'center', paddingHorizontal: 20, paddingTop: 8},
-    accountSwipeMeta: {
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    accountSwipeHint: {fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500'},
-    accountSwipeCounter: {fontSize: 12, color: '#fff', fontWeight: '700'},
     currencyTag: {
         paddingHorizontal: 12, paddingVertical: 4,
         borderRadius: 12, marginBottom: 8,
@@ -385,4 +425,4 @@ const styles = StyleSheet.create({
     },
     confirmBtnText: {fontSize: 15, fontWeight: '700', color: '#fff'},
     disabledBtn: {opacity: 0.6},
-});
+})
