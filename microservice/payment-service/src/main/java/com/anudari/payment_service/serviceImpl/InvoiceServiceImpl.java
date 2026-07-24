@@ -149,9 +149,12 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             BigDecimal totalAmount = request.totalAmount().setScale(2, RoundingMode.HALF_UP);
             long totalCents = totalAmount.movePointRight(2).longValueExact();
+
             int receiversCount = phones.size();
-            long baseCents = totalCents / receiversCount;
-            long remainderCents = totalCents % receiversCount;
+            int participantCount = request.participantCount();
+
+            long baseCents = totalCents / participantCount;
+            long remainderCents = totalCents % participantCount;
 
             List<InvoiceResponse> responses = java.util.stream.IntStream.range(0, receiversCount)
                     .mapToObj(index -> {
@@ -191,6 +194,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
         if (request.receiverAccountId() == null) {
             throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.receiverAccountId.notnull"));
+        }
+        if (request.participantCount() == null || request.participantCount() < 1) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.participantCount.notnull"));
+        }
+        if (request.participantCount() < request.phones().size()) {
+            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.participantCount.invalid"));
         }
     }
 
