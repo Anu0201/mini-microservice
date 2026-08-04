@@ -5,12 +5,15 @@ import {getMyAccounts} from '../../../services/accountApi';
 import {getMe, lookupUserByPhone} from '../../../services/userApi';
 import {CURRENCY_SIGN, MIN_PHONE_LOOKUP_LENGTH, PHONE_LOOKUP_DEBOUNCE_MS} from '../../../constants';
 
+const normalizePhone = (phone) => String(phone ?? '').replace(/\D/g, '');
+
 export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
     const isSend = action === 'send';
 
     const [receiverPhone, setReceiverPhone] = useState('');
     const [receiverUser, setReceiverUser] = useState(null);
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [currentUserPhone, setCurrentUserPhone] = useState('');
     const lookupTimer = useRef(null);
 
     const [accounts, setAccounts] = useState([]);
@@ -26,6 +29,8 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
     const [loadingRate, setLoadingRate] = useState(false);
 
     const [sending, setSending] = useState(false);
+    const [pinVisible, setPinVisible] = useState(false);
+    const pendingDescRef = useRef(null);
 
     const selectedAccount = accounts.find((account) => account.accountId === selectedId);
     const needsConversion = isSend && filterCurrency && selectedAccount && selectedAccount.currency !== filterCurrency;
@@ -51,6 +56,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         (async () => {
             try {
                 const userResponse = await getMe();
+                setCurrentUserPhone(userResponse.data.phoneNumber ?? '');
                 const accountsResponse = await getMyAccounts(userResponse.data.userId);
                 const invoiceCurr = filterCurrency ?? 'MNT';
                 const filtered = accountsResponse.data.filter((account) => account.currency === invoiceCurr);
@@ -70,6 +76,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         (async () => {
             try {
                 const userResponse = await getMe();
+                setCurrentUserPhone(userResponse.data.phoneNumber ?? '');
                 const accountsResponse = await getMyAccounts(userResponse.data.userId);
                 setAccounts(accountsResponse.data);
                 const preferred = filterCurrency
@@ -89,6 +96,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         setReceiverUser(null);
         if (lookupTimer.current) clearTimeout(lookupTimer.current);
         if (phone.length < MIN_PHONE_LOOKUP_LENGTH) return;
+        if (currentUserPhone && normalizePhone(phone) === normalizePhone(currentUserPhone)) return;
         setLookupLoading(true);
         lookupTimer.current = setTimeout(async () => {
             try {
@@ -103,11 +111,11 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         return () => clearTimeout(lookupTimer.current);
     }, [receiverPhone]);
 
-    const doSubmit = async (description) => {
+    const doSubmit = async (description, pin) => {
         setSending(true);
         try {
             if (isSend) {
-                await sendMoney({receiverPhone, amount, currency, description, senderAccountId: selectedId});
+                await sendMoney({receiverPhone, amount, currency, description, senderAccountId: selectedId}, pin);
                 Alert.alert('Амжилттай', 'Мөнгө амжилттай илгээгдлээ', [{text: 'OK', onPress: onSuccess}]);
             } else {
                 await sendInvoice({receiverPhone, amount, currency, description, receiverAccountId});
@@ -125,21 +133,31 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         if (amount <= 0) return Alert.alert('Алдаа', 'Дүн оруулна уу');
         if (isSend && !selectedId) return Alert.alert('Алдаа', 'Данс сонгоно уу');
 
+        if (isSend) {
+            pendingDescRef.current = description;
+            setPinVisible(true);
+            return;
+        }
+
         const currencySymbol = CURRENCY_SIGN[currency] ?? currency;
         const amountStr = `${Number(amount).toLocaleString()} ${currencySymbol}`;
-        const msg = isSend
-            ? `${receiverPhone} дугаарт ${amountStr} илгээх үү?`
-            : `${receiverPhone} дугаараас ${amountStr} нэхэмжлэх үү?`;
-
-        Alert.alert('Итгэлтэй байна уу?', msg, [
+        Alert.alert('Итгэлтэй байна уу?', `${receiverPhone} дугаараас ${amountStr} нэхэмжлэх үү?`, [
             {text: 'Үгүй', style: 'cancel'},
             {text: 'Тийм', onPress: () => doSubmit(description)},
         ]);
     };
 
+    const handlePinConfirm = (pin) => {
+        setPinVisible(false);
+        doSubmit(pendingDescRef.current, pin);
+    };
+
+    const handlePinClose = () => setPinVisible(false);
+
     return {
         receiverPhone, setReceiverPhone,
         receiverUser, lookupLoading,
+        currentUserPhone,
         accounts, selectedId, setSelectedId, loadingAcc,
         invoiceCurrency, setInvoiceCurrency,
         myAccounts, receiverAccountId, setReceiverAccountId, loadingMyAcc,
@@ -147,5 +165,6 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         sending,
         isSend, currency, selectedAccount, needsConversion,
         handleSubmit,
+        pinVisible, handlePinConfirm, handlePinClose,
     };
 };

@@ -5,6 +5,7 @@ import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_SIGN} from '../../../constants';
 import {initials, avatarColor} from '../../../utils/helpers';
 import {useInvoiceList} from '../hooks/useInvoiceList';
+import PinBottomSheet from '../../../components/PinBottomSheet';
 
 function Avatar({name}) {
     return (
@@ -188,6 +189,7 @@ export default function InvoiceListScreen({onBack}) {
         pendingInvoices, transactions,
         payModalVisible, payAccounts, loadingAcc,
         handlePay, executePay, handleCancel, closePayModal,
+        pinVisible, handlePinConfirm, handlePinClose,
     } = useInvoiceList();
 
     const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -253,6 +255,11 @@ export default function InvoiceListScreen({onBack}) {
                 loading={loadingAcc}
                 onClose={closePayModal}
                 onPay={executePay}
+            />
+            <PinBottomSheet
+                visible={pinVisible}
+                onConfirm={handlePinConfirm}
+                onClose={handlePinClose}
             />
         </View>
     );

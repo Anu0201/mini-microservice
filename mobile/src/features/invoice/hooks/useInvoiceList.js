@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import {cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice} from '../../../services/paymentApi';
 import {getMyAccounts} from '../../../services/accountApi';
@@ -14,6 +14,8 @@ export const useInvoiceList = () => {
     const [payingId, setPayingId] = useState(null);
     const [payAccounts, setPayAccounts] = useState([]);
     const [loadingAcc, setLoadingAcc] = useState(false);
+    const [pinVisible, setPinVisible] = useState(false);
+    const pendingAccountIdRef = useRef(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -46,15 +48,26 @@ export const useInvoiceList = () => {
         }
     };
 
-    const executePay = async (accountId) => {
+    const executePay = (accountId) => {
+        pendingAccountIdRef.current = accountId;
+        setPayModalVisible(false);
+        setPinVisible(true);
+    };
+
+    const handlePinConfirm = async (pin) => {
+        setPinVisible(false);
         try {
-            await payInvoice(payingId, accountId);
-            setPayModalVisible(false);
+            await payInvoice(payingId, pendingAccountIdRef.current, pin);
             setPayingId(null);
             load();
         } catch (e) {
             Alert.alert('Алдаа', e.response?.data?.message || 'Төлөлт амжилтгүй');
         }
+    };
+
+    const handlePinClose = () => {
+        setPinVisible(false);
+        setPayModalVisible(true);
     };
 
     const handleCancel = (id) => {
@@ -96,5 +109,6 @@ export const useInvoiceList = () => {
             setPayModalVisible(false);
             setPayingId(null);
         },
+        pinVisible, handlePinConfirm, handlePinClose,
     };
 };

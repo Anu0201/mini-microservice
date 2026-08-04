@@ -1,11 +1,140 @@
-import {useState} from 'react';
-import {ScrollView, StyleSheet, TextInput, TouchableOpacity, View} from 'react-native';
+import {useEffect, useRef, useState} from 'react';
+import {
+    Animated,
+    Dimensions,
+    PanResponder,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS, MIN_PHONE_LOOKUP_LENGTH, EXCHANGE_RATE_FRACTION_DIGITS, AMOUNT_FRACTION_DIGITS} from '../../../constants';
 import {initials, maskName, avatarColor} from '../../../utils/helpers';
 import {PhoneIcon} from '../../../components/icons';
+import PinBottomSheet from '../../../components/PinBottomSheet';
 import {useSendMoney} from '../hooks/useSendMoney';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - 40;
+
+const normalizePhone = (phone) => String(phone ?? '').replace(/\D/g, '');
+
+function AccountCarousel({accounts, index, onIndexChange, onDragStateChange}) {
+    const translateX = useRef(new Animated.Value(-CARD_WIDTH)).current;
+    const len = accounts.length;
+
+    useEffect(() => {
+        translateX.setValue(-CARD_WIDTH);
+    }, [index, len]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponderCapture: () => false,
+            onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+            onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+            onPanResponderGrant: () => {
+                onDragStateChange?.(true);
+            },
+            onPanResponderMove: (_, g) => {
+                translateX.setValue(-CARD_WIDTH + g.dx);
+            },
+            onPanResponderRelease: (_, g) => {
+                onDragStateChange?.(false);
+                const DISTANCE_THRESHOLD = CARD_WIDTH * 0.4;
+                const VELOCITY_THRESHOLD = 0.35;
+                const MIN_FLICK_DISTANCE = 24;
+
+                const goNext = len > 1 && (
+                    g.dx <= -DISTANCE_THRESHOLD ||
+                    (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
+                );
+                const goPrev = len > 1 && (
+                    g.dx >= DISTANCE_THRESHOLD ||
+                    (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
+                );
+
+                if (goNext) {
+                    Animated.timing(translateX, {
+                        toValue: -CARD_WIDTH * 2,
+                        duration: 220,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        onIndexChange((index + 1) % len);
+                        translateX.setValue(-CARD_WIDTH);
+                    });
+                } else if (goPrev) {
+                    Animated.timing(translateX, {
+                        toValue: 0,
+                        duration: 220,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        onIndexChange((index - 1 + len) % len);
+                        translateX.setValue(-CARD_WIDTH);
+                    });
+                } else {
+                    Animated.spring(translateX, {
+                        toValue: -CARD_WIDTH,
+                        useNativeDriver: true,
+                        bounciness: 6,
+                    }).start();
+                }
+            },
+            onPanResponderTerminate: () => {
+                onDragStateChange?.(false);
+                Animated.spring(translateX, {
+                    toValue: -CARD_WIDTH,
+                    useNativeDriver: true,
+                    bounciness: 6,
+                }).start();
+            },
+        })
+    ).current;
+
+    if (len === 0) return null;
+
+    const prevAccount = accounts[(index - 1 + len) % len];
+    const currentAccount = accounts[index];
+    const nextAccount = accounts[(index + 1) % len];
+
+    const renderCard = (account, key) => {
+        const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
+        return (
+            <View key={key} style={[styles.accountCard, {width: CARD_WIDTH}]}>
+                <View style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+                    <Text style={styles.badgeText}>{account.currency}</Text>
+                </View>
+                <View style={{flex: 1}}>
+                    <Text style={styles.accNum}>{account.accountNumber}</Text>
+                    <Text style={styles.accBal}>
+                        {Number(account.balance).toLocaleString()} {currencySymbol}
+                    </Text>
+                </View>
+            </View>
+        );
+    };
+
+    return (
+        <View>
+            <View style={[styles.carouselViewport, {width: CARD_WIDTH}]} {...panResponder.panHandlers}>
+                <Animated.View style={[styles.carouselTrack, {transform: [{translateX}]}]}>
+                    {renderCard(prevAccount, 'prev')}
+                    {renderCard(currentAccount, 'current')}
+                    {renderCard(nextAccount, 'next')}
+                </Animated.View>
+            </View>
+            {len > 1 && (
+                <View style={styles.dotsRow}>
+                    {accounts.map((_, i) => (
+                        <View key={i} style={[styles.dot, i === index && styles.dotActive]}/>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+}
 
 export default function SendMoneyScreen({
                                             action = 'send',
@@ -17,15 +146,38 @@ export default function SendMoneyScreen({
     const {
         receiverPhone, setReceiverPhone,
         receiverUser, lookupLoading,
+        currentUserPhone,
         accounts, selectedId, setSelectedId, loadingAcc,
         myAccounts, receiverAccountId, setReceiverAccountId, loadingMyAcc,
         exchangeRate, loadingRate,
         sending,
         isSend, currency, selectedAccount, needsConversion,
         handleSubmit,
+        pinVisible, handlePinConfirm, handlePinClose,
     } = useSendMoney({action, amount, filterCurrency, onSuccess});
 
     const [description, setDescription] = useState('');
+    const [accountIndex, setAccountIndex] = useState(0);
+    const [accountCarouselDragging, setAccountCarouselDragging] = useState(false);
+
+    const isSelfPhone = (phone) => {
+        const norm = normalizePhone(phone);
+        return norm.length > 0 && norm === normalizePhone(currentUserPhone);
+    };
+
+    const handlePhoneChange = (text) => {
+        setReceiverPhone(text);
+    };
+
+    useEffect(() => {
+        if (accounts.length === 0) return;
+        if (accountIndex > accounts.length - 1) {
+            setAccountIndex(0);
+            return;
+        }
+        setSelectedId(accounts[accountIndex].accountId);
+    }, [accounts, accountIndex]);
+
     const currencySign = CURRENCY_SIGN[currency] ?? currency;
 
     return (
@@ -42,8 +194,11 @@ export default function SendMoneyScreen({
                 </View>
             </SafeAreaView>
 
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                {/* Phone input */}
+            <ScrollView
+                contentContainerStyle={styles.body}
+                keyboardShouldPersistTaps="handled"
+                scrollEnabled={!accountCarouselDragging}
+            >
                 <View style={styles.inputCard}>
                     <PhoneIcon size={24} color="#94a3b8"/>
                     <TextInput
@@ -51,17 +206,25 @@ export default function SendMoneyScreen({
                         placeholder="Утасны дугаар оруулах"
                         placeholderTextColor="#94a3b8"
                         value={receiverPhone}
-                        onChangeText={setReceiverPhone}
+                        onChangeText={handlePhoneChange}
                         keyboardType="phone-pad"
                     />
                 </View>
+
+                {isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && (
+                    <View style={[styles.userCard, styles.userCardNotFound]}>
+                        <Text style={styles.userCardNotFoundText}>
+                            Өөрийн дугаарт {isSend ? 'илгээх' : 'нэхэмжлэх'} боломжгүй
+                        </Text>
+                    </View>
+                )}
 
                 {lookupLoading && (
                     <View style={styles.userCard}>
                         <Spinner size="small" color={COLORS.accent}/>
                     </View>
                 )}
-                {!lookupLoading && receiverUser && (
+                {!lookupLoading && !isSelfPhone(receiverPhone) && receiverUser && (
                     <View style={styles.userCard}>
                         <View style={styles.userCardLeft}>
                             <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
@@ -72,7 +235,7 @@ export default function SendMoneyScreen({
                         </View>
                     </View>
                 )}
-                {!lookupLoading && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
+                {!lookupLoading && !isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
                     <View style={[styles.userCard, styles.userCardNotFound]}>
                         <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
                     </View>
@@ -88,32 +251,12 @@ export default function SendMoneyScreen({
                                 <Text style={styles.emptyText}>Данс байхгүй байна</Text>
                             </View>
                         ) : (
-                            accounts.map((account) => {
-                                const active = selectedId === account.accountId;
-                                const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
-                                return (
-                                    <TouchableOpacity
-                                        key={account.accountId}
-                                        style={[styles.accountRow, active && styles.accountRowActive]}
-                                        onPress={() => setSelectedId(account.accountId)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View
-                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                                            <Text style={styles.badgeText}>{account.currency}</Text>
-                                        </View>
-                                        <View style={{flex: 1}}>
-                                            <Text style={styles.accNum}>{account.accountNumber}</Text>
-                                            <Text style={styles.accBal}>
-                                                {Number(account.balance).toLocaleString()} {currencySymbol}
-                                            </Text>
-                                        </View>
-                                        <View style={[styles.radio, active && styles.radioActive]}>
-                                            {active && <View style={styles.radioDot}/>}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })
+                            <AccountCarousel
+                                accounts={accounts}
+                                index={accountIndex}
+                                onIndexChange={setAccountIndex}
+                                onDragStateChange={setAccountCarouselDragging}
+                            />
                         )}
                     </View>
                 ) : (
@@ -156,7 +299,6 @@ export default function SendMoneyScreen({
                     </View>
                 )}
 
-
                 {needsConversion && (
                     <View style={styles.conversionCard}>
                         {loadingRate ? (
@@ -177,6 +319,7 @@ export default function SendMoneyScreen({
                         )}
                     </View>
                 )}
+
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Тайлбар</Text>
                     <TextInput
@@ -207,6 +350,13 @@ export default function SendMoneyScreen({
                     </Text>
                 </TouchableOpacity>
             </SafeAreaView>
+
+            <PinBottomSheet
+                visible={pinVisible}
+                onConfirm={handlePinConfirm}
+                onClose={handlePinClose}
+                loading={sending}
+            />
         </View>
     );
 }
@@ -236,7 +386,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#e2e8f0',
     },
-    phoneIcon: {fontSize: 18, marginRight: 10},
     phoneInput: {flex: 1, fontSize: 16, color: '#0f172a', paddingVertical: 14},
     section: {marginBottom: 20},
     sectionLabel: {
@@ -250,6 +399,24 @@ const styles = StyleSheet.create({
     centerPad: {paddingVertical: 24, alignItems: 'center'},
     emptyCard: {backgroundColor: '#f8fafc', borderRadius: 12, padding: 16},
     emptyText: {color: COLORS.muted, fontSize: 14},
+    carouselViewport: {overflow: 'hidden', alignSelf: 'center'},
+    carouselTrack: {flexDirection: 'row'},
+    accountCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: COLORS.accent,
+        backgroundColor: COLORS.accentLight,
+    },
+    badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
+    badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
+    accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
+    accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
+    dotsRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, gap: 6},
+    dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: '#cbd5e1'},
+    dotActive: {width: 16, borderRadius: 3, backgroundColor: COLORS.accent},
     accountRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -261,10 +428,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     accountRowActive: {borderColor: COLORS.accent, backgroundColor: COLORS.accentLight},
-    badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
-    badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
-    accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
-    accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
     radio: {
         width: 22, height: 22, borderRadius: 11,
         borderWidth: 2, borderColor: '#cbd5e1',
@@ -272,17 +435,6 @@ const styles = StyleSheet.create({
     },
     radioActive: {borderColor: COLORS.accent},
     radioDot: {width: 11, height: 11, borderRadius: 6, backgroundColor: COLORS.accent},
-    toggleRow: {
-        flexDirection: 'row',
-        backgroundColor: '#f1f5f9',
-        borderRadius: 14,
-        padding: 4,
-        gap: 4,
-    },
-    toggleBtn: {flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center'},
-    toggleActive: {backgroundColor: COLORS.accent},
-    toggleText: {fontSize: 13, fontWeight: '600', color: COLORS.secondary},
-    toggleTextActive: {color: '#fff'},
     descInput: {
         backgroundColor: '#f8fafc',
         borderRadius: 14,

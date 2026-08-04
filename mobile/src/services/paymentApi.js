@@ -19,13 +19,15 @@ export const sendInvoice = (data, idempotencyKey = createIdempotencyKey('invoice
 export const sendSplitInvoice = (data, idempotencyKey = createIdempotencyKey('invoice-split')) =>
     api.post('/api/payments/invoices/split', data, withIdempotencyHeader(idempotencyKey));
 
-export const payInvoice = (id, accountId) => api.post(`/api/payments/invoices/${id}/pay`, { accountId });
+export const payInvoice = (id, accountId, pin) =>
+    api.post(`/api/payments/invoices/${id}/pay`, {accountId}, {headers: {'X-Pin': pin}});
 
 export const cancelInvoice = (id) => api.post(`/api/payments/invoices/${id}/cancel`);
 
 export const cancelMyInvoice = (id) => api.post(`/api/payments/invoices/${id}/cancel/user`);
 
 // data: { receiverPhone, amount, currency, description, senderAccountId }
-export const sendMoney = (data) => api.post('/api/payments/invoices/transfer', data);
+export const sendMoney = (data, pin) =>
+    api.post('/api/payments/invoices/transfer', data, {headers: {'X-Pin': pin}});
 
 export const getExchangeRate = (from, to) => api.get(`/api/payments/invoices/exchange-rate?from=${from}&to=${to}`);
