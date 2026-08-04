@@ -82,8 +82,9 @@ public class InvoiceController {
     @PostMapping("/transfer")
     public ResponseEntity<TransferResponse> sendMoney(
             @Valid @RequestBody SendMoneyRequest request,
-            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId) {
-        return ResponseEntity.ok(invoiceService.sendMoney(request, senderId));
+            @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long senderId,
+            @RequestHeader(AppConstants.HEADER.X_PIN) String pin) {
+        return ResponseEntity.ok(invoiceService.sendMoney(request, senderId, pin));
     }
 
     @PostMapping("/split")
@@ -111,8 +112,9 @@ public class InvoiceController {
             @PathVariable Long invoiceId,
             @Valid @RequestBody PayInvoiceRequest request,
             @RequestHeader(AppConstants.HEADER.AUTH_USER_ID) Long userId,
+            @RequestHeader(AppConstants.HEADER.X_PIN) String pin,
             @RequestHeader(value = AppConstants.HEADER.IDEMPOTENCY_KEY, required = false) String idempotencyKey) {
-        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, request.accountId(), userId, idempotencyKey));
+        return ResponseEntity.ok(invoiceService.payInvoice(invoiceId, request.accountId(), userId, idempotencyKey, pin));
     }
 
     //hoyulaa

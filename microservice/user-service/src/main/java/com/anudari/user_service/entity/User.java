@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,15 @@ public class User extends Audit {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role_name")
     private Set<String> roles = new HashSet<>();
+
+    @Column(name = "pin_hash")
+    private String pinHash;
+
+    @Column(name = "pin_failed_attempts", nullable = false)
+    private int pinFailedAttempts = 0;
+
+    @Column(name = "pin_locked_until")
+    private Instant pinLockedUntil;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Account> accounts = new ArrayList<>();

@@ -14,9 +14,14 @@ import com.anudari.common.utility.JSONUtility;
 import com.anudari.payment_service.entity.Invoice;
 import com.anudari.payment_service.entity.InvoiceItem;
 import com.anudari.payment_service.entity.Payment;
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
+import com.anudari.common.exception.ValidationException;
 import com.anudari.payment_service.feign.AccountInfo;
 import com.anudari.payment_service.feign.CreditRequest;
 import com.anudari.payment_service.feign.DebitRequest;
+import com.anudari.payment_service.feign.PinVerifyRequest;
+import com.anudari.payment_service.feign.PinVerifyResponse;
 import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
 import com.anudari.payment_service.repository.InvoiceRepository;
@@ -144,7 +149,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                     .toList();
 
             if (phones.isEmpty()) {
-                throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phone.required"));
+                throw new ValidationException(MessageUtility.getMessage("invoice.split.phone.required"));
             }
 
             BigDecimal totalAmount = request.totalAmount().setScale(2, RoundingMode.HALF_UP);
@@ -182,36 +187,36 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private void validateSplitInvoiceRequest(SendSplitInvoiceRequest request) {
         if (request.phones() == null || request.phones().isEmpty()) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phones.notempty"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.phones.notempty"));
         }
         boolean hasBlankPhone = request.phones().stream()
                 .anyMatch(phone -> phone == null || phone.trim().isEmpty());
         if (hasBlankPhone) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.phone.notblank"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.phone.notblank"));
         }
         if (request.totalAmount() == null || request.totalAmount().compareTo(new BigDecimal("0.01")) < 0) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.amount.min"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.amount.min"));
         }
         if (request.receiverAccountId() == null) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.receiverAccountId.notnull"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.receiverAccountId.notnull"));
         }
         if (request.participantCount() == null || request.participantCount() < 1) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.participantCount.notnull"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.participantCount.notnull"));
         }
         if (request.participantCount() < request.phones().size()) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.split.participantCount.invalid"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.split.participantCount.invalid"));
         }
     }
 
     private void validateSendInvoiceRequest(SendInvoiceRequest request) {
         if (request.receiverPhone() == null || request.receiverPhone().trim().isEmpty()) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.receiverPhone.required"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.send.receiverPhone.required"));
         }
         if (request.amount() == null || request.amount().compareTo(new BigDecimal("0.01")) < 0) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.amount.min"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.send.amount.min"));
         }
         if (request.receiverAccountId() == null) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.send.receiverAccountId.required"));
+            throw new ValidationException(MessageUtility.getMessage("invoice.send.receiverAccountId.required"));
         }
     }
 
@@ -224,7 +229,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
 
         if (senderId.equals(receiver.userId())) {
-            throw new IllegalArgumentException(MessageUtility.getMessage("invoice.self.send.forbidden"));
+            throw new BusinessException(MessageUtility.getMessage("invoice.self.send.forbidden"));
         }
 
         return Invoice.builder()
@@ -305,7 +310,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             Invoice invoice = findById(invoiceId);
             if (userId != null && !invoice.getUserId().equals(userId) && !userId.equals(invoice.getSenderId())) {
-                throw new SecurityException(MessageUtility.getMessage("invoice.access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("invoice.access.denied"));
             }
             InvoiceResponse response = InvoiceResponse.from(invoice, fetchSenderName(invoice.getSenderId()));
 
@@ -319,12 +324,13 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey) {
+    public InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey, String pin) {
         LogUtility.info(this.getClass().getName(), String.valueOf(userId), "INVOICE", "[pay.invoice] invoiceId: " + invoiceId + ", accountId: " + accountId);
         try {
             if (accountId == null) {
-                throw new IllegalArgumentException(MessageUtility.getMessage("invoice.pay.accountId.required"));
+                throw new ValidationException(MessageUtility.getMessage("invoice.pay.accountId.required"));
             }
+            verifyPin(userId, pin);
             if (idempotencyKey != null) {
                 Optional<Payment> existing = paymentRepository.findByIdempotencyKey(idempotencyKey);
                 if (existing.isPresent()) {
@@ -337,10 +343,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             Invoice invoice = findById(invoiceId);
 
             if (!invoice.getUserId().equals(userId)) {
-                throw new SecurityException(MessageUtility.getMessage("invoice.access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("invoice.access.denied"));
             }
             if (!(invoice.getStatus() instanceof InvoiceStatus.Unpaid)) {
-                throw new IllegalStateException(MessageUtility.getMessage("invoice.not.payable", new Object[]{invoice.getStatus().value()}));
+                throw new BusinessException(MessageUtility.getMessage("invoice.not.payable", new Object[]{invoice.getStatus().value()}));
             }
 
             AccountInfo account;
@@ -367,7 +373,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                         appProperties.getInternalSecret()
                 );
             } catch (FeignException.BadRequest e) {
-                throw new IllegalStateException(MessageUtility.getMessage("invoice.balance.insufficient"));
+                throw new BusinessException(MessageUtility.getMessage("invoice.balance.insufficient"));
             }
 
             if (invoice.getReceiverAccountId() != null && invoice.getSenderId() != null) {
@@ -402,7 +408,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             Invoice invoice = findById(invoiceId);
             if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
-                throw new IllegalStateException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
+                throw new BusinessException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
             }
             invoice.setStatus(new InvoiceStatus.Cancelled());
             InvoiceResponse response = InvoiceResponse.from(invoiceRepository.save(invoice));
@@ -417,9 +423,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Transactional
-    public TransferResponse sendMoney(SendMoneyRequest request, Long senderId) {
+    public TransferResponse sendMoney(SendMoneyRequest request, Long senderId, String pin) {
         LogUtility.info(this.getClass().getName(), String.valueOf(senderId), "INVOICE", "[send.money] " + JSONUtility.toJSON(request));
         try {
+            verifyPin(senderId, pin);
             UserIdResponse receiver;
             try {
                 receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
@@ -428,7 +435,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
 
             if (senderId.equals(receiver.userId())) {
-                throw new IllegalArgumentException(MessageUtility.getMessage("money.self.send.forbidden"));
+                throw new BusinessException(MessageUtility.getMessage("money.self.send.forbidden"));
             }
 
             String currency = request.currency() != null ? request.currency() : "MNT";
@@ -461,7 +468,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                         appProperties.getInternalSecret()
                 );
             } catch (FeignException.BadRequest e) {
-                throw new IllegalStateException(MessageUtility.getMessage("balance.insufficient"));
+                throw new BusinessException(MessageUtility.getMessage("balance.insufficient"));
             }
 
             userServiceClient.creditAccount(
@@ -508,10 +515,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             boolean isSender = userId.equals(invoice.getSenderId());
             boolean isReceiver = userId.equals(invoice.getUserId());
             if (!isSender && !isReceiver) {
-                throw new SecurityException(MessageUtility.getMessage("invoice.cancel.access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("invoice.cancel.access.denied"));
             }
             if (invoice.getStatus() instanceof InvoiceStatus.Paid) {
-                throw new IllegalStateException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
+                throw new BusinessException(MessageUtility.getMessage("invoice.cancel.paid.forbidden"));
             }
             invoice.setStatus(new InvoiceStatus.Cancelled());
             InvoiceResponse response = InvoiceResponse.from(invoiceRepository.save(invoice));
@@ -521,6 +528,19 @@ public class InvoiceServiceImpl implements InvoiceService {
         } catch (Exception ex) {
             LogUtility.error(this.getClass().getName(), String.valueOf(userId), "INVOICE", "[cancel.user.invoice] Exception: " + ex.getMessage());
             throw ex;
+        }
+    }
+
+    private void verifyPin(Long userId, String pin) {
+        PinVerifyResponse result = userServiceClient.verifyPin(
+                new PinVerifyRequest(userId, pin),
+                appProperties.getInternalSecret()
+        );
+        if (!result.valid()) {
+            if ("LOCKED".equals(result.reason())) {
+                throw new BusinessException(MessageUtility.getMessage("pin.locked"));
+            }
+            throw new BusinessException(MessageUtility.getMessage("pin.invalid"));
         }
     }
 

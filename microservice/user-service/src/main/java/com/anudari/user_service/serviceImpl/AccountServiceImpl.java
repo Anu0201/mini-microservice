@@ -1,5 +1,7 @@
 package com.anudari.user_service.serviceImpl;
 
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
 import com.anudari.user_service.config.AppProperties;
 import com.anudari.common.constant.TransactionType;
 import com.anudari.common.utility.LogUtility;
@@ -43,7 +45,7 @@ public class AccountServiceImpl implements AccountService {
         try {
             User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("user.not.found")));
             if (accountRepository.existsByUser_UserIdAndCurrency(userId, request.currency())) {
-                throw new IllegalStateException(MessageUtility.getMessage("account.exists", new Object[]{request.currency()}));
+                throw new BusinessException(MessageUtility.getMessage("account.exists", new Object[]{request.currency()}));
             }
             Account account = Account.builder()
                     .accountNumber(generateUniqueAccountNumber())
@@ -136,10 +138,7 @@ public class AccountServiceImpl implements AccountService {
 
     private void checkSufficientBalance(Account account, BigDecimal requestedAmount) {
         if (account.getBalance().compareTo(requestedAmount) < 0) {
-            throw new IllegalArgumentException(
-                    MessageUtility.getMessage("balance.insufficient.detail",
-                            new Object[]{account.getBalance(), requestedAmount})
-            );
+            throw new BusinessException(MessageUtility.getMessage("balance.insufficient.detail", new Object[]{account.getBalance(), requestedAmount}));
         }
     }
 
@@ -150,7 +149,7 @@ public class AccountServiceImpl implements AccountService {
 
     private void checkAccess(Long ownerId, Long requesterId, String isAdmin) {
         if (!"true".equals(isAdmin) && !ownerId.equals(requesterId)) {
-            throw new SecurityException(MessageUtility.getMessage("access.denied"));
+            throw new RestrictionException(MessageUtility.getMessage("access.denied"));
         }
     }
 
@@ -191,12 +190,12 @@ public class AccountServiceImpl implements AccountService {
 
     private Account validateAndGetAccount(Long accountId, Long userId, String secretToken) {
         if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-            throw new SecurityException(MessageUtility.getMessage("secret.invalid"));
+            throw new RestrictionException(MessageUtility.getMessage("secret.invalid"));
         }
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("account.not.found", new Object[]{accountId})));
         if (!account.getUser().getUserId().equals(userId)) {
-            throw new SecurityException(MessageUtility.getMessage("account.ownership.mismatch"));
+            throw new RestrictionException(MessageUtility.getMessage("account.ownership.mismatch"));
         }
         return account;
     }

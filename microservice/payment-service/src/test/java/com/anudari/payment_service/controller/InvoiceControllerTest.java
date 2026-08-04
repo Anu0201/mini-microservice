@@ -25,7 +25,14 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 
+import com.anudari.payment_service.util.MessageUtility;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.MessageSource;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,6 +50,14 @@ class InvoiceControllerTest {
     private ObjectMapper objectMapper;
     @MockitoBean
     private InvoiceService invoiceService;
+
+    @BeforeEach
+    void setUpMessageUtility() {
+        MessageSource mockSource = mock(MessageSource.class);
+        lenient().when(mockSource.getMessage(anyString(), any(), any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        ReflectionTestUtils.setField(MessageUtility.class, "messageSource", mockSource);
+    }
     @MockitoBean
     private ExchangeRateClient exchangeRateClient;
 
@@ -143,26 +158,28 @@ class InvoiceControllerTest {
 
     @Test
     void payInvoice_passesUserIdAndIdempotencyKeyToService() throws Exception {
-        when(invoiceService.payInvoice(1L, 5L, 7L, "idem-1")).thenReturn(sampleInvoiceResponse());
+        when(invoiceService.payInvoice(1L, 5L, 7L, "idem-1", "1234")).thenReturn(sampleInvoiceResponse());
 
         mockMvc.perform(post("/api/payments/invoices/1/pay")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content("{\"accountId\":5}")
                         .header(AppConstants.HEADER.AUTH_USER_ID, "7")
-                        .header(AppConstants.HEADER.IDEMPOTENCY_KEY, "idem-1"))
+                        .header(AppConstants.HEADER.IDEMPOTENCY_KEY, "idem-1")
+                        .header(AppConstants.HEADER.X_PIN, "1234"))
                 .andExpect(status().isOk());
 
-        verify(invoiceService).payInvoice(1L, 5L, 7L, "idem-1");
+        verify(invoiceService).payInvoice(1L, 5L, 7L, "idem-1", "1234");
     }
 
     @Test
     void payInvoice_forbiddenForOtherUser_returns403() throws Exception {
-        when(invoiceService.payInvoice(1L, 5L, 999L, null)).thenThrow(new SecurityException("Access denied"));
+        when(invoiceService.payInvoice(1L, 5L, 999L, null, "1234")).thenThrow(new SecurityException("Access denied"));
 
         mockMvc.perform(post("/api/payments/invoices/1/pay")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content("{\"accountId\":5}")
-                        .header(AppConstants.HEADER.AUTH_USER_ID, "999"))
+                        .header(AppConstants.HEADER.AUTH_USER_ID, "999")
+                        .header(AppConstants.HEADER.X_PIN, "1234"))
                 .andExpect(status().isForbidden());
     }
 

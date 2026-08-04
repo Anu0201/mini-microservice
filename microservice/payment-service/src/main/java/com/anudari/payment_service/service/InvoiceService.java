@@ -13,13 +13,13 @@ import java.util.concurrent.CompletableFuture;
 public interface InvoiceService {
     InvoiceResponse createInvoice(CreateInvoiceRequest request);
     InvoiceResponse sendUserInvoice(SendInvoiceRequest request, Long senderId, String idempotencyKey);
-    TransferResponse sendMoney(SendMoneyRequest request, Long senderId);
+    TransferResponse sendMoney(SendMoneyRequest request, Long senderId, String pin);
     List<InvoiceResponse> splitInvoice(SendSplitInvoiceRequest request, Long senderId, String idempotencyKey);
     CompletableFuture<List<InvoiceResponse>> listAllInvoices();
     CompletableFuture<List<InvoiceResponse>> listUserInvoices(Long userId);
     CompletableFuture<List<InvoiceResponse>> listSentInvoices(Long senderId);
     InvoiceResponse getInvoiceById(Long invoiceId, Long userId);
-    InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey);
+    InvoiceResponse payInvoice(Long invoiceId, Long accountId, Long userId, String idempotencyKey, String pin);
     InvoiceResponse cancelInvoice(Long invoiceId);
     InvoiceResponse cancelUserInvoice(Long invoiceId, Long senderId);
 }

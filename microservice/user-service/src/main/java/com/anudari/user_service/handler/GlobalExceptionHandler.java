@@ -1,5 +1,12 @@
 package com.anudari.user_service.handler;
 
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
+import com.anudari.common.exception.RestSessionException;
+import com.anudari.common.exception.RunTimeException;
+import com.anudari.common.exception.SessionException;
+import com.anudari.common.exception.TokenException;
+import com.anudari.common.exception.ValidationException;
 import com.anudari.common.utility.LogUtility;
 import com.anudari.user_service.util.MessageUtility;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +26,46 @@ import java.util.NoSuchElementException;
 public class GlobalExceptionHandler {
 
     private static final String CLASS_NAME = GlobalExceptionHandler.class.getName();
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Map<String, Object>> handleBusiness(BusinessException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "BUSINESS", "[business] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation2(ValidationException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "VALIDATION", "[validation] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler({TokenException.class, SessionException.class, RestSessionException.class})
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(RuntimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "UNAUTHORIZED", "[unauthorized] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(errorBody(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    }
+
+    @ExceptionHandler(RestrictionException.class)
+    public ResponseEntity<Map<String, Object>> handleRestriction(RestrictionException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "FORBIDDEN", "[restriction] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(errorBody(HttpStatus.FORBIDDEN, ex.getMessage()));
+    }
+
+    @ExceptionHandler(RunTimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRunTime(RunTimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.error(requestId, CLASS_NAME, "EXCEPTION", "RUNTIME_ERROR", "[runtime] " + ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, MessageUtility.getMessage("error.internal")));
+    }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NoSuchElementException ex, WebRequest request) {

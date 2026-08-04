@@ -14,9 +14,15 @@ import com.anudari.payment_service.exchange.ExchangeRateClient;
 import com.anudari.payment_service.feign.AccountInfo;
 import com.anudari.payment_service.feign.UserIdResponse;
 import com.anudari.payment_service.feign.UserServiceClient;
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
+import com.anudari.payment_service.feign.PinVerifyRequest;
+import com.anudari.payment_service.feign.PinVerifyResponse;
 import com.anudari.payment_service.repository.InvoiceRepository;
 import com.anudari.payment_service.repository.PaymentRepository;
 import com.anudari.payment_service.util.MessageUtility;
+import org.springframework.context.MessageSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,15 +73,17 @@ class InvoiceServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(messageUtility.getMessage(anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        lenient().when(messageUtility.getMessage(anyString(), any(Object[].class)))
+        MessageSource mockSource = org.mockito.Mockito.mock(MessageSource.class);
+        lenient().when(mockSource.getMessage(anyString(), any(), any()))
                 .thenAnswer(invocation -> {
-                    String key = invocation.getArgument(0);
+                    String code = invocation.getArgument(0);
                     Object[] args = invocation.getArgument(1);
-                    return key + ": " + java.util.Arrays.toString(args);
+                    if (args != null && args.length > 0) {
+                        return code + " " + java.util.Arrays.toString(args);
+                    }
+                    return code;
                 });
+        ReflectionTestUtils.setField(MessageUtility.class, "messageSource", mockSource);
 
         createRequest = new CreateInvoiceRequest(
                 42L, "desc", LocalDate.now().plusDays(7), null,
@@ -159,7 +167,7 @@ class InvoiceServiceImplTest {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "UNPAID")));
 
         assertThatThrownBy(() -> invoiceService.getInvoiceById(1L, 999L))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(RestrictionException.class);
     }
 
     @Test
@@ -187,8 +195,10 @@ class InvoiceServiceImplTest {
         when(userServiceClient.getAccountById(5L, "true"))
                 .thenReturn(new AccountInfo(5L, "MN0000000001", CurrencyType.MNT, BigDecimal.valueOf(100000)));
         when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(userServiceClient.verifyPin(any(PinVerifyRequest.class), anyString()))
+                .thenReturn(new PinVerifyResponse(true, null));
 
-        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1");
+        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1", "1234");
 
         assertThat(response.getStatus()).isEqualTo("PAID");
         verify(paymentRepository).save(any(Payment.class));
@@ -199,8 +209,11 @@ class InvoiceServiceImplTest {
         Invoice paidInvoice = invoiceWithId(1L, 7L, "PAID");
         Payment existingPayment = Payment.builder().invoice(paidInvoice).userId(7L).amount(BigDecimal.TEN).idempotencyKey("idem-key-1").build();
         when(paymentRepository.findByIdempotencyKey("idem-key-1")).thenReturn(Optional.of(existingPayment));
+        when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(userServiceClient.verifyPin(any(PinVerifyRequest.class), anyString()))
+                .thenReturn(new PinVerifyResponse(true, null));
 
-        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1");
+        InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1", "1234");
 
         assertThat(response.getStatus()).isEqualTo("PAID");
         verify(invoiceRepository, never()).findById(any());
@@ -210,9 +223,12 @@ class InvoiceServiceImplTest {
     @Test
     void payInvoice_throwsSecurityExceptionForOtherUser() {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "UNPAID")));
+        when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(userServiceClient.verifyPin(any(PinVerifyRequest.class), anyString()))
+                .thenReturn(new PinVerifyResponse(true, null));
 
-        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 999L, null))
-                .isInstanceOf(SecurityException.class);
+        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 999L, null, "1234"))
+                .isInstanceOf(RestrictionException.class);
 
         verify(paymentRepository, never()).save(any());
     }
@@ -220,9 +236,12 @@ class InvoiceServiceImplTest {
     @Test
     void payInvoice_throwsIllegalStateWhenAlreadyPaid() {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "PAID")));
+        when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(userServiceClient.verifyPin(any(PinVerifyRequest.class), anyString()))
+                .thenReturn(new PinVerifyResponse(true, null));
 
-        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 7L, null))
-                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> invoiceService.payInvoice(1L, 5L, 7L, null, "1234"))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -240,7 +259,7 @@ class InvoiceServiceImplTest {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(invoiceWithId(1L, 7L, "PAID")));
 
         assertThatThrownBy(() -> invoiceService.cancelInvoice(1L))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(invoiceRepository, never()).save(any());
     }
@@ -284,6 +303,7 @@ class InvoiceServiceImplTest {
         List<InvoiceResponse> responses = invoiceService.splitInvoice(
                 new SendSplitInvoiceRequest(
                         List.of("99110011", "99110022", "99110033"),
+                        3,
                         new BigDecimal("10.00"),
                         "MNT",
                         "split",
@@ -317,6 +337,7 @@ class InvoiceServiceImplTest {
         List<InvoiceResponse> responses = invoiceService.splitInvoice(
                 new SendSplitInvoiceRequest(
                         List.of("99110011", "99110022"),
+                        2,
                         new BigDecimal("6.67"),
                         "MNT",
                         "split",

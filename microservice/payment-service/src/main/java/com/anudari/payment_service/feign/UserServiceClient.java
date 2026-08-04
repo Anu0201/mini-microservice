@@ -46,4 +46,10 @@ public interface UserServiceClient {
             @PathVariable Long userId,
             @RequestHeader(AppConstants.HEADER.AUTH_IS_ADMIN) String isAdmin
     );
+
+    @PostMapping("/api/users/pin/internal/verify")
+    PinVerifyResponse verifyPin(
+            @RequestBody PinVerifyRequest request,
+            @RequestHeader(AppConstants.HEADER.INTERNAL_SECRET) String internalSecret
+    );
 }

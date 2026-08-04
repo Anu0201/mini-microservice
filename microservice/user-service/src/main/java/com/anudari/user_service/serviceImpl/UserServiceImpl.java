@@ -1,6 +1,7 @@
 package com.anudari.user_service.serviceImpl;
 
 import com.anudari.common.constant.AppConstants;
+import com.anudari.common.exception.RestrictionException;
 import com.anudari.common.utility.LogUtility;
 import com.anudari.common.utility.JSONUtility;
 import com.anudari.user_service.config.AppProperties;
@@ -123,7 +124,7 @@ public class UserServiceImpl implements UserService {
         LogUtility.info(this.getClass().getName(), username, "USER", "[internal.search] username: " + username);
         try {
             if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-                throw new SecurityException(MessageUtility.getMessage("access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("access.denied"));
             }
             UserInternalResponse response = userRepository.findByUsername(username)
                     .map(UserInternalResponse::from)
@@ -142,7 +143,7 @@ public class UserServiceImpl implements UserService {
         LogUtility.info(this.getClass().getName(), phoneNumber, "USER", "[internal.search.by.phone] phoneNumber: " + phoneNumber);
         try {
             if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-                throw new SecurityException(MessageUtility.getMessage("access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("access.denied"));
             }
             UserInternalResponse response = userRepository.findByPhoneNumber(phoneNumber)
                     .map(UserInternalResponse::from)
@@ -162,7 +163,7 @@ public class UserServiceImpl implements UserService {
         LogUtility.info(this.getClass().getName(), "SYSTEM", "USER", "[list.all.users] request received");
         try {
             if (secretToken == null || !secretToken.equals(appProperties.getInternalSecret())) {
-                throw new SecurityException(MessageUtility.getMessage("access.denied"));
+                throw new RestrictionException(MessageUtility.getMessage("access.denied"));
             }
             List<UserResponse> users = userRepository.findAll().stream()
                     .map(UserResponse::from)

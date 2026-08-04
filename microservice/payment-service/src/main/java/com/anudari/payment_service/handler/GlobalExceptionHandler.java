@@ -1,10 +1,18 @@
 package com.anudari.payment_service.handler;
 
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
+import com.anudari.common.exception.RestSessionException;
+import com.anudari.common.exception.RunTimeException;
+import com.anudari.common.exception.SessionException;
+import com.anudari.common.exception.TokenException;
+import com.anudari.common.exception.ValidationException;
 import com.anudari.common.utility.LogUtility;
 import com.anudari.payment_service.util.MessageUtility;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -18,6 +26,38 @@ import java.util.NoSuchElementException;
 public class GlobalExceptionHandler {
 
     private static final String CLASS_NAME = GlobalExceptionHandler.class.getName();
+
+    @ExceptionHandler({BusinessException.class, ValidationException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest2(RuntimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "BAD_REQUEST", "[bad.request] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler({TokenException.class, SessionException.class, RestSessionException.class})
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(RuntimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "UNAUTHORIZED", "[unauthorized] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(errorBody(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    }
+
+    @ExceptionHandler(RestrictionException.class)
+    public ResponseEntity<Map<String, Object>> handleRestriction(RestrictionException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "FORBIDDEN", "[restriction] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(errorBody(HttpStatus.FORBIDDEN, ex.getMessage()));
+    }
+
+    @ExceptionHandler(RunTimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRunTime(RunTimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.error(requestId, CLASS_NAME, "EXCEPTION", "RUNTIME_ERROR", "[runtime] " + ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, MessageUtility.getMessage("error.internal")));
+    }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NoSuchElementException ex, WebRequest request) {
@@ -49,6 +89,14 @@ public class GlobalExceptionHandler {
         LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "CONFLICT", "[conflict] " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(errorBody(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingHeader(MissingRequestHeaderException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "BAD_REQUEST", "[missing.header] " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
