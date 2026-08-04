@@ -1,7 +1,13 @@
 package com.anudari.auth_service.handler;
 
-import com.anudari.auth_service.exception.AuthenticationException;
 import com.anudari.common.constant.AppConstants;
+import com.anudari.common.exception.BusinessException;
+import com.anudari.common.exception.RestrictionException;
+import com.anudari.common.exception.RestSessionException;
+import com.anudari.common.exception.RunTimeException;
+import com.anudari.common.exception.SessionException;
+import com.anudari.common.exception.TokenException;
+import com.anudari.common.exception.ValidationException;
 import com.anudari.common.utility.LogUtility;
 import com.anudari.auth_service.util.MessageUtility;
 import org.springframework.http.HttpStatus;
@@ -20,14 +26,33 @@ public class GlobalExceptionHandler {
 
     private static final String CLASS_NAME = GlobalExceptionHandler.class.getName();
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, Object>> handleAuth(AuthenticationException ex, WebRequest request) {
+    @ExceptionHandler({TokenException.class, SessionException.class, RestSessionException.class})
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(RuntimeException ex, WebRequest request) {
         String requestId = getRequestId(request);
         String message = ex.getMessage() != null ? ex.getMessage() : MessageUtility.getMessage("auth.unauthorized");
-
-        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "UNAUTHORIZED", "[auth.failed] " + message);
-
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "UNAUTHORIZED", "[unauthorized] " + message);
         return buildResponse(HttpStatus.UNAUTHORIZED, message);
+    }
+
+    @ExceptionHandler({BusinessException.class, ValidationException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.info(requestId, CLASS_NAME, "EXCEPTION", "BAD_REQUEST", "[bad.request] " + ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(RestrictionException.class)
+    public ResponseEntity<Map<String, Object>> handleRestriction(RestrictionException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.warn(requestId, CLASS_NAME, "EXCEPTION", "FORBIDDEN", "[restriction] " + ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(RunTimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRunTime(RunTimeException ex, WebRequest request) {
+        String requestId = getRequestId(request);
+        LogUtility.error(requestId, CLASS_NAME, "EXCEPTION", "RUNTIME_ERROR", "[runtime] " + ex.getMessage(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, MessageUtility.getMessage("error.internal"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

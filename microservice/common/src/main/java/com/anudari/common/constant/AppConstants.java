@@ -12,6 +12,7 @@ public final class AppConstants {
         String INTERNAL_SECRET = "X-Internal-Secret";
         String REQUEST_ID = "X-Request-Id";
         String IDEMPOTENCY_KEY = "Idempotency-Key";
+        String X_PIN = "X-Pin";
     }
 
     public interface ROLE {
