@@ -1,11 +1,12 @@
 package com.anudari.user_service.dto;
 
+import com.anudari.common.utility.StringUtility;
 import com.anudari.user_service.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public record UserResponse(Long userId, String username, String email, String phoneNumber, Set<String> roles, LocalDateTime createdDate) {
+public record UserResponse(Long userId, String username, String email, String phoneNumber, Set<String> roles, LocalDateTime createdDate, String initials, boolean hasPinSet) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -14,7 +15,9 @@ public record UserResponse(Long userId, String username, String email, String ph
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getRoles(),
-                user.getCreatedDate()
+                user.getCreatedDate(),
+                StringUtility.initials(user.getUsername()),
+                user.getPinHash() != null
         );
     }
 }

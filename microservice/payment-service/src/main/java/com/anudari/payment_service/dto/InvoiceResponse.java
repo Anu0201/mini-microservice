@@ -1,5 +1,6 @@
 package com.anudari.payment_service.dto;
 
+import com.anudari.common.utility.StringUtility;
 import com.anudari.payment_service.entity.Invoice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +22,9 @@ public class InvoiceResponse {
     private Long userId;
     private Long senderId;
     private String senderName;
+    private String senderInitials;
     private String receiverName;
+    private String receiverInitials;
     private BigDecimal amount;
     private String currency;
     private String status;
@@ -45,7 +48,9 @@ public class InvoiceResponse {
                 .userId(invoice.getUserId())
                 .senderId(invoice.getSenderId())
                 .senderName(senderName)
+                .senderInitials(StringUtility.initials(senderName))
                 .receiverName(receiverName)
+                .receiverInitials(StringUtility.initials(receiverName))
                 .amount(invoice.getAmount())
                 .currency(invoice.getCurrency())
                 .status(invoice.getStatus().value())
