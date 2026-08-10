@@ -1,8 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
 import {
-    Animated,
-    Dimensions,
-    PanResponder,
     ScrollView,
     StyleSheet,
     Switch,
@@ -13,9 +10,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {
-    CURRENCY_BG,
     CURRENCY_SIGN,
-    CURRENCY_FALLBACK_BG,
     COLORS,
     MIN_PHONE_LOOKUP_LENGTH,
     PHONE_LOOKUP_DEBOUNCE_MS
@@ -23,132 +18,14 @@ import {
 import {PhoneIcon} from '../../../components/icons';
 import {useCreateInvoice} from '../hooks/useCreateInvoice';
 import {lookupUserByPhone} from '../../../services/userApi';
-import {initials, maskName, avatarColor} from '../../../utils/helpers';
+import {avatarColor, normalizePhone} from '../../../utils/helpers';
+import AccountCarousel from '../../../components/AccountCarousel';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = SCREEN_WIDTH - 40;
 const MIN_SPLIT_PHONES = 2;
-
-const normalizePhone = (phone) => String(phone ?? '').replace(/\D/g, '');
-
-function AccountCarousel({accounts, index, onIndexChange, onDragStateChange}) {
-    const translateX = useRef(new Animated.Value(-CARD_WIDTH)).current;
-    const len = accounts.length;
-
-    useEffect(() => {
-        translateX.setValue(-CARD_WIDTH);
-    }, [index, len]);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponderCapture: () => false,
-            onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onPanResponderGrant: () => {
-                onDragStateChange?.(true);
-            },
-            onPanResponderMove: (_, g) => {
-                translateX.setValue(-CARD_WIDTH + g.dx);
-            },
-            onPanResponderRelease: (_, g) => {
-                onDragStateChange?.(false);
-                const DISTANCE_THRESHOLD = CARD_WIDTH * 0.4;
-                const VELOCITY_THRESHOLD = 0.35;
-                const MIN_FLICK_DISTANCE = 24;
-
-                const goNext = len > 1 && (
-                    g.dx <= -DISTANCE_THRESHOLD ||
-                    (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
-                );
-                const goPrev = len > 1 && (
-                    g.dx >= DISTANCE_THRESHOLD ||
-                    (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
-                );
-
-                if (goNext) {
-                    Animated.timing(translateX, {
-                        toValue: -CARD_WIDTH * 2,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index + 1) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else if (goPrev) {
-                    Animated.timing(translateX, {
-                        toValue: 0,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index - 1 + len) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else {
-                    Animated.spring(translateX, {
-                        toValue: -CARD_WIDTH,
-                        useNativeDriver: true,
-                        bounciness: 6,
-                    }).start();
-                }
-            },
-            onPanResponderTerminate: () => {
-                onDragStateChange?.(false);
-                Animated.spring(translateX, {
-                    toValue: -CARD_WIDTH,
-                    useNativeDriver: true,
-                    bounciness: 6,
-                }).start();
-            },
-        })
-    ).current;
-
-    if (len === 0) return null;
-
-    const prevAccount = accounts[(index - 1 + len) % len];
-    const currentAccount = accounts[index];
-    const nextAccount = accounts[(index + 1) % len];
-
-    const renderCard = (account, key) => {
-        const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
-        return (
-            <View key={key} style={[styles.accountCard, {width: CARD_WIDTH}]}>
-                <View
-                    style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                    <Text style={styles.badgeText}>{account.currency}</Text>
-                </View>
-                <View style={{flex: 1}}>
-                    <Text style={styles.accNum}>{account.accountNumber}</Text>
-                    <Text style={styles.accBal}>
-                        {Number(account.balance).toLocaleString()} {currencySymbol}
-                    </Text>
-                </View>
-            </View>
-        );
-    };
-
-    return (
-        <View>
-            <View style={[styles.carouselViewport, {width: CARD_WIDTH}]} {...panResponder.panHandlers}>
-                <Animated.View style={[styles.carouselTrack, {transform: [{translateX}]}]}>
-                    {renderCard(prevAccount, 'prev')}
-                    {renderCard(currentAccount, 'current')}
-                    {renderCard(nextAccount, 'next')}
-                </Animated.View>
-            </View>
-            {len > 1 && (
-                <View style={styles.dotsRow}>
-                    {accounts.map((_, i) => (
-                        <View key={i} style={[styles.dot, i === index && styles.dotActive]}/>
-                    ))}
-                </View>
-            )}
-        </View>
-    );
-}
 
 export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT', initialAmount = ''}) {
     const {
-        myAccounts, selectedAccountId, setSelectedAccountId, loadingAccounts, sending, handleSubmit, handleSplitSubmit,
+        myAccounts, setSelectedAccountId, loadingAccounts, sending, handleSubmit, handleSplitSubmit,
         receiverUser, lookupLoading, lookupPhone,
         currentUserPhone
     } = useCreateInvoice({currency, initialAmount, onSuccess});
@@ -321,11 +198,11 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                             <View style={styles.userCard}>
                                 <View style={{flex: 1}}>
                                     <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
-                                    <Text style={styles.userCardName}>{maskName(receiverUser.username)}</Text>
+                                    <Text style={styles.userCardName}>{receiverUser.maskedName}</Text>
                                 </View>
                                 <View
                                     style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username)}]}>
-                                    <Text style={styles.userAvatarText}>{initials(receiverUser.username)}</Text>
+                                    <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
                                 </View>
                             </View>
                         )}
@@ -381,9 +258,9 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                                         <View key={phone} style={styles.phoneChip}>
                                             <View
                                                 style={[styles.chipAvatar, {backgroundColor: avatarColor(u.username)}]}>
-                                                <Text style={styles.chipAvatarText}>{initials(u.username)}</Text>
+                                                <Text style={styles.chipAvatarText}>{u.initials}</Text>
                                             </View>
-                                            <Text style={styles.phoneChipText}>{maskName(u.username)}</Text>
+                                            <Text style={styles.phoneChipText}>{u.maskedName}</Text>
                                             <TouchableOpacity
                                                 onPress={() => removeSplitPhone(phone)}
                                                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
@@ -421,11 +298,11 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                             <TouchableOpacity style={styles.userCard} onPress={selectSplitUser} activeOpacity={0.7}>
                                 <View style={{flex: 1}}>
                                     <Text style={styles.userCardPhone}>{splitLookupUser.phoneNumber}</Text>
-                                    <Text style={styles.userCardName}>{maskName(splitLookupUser.username)}</Text>
+                                    <Text style={styles.userCardName}>{splitLookupUser.maskedName}</Text>
                                 </View>
                                 <View
                                     style={[styles.userAvatar, {backgroundColor: avatarColor(splitLookupUser.username)}]}>
-                                    <Text style={styles.userAvatarText}>{initials(splitLookupUser.username)}</Text>
+                                    <Text style={styles.userAvatarText}>{splitLookupUser.initials}</Text>
                                 </View>
                             </TouchableOpacity>
                         )}
@@ -579,24 +456,6 @@ const styles = StyleSheet.create({
     centerPad: {paddingVertical: 24, alignItems: 'center'},
     emptyCard: {backgroundColor: '#f8fafc', borderRadius: 12, padding: 16},
     emptyText: {color: COLORS.muted, fontSize: 14},
-    carouselViewport: {overflow: 'hidden', alignSelf: 'center'},
-    carouselTrack: {flexDirection: 'row'},
-    accountCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1.5,
-        borderColor: COLORS.accent,
-        backgroundColor: COLORS.accentLight,
-    },
-    badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
-    badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
-    accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
-    accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
-    dotsRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, gap: 6},
-    dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: '#cbd5e1'},
-    dotActive: {width: 16, borderRadius: 3, backgroundColor: COLORS.accent},
     descInput: {
         backgroundColor: '#f8fafc',
         borderRadius: 14,

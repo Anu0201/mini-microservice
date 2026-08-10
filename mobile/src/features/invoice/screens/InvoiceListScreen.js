@@ -3,14 +3,14 @@ import {Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-nativ
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_SIGN} from '../../../constants';
-import {initials, avatarColor} from '../../../utils/helpers';
+import {avatarColor} from '../../../utils/helpers';
 import {useInvoiceList} from '../hooks/useInvoiceList';
 import PinBottomSheet from '../../../components/PinBottomSheet';
 
-function Avatar({name}) {
+function Avatar({name, initials}) {
     return (
         <View style={[styles.avatar, {backgroundColor: avatarColor(name)}]}>
-            <Text style={styles.avatarText}>{initials(name)}</Text>
+            <Text style={styles.avatarText}>{initials ?? '?'}</Text>
         </View>
     );
 }
@@ -31,7 +31,7 @@ function InvoiceRow({item, onSelect}) {
     const sign = CURRENCY_SIGN[item.currency] ?? item.currency;
     return (
         <TouchableOpacity style={styles.invoiceHighlightRow} onPress={() => onSelect(item)} activeOpacity={0.7}>
-            <Avatar name={name}/>
+            <Avatar name={name} initials={item.senderInitials}/>
             <View style={styles.txInfo}>
                 <Text style={styles.txName}>{name}</Text>
                 <Text style={styles.txMeta}>{formatDate(item.createdAt)} - SocialPay нэхэмжлэл</Text>
@@ -55,7 +55,7 @@ function InvoiceDetailModal({item, onClose, onPay, onCancel}) {
             <View style={styles.sheet}>
                 <View style={styles.sheetHandle}/>
                 <View style={styles.detailHeader}>
-                    <Avatar name={name}/>
+                    <Avatar name={name} initials={item.senderInitials}/>
                     <View style={{flex: 1, marginLeft: 12}}>
                         <Text style={styles.detailName}>{name}</Text>
                         <Text style={styles.detailMeta}>{formatDate(item.createdAt)}</Text>
@@ -155,6 +155,7 @@ function TransactionRow({item}) {
     const isPending = isSent && item.status === 'UNPAID';
     const isDeclined = item._isDeclined; // hook-с шууд авна
     const name = isSent ? (item.receiverName || 'Хүлээн авагч') : (item.senderName || 'Илгээгч');
+    const avatarInitials = isSent ? item.receiverInitials : item.senderInitials;
     const sign = CURRENCY_SIGN[item.currency] ?? item.currency;
     const isInvoice = item.invoiceNumber?.startsWith('INV-');
     const label = isInvoice ? 'нэхэмжлэл' : 'гүйлгээ';
@@ -166,7 +167,7 @@ function TransactionRow({item}) {
 
     return (
         <View style={styles.txRow}>
-            <Avatar name={name}/>
+            <Avatar name={name} initials={avatarInitials}/>
             <View style={styles.txInfo}>
                 <Text style={[styles.txName, (isPending || isDeclined) && styles.txNameMuted]}>{name}</Text>
                 <Text style={styles.txMeta}>{formatDate(item.createdAt)} - SocialPay {label}</Text>

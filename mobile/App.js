@@ -1,5 +1,6 @@
 import {StatusBar} from 'expo-status-bar';
 import {StyleSheet, View} from 'react-native';
+import {useState} from 'react';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {GluestackUIProvider} from '@gluestack-ui/themed';
 import {config} from '@gluestack-ui/config';
@@ -7,6 +8,7 @@ import {config} from '@gluestack-ui/config';
 import {useAppNavigation} from './src/hooks/useAppNavigation';
 import TabBar from './src/components/TabBar';
 import {TAB_CONTENT_HEIGHT, TAB_BAR_FALLBACK_PADDING} from './src/constants';
+import {LanguageProvider} from './src/context/LanguageContext';
 
 import LoginScreen from './src/features/auth/screens/LoginScreen';
 import RegisterScreen from './src/features/auth/screens/RegisterScreen';
@@ -16,6 +18,9 @@ import AccountScreen from './src/features/wallet/screens/AccountScreen';
 import AccountDetailScreen from './src/features/wallet/screens/AccountDetailScreen';
 import SendMoneyScreen from './src/features/wallet/screens/SendMoneyScreen';
 import CreateInvoiceScreen from './src/features/invoice/screens/CreateInvoiceScreen';
+import PinSettingsScreen from './src/features/wallet/screens/PinSettingsScreen';
+import MenuScreen from './src/features/wallet/screens/MenuScreen';
+import LanguageSettingsScreen from './src/features/wallet/screens/LanguageSettingsScreen';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
@@ -40,6 +45,9 @@ function AppContent() {
         switchTab, openSend, openInvoice, closeAction,
         showTabBar,
     } = useAppNavigation();
+
+    const [menuSub, setMenuSub] = useState(null); // null | 'pin' | 'language'
+    const switchTabAndReset = (tab) => { setMenuSub(null); switchTab(tab); };
 
     const renderContent = () => {
         if (!user) {
@@ -97,7 +105,14 @@ function AppContent() {
             return <AccountScreen onSelectAccount={setSelectedAccount} onLogout={handleLogout}/>;
         }
 
-        return <View style={{flex: 1, backgroundColor: '#f8fafc'}}/>;
+        if (menuSub === 'pin') return <PinSettingsScreen onBack={() => setMenuSub(null)}/>;
+        if (menuSub === 'language') return <LanguageSettingsScreen onBack={() => setMenuSub(null)}/>;
+        return (
+            <MenuScreen
+                onOpenPin={() => setMenuSub('pin')}
+                onOpenLanguage={() => setMenuSub('language')}
+            />
+        );
     };
 
     return (
@@ -109,7 +124,7 @@ function AppContent() {
             {showTabBar && (
                 <TabBar
                     activeTab={mainTab}
-                    onSwitch={switchTab}
+                    onSwitch={switchTabAndReset}
                     glass={GLASS}
                     liquidGlassView={LiquidGlassView}
                     insets={insets}
@@ -123,7 +138,9 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <GluestackUIProvider config={config}>
-                <AppContent/>
+                <LanguageProvider>
+                    <AppContent/>
+                </LanguageProvider>
                 <StatusBar style="auto"/>
             </GluestackUIProvider>
         </SafeAreaProvider>

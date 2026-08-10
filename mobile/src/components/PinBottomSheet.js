@@ -28,6 +28,10 @@ export default function PinBottomSheet({
         if (visible) setDigits([]);
     }, [visible]);
 
+    useEffect(() => {
+        setDigits([]);
+    }, [title]);
+
     const pressDigit = (num) => {
         if (loading || digits.length >= PIN_LENGTH) return;
         const next = [...digits, String(num)];

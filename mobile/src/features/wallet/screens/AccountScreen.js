@@ -3,7 +3,7 @@ import {Alert, Animated, Easing, ScrollView, StyleSheet, TouchableOpacity, View}
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_BG, CURRENCY_SIGN, COLORS, CURRENCIES} from '../../../constants';
-import {initials, isPrefixCurrency} from '../../../utils/helpers';
+import {isPrefixCurrency} from '../../../utils/helpers';
 import {useAccount} from '../hooks/useAccount';
 
 function AccountCard({account, onPress}) {
@@ -59,7 +59,7 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                 <SafeAreaView edges={['top']}>
                     <View style={styles.profileHeaderContent}>
                         <View style={styles.avatarCircle}>
-                            <Text style={styles.avatarText}>{initials(userInfo?.username)}</Text>
+                            <Text style={styles.avatarText}>{userInfo?.initials ?? '?'}</Text>
                         </View>
                         <Text style={styles.userName}>{userInfo?.username ?? '...'}</Text>
                         {userInfo?.email ? <Text style={styles.userEmail}>{userInfo.email}</Text> : null}

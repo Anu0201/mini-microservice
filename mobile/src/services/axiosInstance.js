@@ -14,10 +14,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  const [token, lang] = await AsyncStorage.multiGet(['token', 'app_language']);
+  if (token[1]) config.headers.Authorization = `Bearer ${token[1]}`;
+  config.headers['Accept-Language'] = lang[1] ?? 'mn';
   return config;
 });
 

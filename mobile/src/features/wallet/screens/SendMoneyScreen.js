@@ -1,8 +1,5 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
-    Animated,
-    Dimensions,
-    PanResponder,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -11,130 +8,20 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS, MIN_PHONE_LOOKUP_LENGTH, EXCHANGE_RATE_FRACTION_DIGITS, AMOUNT_FRACTION_DIGITS} from '../../../constants';
-import {initials, maskName, avatarColor} from '../../../utils/helpers';
+import {
+    CURRENCY_BG,
+    CURRENCY_SIGN,
+    CURRENCY_FALLBACK_BG,
+    COLORS,
+    MIN_PHONE_LOOKUP_LENGTH,
+    EXCHANGE_RATE_FRACTION_DIGITS,
+    AMOUNT_FRACTION_DIGITS
+} from '../../../constants';
+import {avatarColor, normalizePhone} from '../../../utils/helpers';
 import {PhoneIcon} from '../../../components/icons';
 import PinBottomSheet from '../../../components/PinBottomSheet';
+import AccountCarousel from '../../../components/AccountCarousel';
 import {useSendMoney} from '../hooks/useSendMoney';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = SCREEN_WIDTH - 40;
-
-const normalizePhone = (phone) => String(phone ?? '').replace(/\D/g, '');
-
-function AccountCarousel({accounts, index, onIndexChange, onDragStateChange}) {
-    const translateX = useRef(new Animated.Value(-CARD_WIDTH)).current;
-    const len = accounts.length;
-
-    useEffect(() => {
-        translateX.setValue(-CARD_WIDTH);
-    }, [index, len]);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponderCapture: () => false,
-            onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onPanResponderGrant: () => {
-                onDragStateChange?.(true);
-            },
-            onPanResponderMove: (_, g) => {
-                translateX.setValue(-CARD_WIDTH + g.dx);
-            },
-            onPanResponderRelease: (_, g) => {
-                onDragStateChange?.(false);
-                const DISTANCE_THRESHOLD = CARD_WIDTH * 0.4;
-                const VELOCITY_THRESHOLD = 0.35;
-                const MIN_FLICK_DISTANCE = 24;
-
-                const goNext = len > 1 && (
-                    g.dx <= -DISTANCE_THRESHOLD ||
-                    (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
-                );
-                const goPrev = len > 1 && (
-                    g.dx >= DISTANCE_THRESHOLD ||
-                    (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
-                );
-
-                if (goNext) {
-                    Animated.timing(translateX, {
-                        toValue: -CARD_WIDTH * 2,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index + 1) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else if (goPrev) {
-                    Animated.timing(translateX, {
-                        toValue: 0,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index - 1 + len) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else {
-                    Animated.spring(translateX, {
-                        toValue: -CARD_WIDTH,
-                        useNativeDriver: true,
-                        bounciness: 6,
-                    }).start();
-                }
-            },
-            onPanResponderTerminate: () => {
-                onDragStateChange?.(false);
-                Animated.spring(translateX, {
-                    toValue: -CARD_WIDTH,
-                    useNativeDriver: true,
-                    bounciness: 6,
-                }).start();
-            },
-        })
-    ).current;
-
-    if (len === 0) return null;
-
-    const prevAccount = accounts[(index - 1 + len) % len];
-    const currentAccount = accounts[index];
-    const nextAccount = accounts[(index + 1) % len];
-
-    const renderCard = (account, key) => {
-        const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
-        return (
-            <View key={key} style={[styles.accountCard, {width: CARD_WIDTH}]}>
-                <View style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
-                    <Text style={styles.badgeText}>{account.currency}</Text>
-                </View>
-                <View style={{flex: 1}}>
-                    <Text style={styles.accNum}>{account.accountNumber}</Text>
-                    <Text style={styles.accBal}>
-                        {Number(account.balance).toLocaleString()} {currencySymbol}
-                    </Text>
-                </View>
-            </View>
-        );
-    };
-
-    return (
-        <View>
-            <View style={[styles.carouselViewport, {width: CARD_WIDTH}]} {...panResponder.panHandlers}>
-                <Animated.View style={[styles.carouselTrack, {transform: [{translateX}]}]}>
-                    {renderCard(prevAccount, 'prev')}
-                    {renderCard(currentAccount, 'current')}
-                    {renderCard(nextAccount, 'next')}
-                </Animated.View>
-            </View>
-            {len > 1 && (
-                <View style={styles.dotsRow}>
-                    {accounts.map((_, i) => (
-                        <View key={i} style={[styles.dot, i === index && styles.dotActive]}/>
-                    ))}
-                </View>
-            )}
-        </View>
-    );
-}
 
 export default function SendMoneyScreen({
                                             action = 'send',
@@ -147,7 +34,7 @@ export default function SendMoneyScreen({
         receiverPhone, setReceiverPhone,
         receiverUser, lookupLoading,
         currentUserPhone,
-        accounts, selectedId, setSelectedId, loadingAcc,
+        accounts, setSelectedId, loadingAcc,
         myAccounts, receiverAccountId, setReceiverAccountId, loadingMyAcc,
         exchangeRate, loadingRate,
         sending,
@@ -228,10 +115,10 @@ export default function SendMoneyScreen({
                     <View style={styles.userCard}>
                         <View style={styles.userCardLeft}>
                             <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
-                            <Text style={styles.userCardName}>{maskName(receiverUser.username)}</Text>
+                            <Text style={styles.userCardName}>{receiverUser.maskedName}</Text>
                         </View>
                         <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username)}]}>
-                            <Text style={styles.userAvatarText}>{initials(receiverUser.username)}</Text>
+                            <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
                         </View>
                     </View>
                 )}
@@ -301,20 +188,41 @@ export default function SendMoneyScreen({
 
                 {needsConversion && (
                     <View style={styles.conversionCard}>
+                        <Text style={styles.conversionTitle}>Ханш хөрвүүлэлт</Text>
                         {loadingRate ? (
-                            <Text style={styles.conversionText}>Ханш татаж байна...</Text>
+                            <View style={styles.conversionLoading}>
+                                <Spinner size="small" color={COLORS.convertText}/>
+                                <Text style={styles.conversionLoadingText}>Ханш татаж байна...</Text>
+                            </View>
                         ) : exchangeRate ? (
                             <>
-                                <Text style={styles.conversionText}>
-                                    1 {filterCurrency} = {CURRENCY_SIGN[selectedAccount.currency]}{Number(exchangeRate).toLocaleString(undefined, {maximumFractionDigits: EXCHANGE_RATE_FRACTION_DIGITS})} {selectedAccount.currency}
-                                </Text>
-                                <Text style={[styles.conversionText, {marginTop: 4, fontWeight: '700'}]}>
-                                    {CURRENCY_SIGN[filterCurrency]}{Number(amount).toLocaleString()} {filterCurrency} → {CURRENCY_SIGN[selectedAccount.currency]}{Number(amount * exchangeRate).toLocaleString(undefined, {maximumFractionDigits: AMOUNT_FRACTION_DIGITS})} {selectedAccount.currency}
-                                </Text>
+                                <View style={styles.conversionRateRow}>
+                                    <Text style={styles.conversionRateLabel}>1 {filterCurrency}</Text>
+                                    <Text style={styles.conversionRateEq}>≈</Text>
+                                    <Text style={styles.conversionRateValue}>
+                                        {CURRENCY_SIGN[selectedAccount.currency]}{Number(exchangeRate).toLocaleString(undefined, {maximumFractionDigits: EXCHANGE_RATE_FRACTION_DIGITS})} {selectedAccount.currency}
+                                    </Text>
+                                </View>
+                                <View style={styles.conversionDivider}/>
+                                <View style={styles.conversionAmountRow}>
+                                    <View style={styles.conversionAmountBox}>
+                                        <Text style={styles.conversionAmountLabel}>{filterCurrency}</Text>
+                                        <Text style={styles.conversionAmountValue}>
+                                            {CURRENCY_SIGN[filterCurrency]}{Number(amount).toLocaleString()}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.conversionArrow}>→</Text>
+                                    <View style={[styles.conversionAmountBox, styles.conversionAmountBoxResult]}>
+                                        <Text style={styles.conversionAmountLabel}>{selectedAccount.currency}</Text>
+                                        <Text style={[styles.conversionAmountValue, styles.conversionAmountValueResult]}>
+                                            {CURRENCY_SIGN[selectedAccount.currency]}{Number(amount * exchangeRate).toLocaleString(undefined, {maximumFractionDigits: AMOUNT_FRACTION_DIGITS})}
+                                        </Text>
+                                    </View>
+                                </View>
                             </>
                         ) : (
-                            <Text style={styles.conversionText}>
-                                {filterCurrency} → {selectedAccount.currency} ханшаар хөрвүүлэгдэнэ
+                            <Text style={styles.conversionLoadingText}>
+                                {filterCurrency} → {selectedAccount.currency} ханш авах боломжгүй байна
                             </Text>
                         )}
                     </View>
@@ -399,24 +307,10 @@ const styles = StyleSheet.create({
     centerPad: {paddingVertical: 24, alignItems: 'center'},
     emptyCard: {backgroundColor: '#f8fafc', borderRadius: 12, padding: 16},
     emptyText: {color: COLORS.muted, fontSize: 14},
-    carouselViewport: {overflow: 'hidden', alignSelf: 'center'},
-    carouselTrack: {flexDirection: 'row'},
-    accountCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1.5,
-        borderColor: COLORS.accent,
-        backgroundColor: COLORS.accentLight,
-    },
     badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
     badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
     accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
     accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
-    dotsRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, gap: 6},
-    dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: '#cbd5e1'},
-    dotActive: {width: 16, borderRadius: 3, backgroundColor: COLORS.accent},
     accountRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -448,13 +342,48 @@ const styles = StyleSheet.create({
     },
     conversionCard: {
         backgroundColor: COLORS.convertBg,
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: COLORS.convertBg,
-        padding: 12,
+        borderColor: '#e9d5ff',
+        padding: 16,
         marginBottom: 20,
     },
-    conversionText: {fontSize: 13, color: COLORS.convertText, fontWeight: '500'},
+    conversionTitle: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: COLORS.convertText,
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
+        marginBottom: 12,
+    },
+    conversionLoading: {flexDirection: 'row', alignItems: 'center', gap: 8},
+    conversionLoadingText: {fontSize: 13, color: COLORS.convertText},
+    conversionRateRow: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12},
+    conversionRateLabel: {fontSize: 13, color: COLORS.secondary, fontWeight: '500'},
+    conversionRateEq: {fontSize: 14, color: COLORS.convertText, fontWeight: '700'},
+    conversionRateValue: {fontSize: 14, fontWeight: '700', color: '#0f172a', flex: 1},
+    conversionDivider: {height: 1, backgroundColor: '#e9d5ff', marginBottom: 12},
+    conversionAmountRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
+    conversionAmountBox: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 12,
+    },
+    conversionAmountBoxResult: {
+        backgroundColor: '#f3e8ff',
+    },
+    conversionAmountLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: COLORS.muted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
+    conversionAmountValue: {fontSize: 17, fontWeight: '800', color: '#0f172a'},
+    conversionAmountValueResult: {color: COLORS.convertText},
+    conversionArrow: {fontSize: 20, color: COLORS.convertText, fontWeight: '700'},
     submitBtn: {
         marginHorizontal: 16,
         marginBottom: 12,
