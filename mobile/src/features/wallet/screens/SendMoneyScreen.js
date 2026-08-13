@@ -113,7 +113,7 @@ export default function SendMoneyScreen({
                             <Text style={[styles.userCardPhone, {color: colors.text}]}>{receiverUser.phoneNumber}</Text>
                             <Text style={[styles.userCardName, {color: colors.muted}]}>{receiverUser.maskedName}</Text>
                         </View>
-                        <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username, colors)}]}>
+                        <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.phoneNumber, colors)}]}>
                             {receiverUser.profileImageUrl
                                 ? <Image source={{uri: receiverUser.profileImageUrl}} style={styles.userAvatarImage}/>
                                 : <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>

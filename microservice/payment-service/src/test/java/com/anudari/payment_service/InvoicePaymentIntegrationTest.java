@@ -44,7 +44,7 @@ class InvoicePaymentIntegrationTest {
     @Test
     void fullInvoiceLifecycle_createListPayCancel() {
         when(userServiceClient.getUserById(anyLong(), any()))
-                .thenReturn(new com.anudari.payment_service.feign.UserIdResponse(501L, "testuser", "hash", List.of("ROLE_USER")));
+                .thenReturn(new com.anudari.payment_service.feign.UserIdResponse(501L, "testuser", "Нэр", "Овог", "hash", List.of("ROLE_USER")));
 
         Long userId = 501L;
 

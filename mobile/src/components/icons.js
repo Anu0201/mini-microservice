@@ -127,6 +127,14 @@ export const EditIcon = ({size = 24, color = '#292D32'}) => (
     </Svg>
 );
 
+export const LogoutIcon = ({size = 20, color = '#94a3b8'}) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M16 17l5-5-5-5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M21 12H9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+);
+
 export const ProfileIcon = ({size = 24, color = '#94a3b8'}) => (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
         <G transform="translate(-140 -2159)">

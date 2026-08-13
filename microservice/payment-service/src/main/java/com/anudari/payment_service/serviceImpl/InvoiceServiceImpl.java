@@ -564,7 +564,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private String fetchSenderName(Long senderId) {
         if (senderId == null) return null;
         try {
-            return userServiceClient.getUserById(senderId, "true").username();
+            return userServiceClient.getUserById(senderId, "true").fullName();
         } catch (Exception e) {
             return null;
         }

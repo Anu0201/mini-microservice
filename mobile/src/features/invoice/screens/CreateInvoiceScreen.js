@@ -191,7 +191,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                                     <Text style={[styles.userCardPhone, {color: colors.text}]}>{receiverUser.phoneNumber}</Text>
                                     <Text style={[styles.userCardName, {color: colors.muted}]}>{receiverUser.maskedName}</Text>
                                 </View>
-                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username, colors)}]}>
+                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.phoneNumber, colors)}]}>
                                     {receiverUser.profileImageUrl
                                         ? <Image source={{uri: receiverUser.profileImageUrl}} style={styles.userAvatarImage}/>
                                         : <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
@@ -249,7 +249,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                                     const u = splitUsers[phone];
                                     return (
                                         <View key={phone} style={[styles.phoneChip, {backgroundColor: colors.accentLight}]}>
-                                            <View style={[styles.chipAvatar, {backgroundColor: avatarColor(u.username, colors)}]}>
+                                            <View style={[styles.chipAvatar, {backgroundColor: avatarColor(u.phoneNumber, colors)}]}>
                                                 {u.profileImageUrl
                                                     ? <Image source={{uri: u.profileImageUrl}} style={styles.chipAvatarImage}/>
                                                     : <Text style={styles.chipAvatarText}>{u.initials}</Text>
@@ -292,7 +292,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                                     <Text style={[styles.userCardPhone, {color: colors.text}]}>{splitLookupUser.phoneNumber}</Text>
                                     <Text style={[styles.userCardName, {color: colors.muted}]}>{splitLookupUser.maskedName}</Text>
                                 </View>
-                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(splitLookupUser.username, colors)}]}>
+                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(splitLookupUser.phoneNumber, colors)}]}>
                                     {splitLookupUser.profileImageUrl
                                         ? <Image source={{uri: splitLookupUser.profileImageUrl}} style={styles.userAvatarImage}/>
                                         : <Text style={styles.userAvatarText}>{splitLookupUser.initials}</Text>

@@ -37,10 +37,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse register(RegisterRequest request) {
-        LogUtility.info(this.getClass().getName(), request.username(), "USER", "[register] " + JSONUtility.toJSON(request));
+        LogUtility.info(this.getClass().getName(), request.phoneNumber(), "USER", "[register] " + JSONUtility.toJSON(request));
         try {
             User user = new User();
-            user.setUsername(request.username());
+            user.setUsername(request.phoneNumber());
+            user.setFirstName(request.firstName());
+            user.setLastName(request.lastName());
             user.setEmail(request.email());
             user.setPhoneNumber(request.phoneNumber());
             user.setPassword(passwordEncoder.encode(request.password()));
@@ -48,10 +50,10 @@ public class UserServiceImpl implements UserService {
 
             UserResponse response = UserResponse.from(userRepository.save(user));
 
-            LogUtility.info(this.getClass().getName(), request.username(), "USER", "[register] " + JSONUtility.toJSON(response));
+            LogUtility.info(this.getClass().getName(), request.phoneNumber(), "USER", "[register] " + JSONUtility.toJSON(response));
             return response;
         } catch (Exception ex) {
-            LogUtility.error(this.getClass().getName(), request.username(), "USER", "[register] Exception: " + ex.getMessage());
+            LogUtility.error(this.getClass().getName(), request.phoneNumber(), "USER", "[register] Exception: " + ex.getMessage());
             throw ex;
         }
     }

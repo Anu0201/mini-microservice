@@ -6,14 +6,14 @@ import {login} from '../services/authApi';
 export const useRegister = ({onRegisterSuccess, onGoLogin}) => {
     const [loading, setLoading] = useState(false);
 
-    const handleRegister = async ({username, password, email, phone}) => {
-        if (!username || !password || !email) {
+    const handleRegister = async ({firstName, lastName, password, email, phone}) => {
+        if (!firstName || !lastName || !password || !email || !phone) {
             Alert.alert('Алдаа', 'Заавал бөглөх талбаруудыг бөглөнө үү.');
             return;
         }
         setLoading(true);
         try {
-            await register(username, password, email, phone);
+            await register(firstName, lastName, password, email, phone);
             const loginData = await login({phone, password});
             onRegisterSuccess(loginData);
         } catch (e) {

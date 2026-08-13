@@ -18,6 +18,13 @@ public final class StringUtility {
         return name.charAt(0) + String.valueOf(name.charAt(1)) + MASK + name.charAt(name.length() - 1);
     }
 
+    public static String maskFullName(String firstName, String lastName) {
+        String maskedFirst = (firstName != null && !firstName.isBlank()) ? maskName(firstName.trim()) : "";
+        String maskedLast  = (lastName  != null && !lastName.isBlank())  ? maskName(lastName.trim())  : "";
+        if (!maskedLast.isBlank() && !maskedFirst.isBlank()) return maskedLast + " " + maskedFirst;
+        return maskedLast.isBlank() ? maskedFirst : maskedLast;
+    }
+
     public static String initials(String name) {
         if (name == null || name.isBlank()) {
             return "?";

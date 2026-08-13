@@ -10,7 +10,8 @@ export default function RegisterScreen({onGoLogin, onRegisterSuccess}) {
     const {t} = useLanguage();
     const {colors} = useTheme();
 
-    const [username, setUsername] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
@@ -22,11 +23,18 @@ export default function RegisterScreen({onGoLogin, onRegisterSuccess}) {
 
                 <TextInput
                     style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
-                    placeholder={t('Нэвтрэх нэр', 'Username')}
+                    placeholder={t('Овог', 'Last name')}
                     placeholderTextColor={colors.muted}
-                    value={username}
-                    onChangeText={setUsername}
-                    autoCapitalize="none"
+                    value={lastName}
+                    onChangeText={setLastName}
+                />
+
+                <TextInput
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Нэр', 'First name')}
+                    placeholderTextColor={colors.muted}
+                    value={firstName}
+                    onChangeText={setFirstName}
                 />
 
                 <TextInput
@@ -59,7 +67,7 @@ export default function RegisterScreen({onGoLogin, onRegisterSuccess}) {
 
                 <TouchableOpacity
                     style={[styles.submitBtn, {backgroundColor: colors.primary}, loading && {backgroundColor: colors.muted}]}
-                    onPress={() => handleRegister({username, password, email, phone})}
+                    onPress={() => handleRegister({firstName, lastName, password, email, phone})}
                     disabled={loading}
                     activeOpacity={0.85}
                 >

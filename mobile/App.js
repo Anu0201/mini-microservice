@@ -136,7 +136,7 @@ function AppContent() {
         }
 
         if (mainTab === 'profile') {
-            return <AccountScreen onSelectAccount={setSelectedAccount} onLogout={handleLogout}/>;
+            return <AccountScreen onSelectAccount={setSelectedAccount}/>;
         }
 
         if (menuSub === 'pin') return <PinSettingsScreen onBack={() => setMenuSub(null)}/>;
@@ -147,6 +147,7 @@ function AppContent() {
                 onOpenPin={() => setMenuSub('pin')}
                 onOpenLanguage={() => setMenuSub('language')}
                 onOpenTheme={() => setMenuSub('theme')}
+                onLogout={handleLogout}
             />
         );
     };

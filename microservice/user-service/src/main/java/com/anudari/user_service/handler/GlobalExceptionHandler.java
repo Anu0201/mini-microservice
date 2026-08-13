@@ -96,9 +96,7 @@ public class GlobalExceptionHandler {
         String requestId = getRequestId(request);
         String detail = ex.getMostSpecificCause().getMessage();
         String msg = MessageUtility.getMessage("account.conflict.default");
-        if (detail != null && detail.contains("(username)"))
-            msg = MessageUtility.getMessage("account.conflict.username");
-        else if (detail != null && detail.contains("(phone_number)"))
+        if (detail != null && (detail.contains("(username)") || detail.contains("(phone_number)")))
             msg = MessageUtility.getMessage("account.conflict.phone");
         else if (detail != null && detail.contains("(email)"))
             msg = MessageUtility.getMessage("account.conflict.email");

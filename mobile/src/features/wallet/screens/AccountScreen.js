@@ -103,25 +103,8 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                                 }
                             </View>
                         </TouchableOpacity>
-                        <Text style={styles.userName}>{userInfo?.username ?? '...'}</Text>
+                        <Text style={styles.userName}>{[userInfo?.lastName, userInfo?.firstName].filter(Boolean).join(' ') || '...'}</Text>
                         {userInfo?.email ? <Text style={styles.userEmail}>{userInfo.email}</Text> : null}
-                        {onLogout && (
-                            <TouchableOpacity
-                                onPress={() =>
-                                    Alert.alert(
-                                        t('Гарах', 'Logout'),
-                                        t('Системээс гарахдаа итгэлтэй байна уу?', 'Are you sure you want to logout?'),
-                                        [
-                                            {text: t('Болих', 'Cancel'), style: 'cancel'},
-                                            {text: t('Гарах', 'Logout'), style: 'destructive', onPress: onLogout},
-                                        ]
-                                    )
-                                }
-                                style={styles.logoutBtn}
-                            >
-                                <Text style={styles.logoutText}>{t('Гарах', 'Logout')}</Text>
-                            </TouchableOpacity>
-                        )}
                     </View>
                 </SafeAreaView>
             </View>
@@ -226,14 +209,6 @@ const styles = StyleSheet.create({
     avatarEditIcon: {},
     userName: {color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 4},
     userEmail: {color: 'rgba(255,255,255,0.75)', fontSize: 13},
-    logoutBtn: {
-        marginTop: 12,
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.2)'
-    },
-    logoutText: {color: '#fff', fontSize: 13, fontWeight: '600'},
     center: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     body: {padding: 16, paddingBottom: 24},
     accountCard: {

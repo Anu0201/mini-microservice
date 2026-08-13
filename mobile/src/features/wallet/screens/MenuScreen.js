@@ -1,7 +1,7 @@
-import {ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
-import {LockIcon, ColorPaletteIcon, LanguageIcon} from '../../../components/icons';
+import {LockIcon, ColorPaletteIcon, LanguageIcon, LogoutIcon} from '../../../components/icons';
 import {useLanguage} from '../../../context/LanguageContext';
 import {useTheme} from '../../../context/ThemeContext';
 
@@ -22,7 +22,7 @@ function MenuItem({icon, label, sub, onPress, chevron = true, colors}) {
     );
 }
 
-export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme}) {
+export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLogout}) {
     const {t, lang} = useLanguage();
     const {colors, theme} = useTheme();
 
@@ -44,7 +44,6 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme}) {
                     <MenuItem
                         icon={<LockIcon size={20} color={colors.primary}/>}
                         label={t('PIN тохиргоо', 'PIN Settings')}
-                        sub={t('Гүйлгээний PIN удирдах', 'Manage transaction PIN')}
                         onPress={onOpenPin}
                         colors={colors}
                     />
@@ -59,7 +58,8 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme}) {
                         onPress={onOpenLanguage}
                         colors={colors}
                     />
-                    <View style={[styles.divider, {backgroundColor: colors.border}]}/>
+                </View>
+                <View style={[styles.section, {backgroundColor: colors.surface}]}>
                     <MenuItem
                         icon={<ColorPaletteIcon size={20} color={colors.primary}/>}
                         label={t('Өнгөний тохиргоо', 'Theme')}
@@ -69,6 +69,26 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme}) {
                     />
                 </View>
             </ScrollView>
+
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
+                <TouchableOpacity
+                    style={[styles.logoutBtn]}
+                    activeOpacity={0.7}
+                    onPress={() =>
+                        Alert.alert(
+                            t('Гарах', 'Logout'),
+                            t('Системээс гарахдаа итгэлтэй байна уу?', 'Are you sure you want to logout?'),
+                            [
+                                {text: t('Болих', 'Cancel'), style: 'cancel'},
+                                {text: t('Гарах', 'Logout'), style: 'destructive', onPress: onLogout},
+                            ]
+                        )
+                    }
+                >
+                    <LogoutIcon size={18} color={colors.danger}/>
+                    <Text style={[styles.logoutText, {color: colors.danger}]}>{t('Гарах', 'Logout')}</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
         </View>
     );
 }
@@ -101,7 +121,6 @@ const styles = StyleSheet.create({
         elevation: 1,
         overflow: 'hidden',
     },
-    divider: {height: 1, marginHorizontal: 16},
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -119,4 +138,18 @@ const styles = StyleSheet.create({
     menuLabel: {fontSize: 15, fontWeight: '600', marginBottom: 2},
     menuSub: {fontSize: 12},
     menuChevron: {fontSize: 22, lineHeight: 26},
+    footer: {
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: 8,
+    },
+    logoutBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        borderRadius: 16,
+        paddingVertical: 15,
+    },
+    logoutText: {fontSize: 15, fontWeight: '600'},
 });
