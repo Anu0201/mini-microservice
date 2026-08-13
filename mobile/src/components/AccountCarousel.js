@@ -1,11 +1,13 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import {Animated, Dimensions, PanResponder, StyleSheet, View} from 'react-native';
 import {Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, CURRENCY_FALLBACK_BG, COLORS} from '../constants';
+import {CURRENCY_SIGN, getCurrencyBg} from '../constants';
+import {useTheme} from '../context/ThemeContext';
 
 const CARD_WIDTH = Dimensions.get('window').width - 40;
 
 export default function AccountCarousel({accounts, index, onIndexChange, onDragStateChange}) {
+    const {colors} = useTheme();
     const translateX = useRef(new Animated.Value(-CARD_WIDTH)).current;
     const len = accounts.length;
 
@@ -13,68 +15,68 @@ export default function AccountCarousel({accounts, index, onIndexChange, onDragS
         translateX.setValue(-CARD_WIDTH);
     }, [index, len]);
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponderCapture: () => false,
-            onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-            onPanResponderGrant: () => {
-                onDragStateChange?.(true);
-            },
-            onPanResponderMove: (_, g) => {
-                translateX.setValue(-CARD_WIDTH + g.dx);
-            },
-            onPanResponderRelease: (_, g) => {
-                onDragStateChange?.(false);
-                const DISTANCE_THRESHOLD = CARD_WIDTH * 0.4;
-                const VELOCITY_THRESHOLD = 0.35;
-                const MIN_FLICK_DISTANCE = 24;
+    const panResponder = useMemo(() => PanResponder.create({
+        onStartShouldSetPanResponderCapture: () => false,
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onPanResponderGrant: () => {
+            onDragStateChange?.(true);
+        },
+        onPanResponderMove: (_, g) => {
+            translateX.setValue(-CARD_WIDTH + g.dx);
+        },
+        onPanResponderRelease: (_, g) => {
+            onDragStateChange?.(false);
+            const DISTANCE_THRESHOLD = CARD_WIDTH * 0.4;
+            const VELOCITY_THRESHOLD = 0.35;
+            const MIN_FLICK_DISTANCE = 24;
 
-                const goNext = len > 1 && (
-                    g.dx <= -DISTANCE_THRESHOLD ||
-                    (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
-                );
-                const goPrev = len > 1 && (
-                    g.dx >= DISTANCE_THRESHOLD ||
-                    (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
-                );
+            const goNext = len > 1 && (
+                g.dx <= -DISTANCE_THRESHOLD ||
+                (g.dx <= -MIN_FLICK_DISTANCE && g.vx <= -VELOCITY_THRESHOLD)
+            );
+            const goPrev = len > 1 && (
+                g.dx >= DISTANCE_THRESHOLD ||
+                (g.dx >= MIN_FLICK_DISTANCE && g.vx >= VELOCITY_THRESHOLD)
+            );
 
-                if (goNext) {
-                    Animated.timing(translateX, {
-                        toValue: -CARD_WIDTH * 2,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index + 1) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else if (goPrev) {
-                    Animated.timing(translateX, {
-                        toValue: 0,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        onIndexChange((index - 1 + len) % len);
-                        translateX.setValue(-CARD_WIDTH);
-                    });
-                } else {
-                    Animated.spring(translateX, {
-                        toValue: -CARD_WIDTH,
-                        useNativeDriver: true,
-                        bounciness: 6,
-                    }).start();
-                }
-            },
-            onPanResponderTerminate: () => {
-                onDragStateChange?.(false);
+            if (goNext) {
+                Animated.timing(translateX, {
+                    toValue: -CARD_WIDTH * 2,
+                    duration: 220,
+                    useNativeDriver: true,
+                }).start(({finished}) => {
+                    if (!finished) return;
+                    onIndexChange((index + 1) % len);
+                    translateX.setValue(-CARD_WIDTH);
+                });
+            } else if (goPrev) {
+                Animated.timing(translateX, {
+                    toValue: 0,
+                    duration: 220,
+                    useNativeDriver: true,
+                }).start(({finished}) => {
+                    if (!finished) return;
+                    onIndexChange((index - 1 + len) % len);
+                    translateX.setValue(-CARD_WIDTH);
+                });
+            } else {
                 Animated.spring(translateX, {
                     toValue: -CARD_WIDTH,
                     useNativeDriver: true,
                     bounciness: 6,
                 }).start();
-            },
-        })
-    ).current;
+            }
+        },
+        onPanResponderTerminate: () => {
+            onDragStateChange?.(false);
+            Animated.spring(translateX, {
+                toValue: -CARD_WIDTH,
+                useNativeDriver: true,
+                bounciness: 6,
+            }).start();
+        },
+    }), [index, len, onIndexChange, onDragStateChange, translateX]);
 
     if (len === 0) return null;
 
@@ -85,13 +87,13 @@ export default function AccountCarousel({accounts, index, onIndexChange, onDragS
     const renderCard = (account, key) => {
         const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
         return (
-            <View key={key} style={[styles.accountCard, {width: CARD_WIDTH}]}>
-                <View style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+            <View key={key} style={[styles.accountCard, {width: CARD_WIDTH, borderColor: colors.accent, backgroundColor: colors.accentLight}]}>
+                <View style={[styles.badge, {backgroundColor: getCurrencyBg(account.currency, colors)}]}>
                     <Text style={styles.badgeText}>{account.currency}</Text>
                 </View>
                 <View style={{flex: 1}}>
-                    <Text style={styles.accNum}>{account.accountNumber}</Text>
-                    <Text style={styles.accBal}>
+                    <Text style={[styles.accNum, {color: colors.muted}]}>{account.accountNumber}</Text>
+                    <Text style={[styles.accBal, {color: colors.text}]}>
                         {Number(account.balance).toLocaleString()} {currencySymbol}
                     </Text>
                 </View>
@@ -111,7 +113,7 @@ export default function AccountCarousel({accounts, index, onIndexChange, onDragS
             {len > 1 && (
                 <View style={styles.dotsRow}>
                     {accounts.map((_, i) => (
-                        <View key={i} style={[styles.dot, i === index && styles.dotActive]}/>
+                        <View key={i} style={[styles.dot, {backgroundColor: colors.border}, i === index && {backgroundColor: colors.accent, width: 16}]}/>
                     ))}
                 </View>
             )}
@@ -128,14 +130,11 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 16,
         borderWidth: 1.5,
-        borderColor: COLORS.accent,
-        backgroundColor: COLORS.accentLight,
     },
     badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
     badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
-    accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
-    accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
+    accNum: {fontSize: 12, marginBottom: 2},
+    accBal: {fontSize: 16, fontWeight: '700'},
     dotsRow: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, gap: 6},
-    dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: '#cbd5e1'},
-    dotActive: {width: 16, borderRadius: 3, backgroundColor: COLORS.accent},
+    dot: {width: 6, height: 6, borderRadius: 3},
 });

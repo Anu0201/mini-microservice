@@ -14,6 +14,11 @@ export const useAppNavigation = () => {
         setScreen('home');
     };
 
+    const handleRegisterSuccess = (data) => {
+        setUser(data);
+        setScreen('set-pin');
+    };
+
     const handleLogout = async () => {
         await logout();
         setUser(null);
@@ -42,7 +47,7 @@ export const useAppNavigation = () => {
         user, mainTab,
         actionScreen, selectedAccount, setSelectedAccount,
         showHistory, setShowHistory,
-        handleLoginSuccess, handleLogout,
+        handleLoginSuccess, handleRegisterSuccess, handleLogout,
         switchTab, openSend, openInvoice, closeAction,
         isSubScreen, showTabBar,
     };

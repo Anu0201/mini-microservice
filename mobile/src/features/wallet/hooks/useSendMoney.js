@@ -101,6 +101,7 @@ export const useSendMoney = ({action, amount, filterCurrency, onSuccess}) => {
         lookupTimer.current = setTimeout(async () => {
             try {
                 const lookupResponse = await lookupUserByPhone(phone);
+                console.log('[lookup]', JSON.stringify(lookupResponse.data));
                 setReceiverUser(lookupResponse.data);
             } catch {
                 setReceiverUser(null);

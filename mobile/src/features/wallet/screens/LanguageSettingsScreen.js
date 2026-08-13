@@ -3,6 +3,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
 import {COLORS} from '../../../constants';
 import {useLanguage, LANGUAGES} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 import {FlagMN, FlagUS} from '../../../components/flags';
 
 const OPTIONS = [
@@ -22,21 +23,22 @@ const OPTIONS = [
 
 export default function LanguageSettingsScreen({onBack}) {
     const {lang, setLang, t} = useLanguage();
+    const {colors} = useTheme();
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             <SafeAreaView edges={['top']}>
-                <View style={styles.header}>
+                <View style={[styles.header, {backgroundColor: colors.background, borderColor: colors.border}]}>
                     <TouchableOpacity onPress={onBack} hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
-                        <Text style={styles.backArrow}>‹</Text>
+                        <Text style={[styles.backArrow, {color: colors.text}]}>‹</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t('Хэлний тохиргоо', 'Language')}</Text>
+                    <Text style={[styles.headerTitle, {color: colors.text}]}>{t('Хэлний тохиргоо', 'Language')}</Text>
                     <View style={{width: 32}}/>
                 </View>
             </SafeAreaView>
 
             <View style={styles.body}>
-                <Text style={styles.hint}>
+                <Text style={[styles.hint, {color: colors.muted}]}>
                     {t(
                         'Сонгосон хэл нь апп, серверийн мэдэгдлүүдэд хамаарна.',
                         'The selected language applies to the app and server messages.'
@@ -49,7 +51,7 @@ export default function LanguageSettingsScreen({onBack}) {
                         return (
                             <TouchableOpacity
                                 key={opt.lang}
-                                style={[styles.option, active && styles.optionActive]}
+                                style={[styles.option, {borderColor: active ? colors.primary : colors.border}]}
                                 onPress={() => setLang(opt.lang)}
                                 activeOpacity={0.75}
                             >
@@ -57,13 +59,13 @@ export default function LanguageSettingsScreen({onBack}) {
                                     <opt.FlagComponent size={36}/>
                                 </View>
                                 <View style={{flex: 1}}>
-                                    <Text style={[styles.optionName, active && styles.optionNameActive]}>
+                                    <Text style={[styles.optionName, {color: colors.text}, active && {color: colors.primary}]}>
                                         {opt.name}
                                     </Text>
-                                    <Text style={styles.optionNative}>{opt.native}</Text>
+                                    <Text style={[styles.optionNative, {color: colors.muted}]}>{opt.native}</Text>
                                 </View>
-                                <View style={[styles.radio, active && styles.radioActive]}>
-                                    {active && <View style={styles.radioDot}/>}
+                                <View style={[styles.radio, {borderColor: colors.border}, active && {borderColor: colors.primary}]}>
+                                    {active && <View style={[styles.radioDot, {backgroundColor: colors.primary}]}/>}
                                 </View>
                             </TouchableOpacity>
                         );
@@ -96,25 +98,16 @@ const styles = StyleSheet.create({
         lineHeight: 19,
         paddingHorizontal: 4,
     },
-    optionList: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        elevation: 1,
-    },
+    optionList: {gap: 10},
     option: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 18,
         paddingVertical: 16,
         gap: 14,
-        borderBottomWidth: 1,
-        borderColor: '#f1f5f9',
+        borderWidth: 1.5,
+        borderRadius: 16,
     },
-    optionActive: {backgroundColor: '#f0f9ff'},
     flagWrap: {width: 36, height: 36, borderRadius: 6, overflow: 'hidden'},
     optionName: {fontSize: 16, fontWeight: '600', color: '#0f172a', marginBottom: 2},
     optionNameActive: {color: COLORS.primary},

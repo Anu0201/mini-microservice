@@ -2,9 +2,13 @@ import {useState} from 'react';
 import {StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {COLORS} from '../../../constants';
 import {useLogin} from '../hooks/useLogin';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 
 export default function LoginScreen({onLoginSuccess, onGoRegister}) {
     const {loading, handleLogin} = useLogin({onLoginSuccess});
+    const {t} = useLanguage();
+    const {colors} = useTheme();
 
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
@@ -12,42 +16,42 @@ export default function LoginScreen({onLoginSuccess, onGoRegister}) {
     const handleSubmit = () => handleLogin({phone, password});
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             <View style={styles.body}>
-                <Text style={styles.title}>Нэвтрэх</Text>
+                <Text style={[styles.title, {color: colors.text}]}>{t('Нэвтрэх', 'Login')}</Text>
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="Утасны дугаар"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Утасны дугаар', 'Phone number')}
+                    placeholderTextColor={colors.muted}
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                 />
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="Нууц үг"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Нууц үг', 'Password')}
+                    placeholderTextColor={colors.muted}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                 />
 
                 <TouchableOpacity
-                    style={[styles.submitBtn, loading && styles.submitDisabled]}
+                    style={[styles.submitBtn, {backgroundColor: colors.primary}, loading && {backgroundColor: colors.muted}]}
                     onPress={handleSubmit}
                     disabled={loading}
                     activeOpacity={0.85}
                 >
-                    <Text style={styles.submitText}>
-                        {loading ? 'Түр хүлээнэ үү...' : 'Нэвтрэх'}
+                    <Text style={[styles.submitText, {color: colors.textOnPrimary}]}>
+                        {loading ? t('Түр хүлээнэ үү...', 'Please wait...') : t('Нэвтрэх', 'Login')}
                     </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onGoRegister} style={styles.linkRow}>
-                    <Text style={styles.linkText}>Бүртгэлгүй юу? </Text>
-                    <Text style={styles.linkBold}>Бүртгүүлэх</Text>
+                    <Text style={[styles.linkText, {color: colors.secondary}]}>{t('Бүртгэлгүй юу? ', 'No account? ')}</Text>
+                    <Text style={[styles.linkBold, {color: colors.primary}]}>{t('Бүртгүүлэх', 'Register')}</Text>
                 </TouchableOpacity>
             </View>
         </View>

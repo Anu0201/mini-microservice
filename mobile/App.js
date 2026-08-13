@@ -9,6 +9,7 @@ import {useAppNavigation} from './src/hooks/useAppNavigation';
 import TabBar from './src/components/TabBar';
 import {TAB_CONTENT_HEIGHT, TAB_BAR_FALLBACK_PADDING} from './src/constants';
 import {LanguageProvider} from './src/context/LanguageContext';
+import {ThemeProvider, useTheme} from './src/context/ThemeContext';
 
 import LoginScreen from './src/features/auth/screens/LoginScreen';
 import RegisterScreen from './src/features/auth/screens/RegisterScreen';
@@ -21,6 +22,7 @@ import CreateInvoiceScreen from './src/features/invoice/screens/CreateInvoiceScr
 import PinSettingsScreen from './src/features/wallet/screens/PinSettingsScreen';
 import MenuScreen from './src/features/wallet/screens/MenuScreen';
 import LanguageSettingsScreen from './src/features/wallet/screens/LanguageSettingsScreen';
+import ThemeSettingsScreen from './src/features/wallet/screens/ThemeSettingsScreen';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
@@ -41,12 +43,30 @@ function AppContent() {
         user, mainTab,
         actionScreen, selectedAccount, setSelectedAccount,
         showHistory, setShowHistory,
-        handleLoginSuccess, handleLogout,
+        handleLoginSuccess: _handleLoginSuccess,
+        handleRegisterSuccess: _handleRegisterSuccess,
+        handleLogout: _handleLogout,
         switchTab, openSend, openInvoice, closeAction,
         showTabBar,
     } = useAppNavigation();
 
-    const [menuSub, setMenuSub] = useState(null); // null | 'pin' | 'language'
+    const {colors, loadThemeForUser, resetTheme} = useTheme();
+
+    const handleLoginSuccess = (data) => {
+        _handleLoginSuccess(data);
+        loadThemeForUser(data.username);
+    };
+
+    const handleRegisterSuccess = (data) => {
+        _handleRegisterSuccess(data);
+        loadThemeForUser(data.username);
+    };
+
+    const handleLogout = async () => {
+        await _handleLogout();
+        resetTheme();
+    };
+    const [menuSub, setMenuSub] = useState(null); // null | 'pin' | 'language' | 'theme'
     const switchTabAndReset = (tab) => { setMenuSub(null); switchTab(tab); };
 
     const renderContent = () => {
@@ -59,7 +79,21 @@ function AppContent() {
                     />
                 );
             }
-            return <RegisterScreen onGoLogin={() => setScreen('login')}/>;
+            return (
+                <RegisterScreen
+                    onGoLogin={() => setScreen('login')}
+                    onRegisterSuccess={handleRegisterSuccess}
+                />
+            );
+        }
+
+        if (screen === 'set-pin') {
+            return (
+                <PinSettingsScreen
+                    onSuccess={() => setScreen('home')}
+                    onBack={() => setScreen('home')}
+                />
+            );
         }
 
         if (showHistory) return <InvoiceListScreen onBack={() => setShowHistory(false)}/>;
@@ -107,16 +141,18 @@ function AppContent() {
 
         if (menuSub === 'pin') return <PinSettingsScreen onBack={() => setMenuSub(null)}/>;
         if (menuSub === 'language') return <LanguageSettingsScreen onBack={() => setMenuSub(null)}/>;
+        if (menuSub === 'theme') return <ThemeSettingsScreen onBack={() => setMenuSub(null)}/>;
         return (
             <MenuScreen
                 onOpenPin={() => setMenuSub('pin')}
                 onOpenLanguage={() => setMenuSub('language')}
+                onOpenTheme={() => setMenuSub('theme')}
             />
         );
     };
 
     return (
-        <View style={styles.root}>
+        <View style={[styles.root, {backgroundColor: colors.background}]}>
             <View style={[styles.content, showTabBar && {paddingBottom: tabBarH}]}>
                 {renderContent()}
             </View>
@@ -138,9 +174,11 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <GluestackUIProvider config={config}>
-                <LanguageProvider>
-                    <AppContent/>
-                </LanguageProvider>
+                <ThemeProvider>
+                    <LanguageProvider>
+                        <AppContent/>
+                    </LanguageProvider>
+                </ThemeProvider>
                 <StatusBar style="auto"/>
             </GluestackUIProvider>
         </SafeAreaProvider>

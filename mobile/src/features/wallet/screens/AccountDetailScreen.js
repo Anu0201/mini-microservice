@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {COLORS, CURRENCY_BG, CURRENCY_SIGN} from '../../../constants';
+import {COLORS, CURRENCY_SIGN, getCurrencyBg} from '../../../constants';
 import {DepositIcon, WithdrawIcon, BackIcon} from '../../../components/icons';
 import {isPrefixCurrency} from '../../../utils/helpers';
 import {useAccountDetail} from '../hooks/useAccountDetail';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
@@ -30,12 +32,12 @@ try {
 const GLASS = isLiquidGlassSupported;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const TX_LABEL = {
-    DEPOSIT: 'Орлого',
-    WITHDRAW: 'Зарлага',
-    INVOICE_CREDIT: 'SOCIALPAY гүйлгээ',
-    INVOICE_DEBIT: 'Нэхэмжлэл гүйлгээ',
-};
+const getTxLabel = (t) => ({
+    DEPOSIT: t('Орлого', 'Deposit'),
+    WITHDRAW: t('Зарлага', 'Withdrawal'),
+    INVOICE_CREDIT: t('SOCIALPAY гүйлгээ', 'SOCIALPAY transfer'),
+    INVOICE_DEBIT: t('Нэхэмжлэл гүйлгээ', 'Invoice payment'),
+});
 const TX_SIGN = {DEPOSIT: '+', INVOICE_CREDIT: '+', WITHDRAW: '-', INVOICE_DEBIT: '-'};
 const TX_COLOR = {
     DEPOSIT: COLORS.success,
@@ -45,9 +47,12 @@ const TX_COLOR = {
 };
 
 function TxCard({item}) {
+    const {t} = useLanguage();
+    const {colors} = useTheme();
     const amountSign = TX_SIGN[item.type] ?? '';
-    const color = TX_COLOR[item.type] ?? COLORS.secondary;
-    const label = TX_LABEL[item.type] ?? item.type;
+    const isCredit = amountSign === '+';
+    const color = isCredit ? colors.primary : colors.accent;
+    const label = getTxLabel(t)[item.type] ?? item.type;
     const currencySymbol = CURRENCY_SIGN[item.currency] ?? item.currency ?? '';
     const isPrefix = isPrefixCurrency(item.currency);
     const amountDisplay = isPrefix
@@ -60,21 +65,28 @@ function TxCard({item}) {
         : '';
 
     return (
-        <View style={styles.txCard}>
+        <View style={[styles.txCard, {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderLeftColor: color,
+            shadowOpacity: colors.isDark ? 0 : 0.06,
+        }]}>
             <View style={styles.txLeft}>
-                <Text style={styles.txLabel}>{label}</Text>
-                {item.description ? <Text style={styles.txDesc}>{item.description}</Text> : null}
-                <Text style={styles.txDate}>{date}</Text>
+                <Text style={[styles.txLabel, {color: colors.text}]}>{label}</Text>
+                {item.description ? <Text style={[styles.txDesc, {color: colors.muted}]}>{item.description}</Text> : null}
+                <Text style={[styles.txDate, {color: colors.muted}]}>{date}</Text>
             </View>
             <View style={styles.txRight}>
                 <Text style={[styles.txAmount, {color}]}>{amountDisplay}</Text>
-                <Text style={styles.txBalance}>{Number(item.balanceAfter).toLocaleString()}</Text>
+                <Text style={[styles.txBalance, {color: colors.muted}]}>{Number(item.balanceAfter).toLocaleString()}</Text>
             </View>
         </View>
     );
 }
 
 function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
+    const {t} = useLanguage();
+    const {colors} = useTheme();
     const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
     const len = accounts.length;
 
@@ -154,7 +166,7 @@ function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
 
         return (
             <View key={key} style={[styles.balanceArea, {width: SCREEN_WIDTH}]}>
-                <View style={[styles.currencyTag, {backgroundColor: CURRENCY_BG[account.currency] ?? COLORS.primary}]}>
+                <View style={[styles.currencyTag, {backgroundColor: getCurrencyBg(account.currency, colors)}]}>
                     <Text style={styles.currencyTagText}>{account.currency}</Text>
                 </View>
                 <Text style={styles.accountNumber}>{account.accountNumber}</Text>
@@ -162,12 +174,12 @@ function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
 
                 <View style={styles.actionRow}>
                     <TouchableOpacity
-                        style={styles.actionBtn}
+                        style={[styles.actionBtn, {backgroundColor: colors.surface}]}
                         onPress={() => onOpenModal('deposit')}
                         activeOpacity={0.85}
                     >
-                        <DepositIcon size={20} color={COLORS.primary}/>
-                        <Text style={styles.actionBtnText}>Орлого</Text>
+                        <DepositIcon size={20} color={colors.primary}/>
+                        <Text style={[styles.actionBtnText, {color: colors.primary}]}>{t('Орлого', 'Deposit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.actionBtnOutline]}
@@ -176,7 +188,7 @@ function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
                     >
                         <WithdrawIcon size={20} color="#fff"/>
                         <Text style={[styles.actionBtnText, styles.actionBtnTextOutline]}>
-                            Зарлага
+                            {t('Зарлага', 'Withdraw')}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -196,6 +208,8 @@ function BalanceCarousel({accounts, index, onIndexChange, onOpenModal}) {
 }
 
 export default function AccountDetailScreen({accountId, onBack}) {
+    const {t} = useLanguage();
+    const {colors} = useTheme();
     const insets = useSafeAreaInsets();
     const {
         account, accounts, activeIndex, goToIndex,
@@ -210,15 +224,15 @@ export default function AccountDetailScreen({accountId, onBack}) {
                 <BackIcon size={20} color={GLASS ? 'rgba(255,255,255,0.9)' : '#fff'}/>
             </TouchableOpacity>
             <Text style={[styles.headerTitle, GLASS && styles.headerTitleGlass]}>
-                Дансны мэдээлэл
+                {t('Дансны мэдээлэл', 'Account Details')}
             </Text>
             <View style={styles.backBtn}/>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <View style={[styles.header, {paddingTop: insets.top}]}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
+            <View style={[styles.header, {paddingTop: insets.top, backgroundColor: colors.primary}]}>
                            {GLASS ? (
                                <LiquidGlassView style={styles.glassNav} effect="regular" colorScheme="system">
                                    {headerContent}
@@ -242,15 +256,15 @@ export default function AccountDetailScreen({accountId, onBack}) {
             </View>
 
             {loading || !account ? (
-                <View style={styles.center}>
-                    <Spinner size="large" color={COLORS.primary}/>
+                <View style={[styles.center, {backgroundColor: colors.background}]}>
+                    <Spinner size="large" color={colors.primary}/>
                 </View>
             ) : (
                 <>
-                    <Text style={styles.sectionLabel}>ГҮЙЛГЭЭНИЙ ТҮҮХ</Text>
+                    <Text style={[styles.sectionLabel, {color: colors.muted, backgroundColor: colors.background}]}>{t('ГҮЙЛГЭЭНИЙ ТҮҮХ', 'TRANSACTION HISTORY')}</Text>
                     {transactionsLoading ? (
-                        <View style={styles.center}>
-                            <Spinner size="small" color={COLORS.primary}/>
+                        <View style={[styles.center, {backgroundColor: colors.background}]}>
+                            <Spinner size="small" color={colors.primary}/>
                         </View>
                     ) : (
                         <FlatList
@@ -259,9 +273,10 @@ export default function AccountDetailScreen({accountId, onBack}) {
                             renderItem={({item}) => <TxCard item={item}/>}
                             ListEmptyComponent={
                                 <View style={styles.emptyWrap}>
-                                    <Text style={styles.emptyText}>Гүйлгээний түүх байхгүй байна</Text>
+                                    <Text style={[styles.emptyText, {color: colors.muted}]}>{t('Гүйлгээний түүх байхгүй байна', 'No transaction history')}</Text>
                                 </View>
                             }
+                            style={{backgroundColor: colors.background}}
                             contentContainerStyle={{paddingBottom: 24}}
                         />
                     )}
@@ -275,45 +290,45 @@ export default function AccountDetailScreen({accountId, onBack}) {
                 onRequestClose={() => setModal(null)}
             >
                 <View style={styles.modalBackdrop}>
-                    <View style={styles.modalBox}>
-                        <Text style={styles.modalTitle}>
-                            {modal === 'deposit' ? 'Орлого оруулах' : 'Зарлага гаргах'}
+                    <View style={[styles.modalBox, {backgroundColor: colors.surface}]}>
+                        <Text style={[styles.modalTitle, {color: colors.text}]}>
+                            {modal === 'deposit' ? t('Орлого оруулах', 'Deposit') : t('Зарлага гаргах', 'Withdraw')}
                         </Text>
-                        <Text style={styles.modalLabel}>Дүн ({account?.currency})</Text>
+                        <Text style={[styles.modalLabel, {color: colors.muted}]}>{t('Дүн', 'Amount')} ({account?.currency})</Text>
                         <TextInput
-                            style={styles.modalInput}
+                            style={[styles.modalInput, {borderColor: colors.border, color: colors.text, backgroundColor: colors.card}]}
                             placeholder="0.00"
-                            placeholderTextColor={COLORS.muted}
+                            placeholderTextColor={colors.muted}
                             value={amount}
                             onChangeText={setAmount}
                             keyboardType="decimal-pad"
                             autoFocus
                         />
                         {account && (
-                            <Text style={styles.modalHint}>
-                                Үлдэгдэл: {Number(account.balance).toLocaleString()} {account.currency}
+                            <Text style={[styles.modalHint, {color: colors.muted}]}>
+                                {t('Үлдэгдэл', 'Balance')}: {Number(account.balance).toLocaleString()} {account.currency}
                             </Text>
                         )}
                         <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={styles.cancelBtn}
+                                style={[styles.cancelBtn, {borderColor: colors.border}]}
                                 onPress={() => setModal(null)}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.cancelBtnText}>Цуцлах</Text>
+                                <Text style={[styles.cancelBtnText, {color: colors.muted}]}>{t('Цуцлах', 'Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
                                     styles.confirmBtn,
-                                    {backgroundColor: modal === 'deposit' ? COLORS.success : COLORS.primary},
+                                    {backgroundColor: modal === 'deposit' ? colors.primary : colors.primary},
                                     txLoading && styles.disabledBtn,
                                 ]}
                                 onPress={handleTransaction}
                                 disabled={txLoading}
                                 activeOpacity={0.85}
                             >
-                                <Text style={styles.confirmBtnText}>
-                                    {txLoading ? 'Хүлээнэ үү...' : 'Батлах'}
+                                <Text style={[styles.confirmBtnText, {color: colors.textOnPrimary}]}>
+                                    {txLoading ? t('Хүлээнэ үү...', 'Please wait...') : t('Батлах', 'Confirm')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -374,15 +389,16 @@ const styles = StyleSheet.create({
     txCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
         marginHorizontal: 12,
         marginTop: 8,
         borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
+        borderWidth: 1,
+        borderLeftWidth: 4,
         shadowColor: '#000',
-        shadowOpacity: 0.05,
         shadowRadius: 4,
+        shadowOffset: {width: 0, height: 1},
         elevation: 1,
     },
     txLeft: {flex: 1, marginRight: 12},

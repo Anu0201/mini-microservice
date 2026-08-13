@@ -2,8 +2,10 @@ import {useCallback, useState} from 'react';
 import {Alert} from 'react-native';
 import {getMe} from '../../../services/userApi';
 import {createPin, changePin, recoverPin, checkPin} from '../../../services/pinApi';
+import {useLanguage} from '../../../context/LanguageContext';
 
-export const usePinSettings = () => {
+export const usePinSettings = ({onPinCreated} = {}) => {
+    const {t} = useLanguage();
     const [hasPinSet, setHasPinSet] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
@@ -21,7 +23,7 @@ export const usePinSettings = () => {
             setHasPinSet(res.data.hasPinSet);
             setFetched(true);
         } catch {
-            Alert.alert('Алдаа', 'Мэдээлэл татаж чадсангүй');
+            Alert.alert(t('Алдаа', 'Error'), t('Мэдээлэл татаж чадсангүй', 'Failed to load data'));
         } finally {
             setLoading(false);
         }
@@ -33,13 +35,20 @@ export const usePinSettings = () => {
 
     const closePin = () => { setFlow(null); setStep(null); setPendingPin(''); };
 
+    const pinScreenTitle = () => {
+        if (flow === 'create') return t('PIN үүсгэх', 'Create PIN');
+        if (flow === 'change') return t('PIN солих', 'Change PIN');
+        if (flow === 'recover') return t('PIN сэргээх', 'Recover PIN');
+        return t('PIN', 'PIN');
+    };
+
     const pinTitle = () => {
-        if (flow === 'change' && step === 'current') return 'Одоогийн PIN оруулна уу';
-        if (step === 'confirm') return 'PIN давтан оруулна уу';
-        if (flow === 'create') return 'Шинэ PIN оруулна уу';
-        if (flow === 'change') return 'Шинэ PIN оруулна уу';
-        if (flow === 'recover') return 'Шинэ PIN оруулна уу';
-        return 'PIN оруулна уу';
+        if (flow === 'change' && step === 'current') return t('Одоогийн PIN код', 'Current PIN');
+        if (step === 'confirm') return t('PIN давтан оруулна уу', 'Confirm your PIN');
+        if (flow === 'create') return t('Шинэ PIN код', 'New PIN');
+        if (flow === 'change') return t('Шинэ PIN код', 'New PIN');
+        if (flow === 'recover') return t('Шинэ PIN код', 'New PIN');
+        return t('PIN оруулна уу', 'Enter PIN');
     };
 
     const handlePinConfirm = async (pin) => {
@@ -50,7 +59,7 @@ export const usePinSettings = () => {
                 setStep('new');
             } catch (e) {
                 closePin();
-                Alert.alert('Буруу PIN', e.response?.data?.message || 'PIN буруу байна');
+                Alert.alert(t('Буруу PIN', 'Wrong PIN'), e.response?.data?.message || t('PIN буруу байна', 'Incorrect PIN'));
             } finally {
                 setSubmitting(false);
             }
@@ -67,7 +76,7 @@ export const usePinSettings = () => {
             if (pin !== pendingPin) {
                 setPendingPin('');
                 setStep('new');
-                Alert.alert('Тохирохгүй байна', 'PIN тохирохгүй байна. Дахин оруулна уу.');
+                Alert.alert(t('Тохирохгүй байна', 'PIN mismatch'), t('PIN тохирохгүй байна. Дахин оруулна уу.', 'PINs do not match. Please try again.'));
                 return;
             }
             setSubmitting(true);
@@ -76,11 +85,12 @@ export const usePinSettings = () => {
                 else if (flow === 'change') await changePin(pin);
                 else if (flow === 'recover') await recoverPin(pin);
                 setHasPinSet(true);
-                setSuccessMsg(flow === 'create' ? 'PIN амжилттай үүслээ' : 'PIN амжилттай солигдлоо');
+                setSuccessMsg(flow === 'create' ? t('PIN амжилттай үүслээ', 'PIN created successfully') : t('PIN амжилттай солигдлоо', 'PIN changed successfully'));
                 closePin();
+                if (flow === 'create') onPinCreated?.();
             } catch (e) {
                 closePin();
-                Alert.alert('Алдаа', e.response?.data?.message || 'Алдаа гарлаа');
+                Alert.alert(t('Алдаа', 'Error'), e.response?.data?.message || t('Алдаа гарлаа', 'Something went wrong'));
             } finally {
                 setSubmitting(false);
             }
@@ -91,6 +101,7 @@ export const usePinSettings = () => {
         hasPinSet, loading, fetched, load,
         flow, step, submitting, successMsg, setSuccessMsg,
         pinVisible: !!flow,
+        pinScreenTitle: pinScreenTitle(),
         pinTitle: pinTitle(),
         startCreate, startChange, startRecover, closePin, handlePinConfirm,
     };

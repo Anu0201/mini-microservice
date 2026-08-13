@@ -1,4 +1,4 @@
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import {cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice} from '../../../services/paymentApi';
 import {getMyAccounts} from '../../../services/accountApi';
@@ -9,6 +9,9 @@ export const useInvoiceList = () => {
     const [sent, setSent] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
+
+    const [hasUnread, setHasUnread] = useState(false);
+    const prevPendingCountRef = useRef(0);
 
     const [payModalVisible, setPayModalVisible] = useState(false);
     const [payingId, setPayingId] = useState(null);
@@ -24,6 +27,11 @@ export const useInvoiceList = () => {
             setReceived(rcv.data);
             setSent(snt.data);
             setFetched(true);
+            const newPendingCount = rcv.data.filter((i) => i.status === 'UNPAID').length;
+            if (newPendingCount > prevPendingCountRef.current) {
+                setHasUnread(true);
+            }
+            prevPendingCountRef.current = newPendingCount;
         } catch {
             Alert.alert('Алдаа', 'Мэдээлэл татаж чадсангүй');
         } finally {
@@ -100,9 +108,15 @@ export const useInvoiceList = () => {
         return tb - ta;
     });
 
+    const markSeen = useCallback(() => {
+        setHasUnread(false);
+        prevPendingCountRef.current = pendingInvoices.length;
+    }, [pendingInvoices.length]);
+
     return {
         loading, fetched, load,
         pendingInvoices, transactions,
+        hasUnread, markSeen,
         payModalVisible, payAccounts, loadingAcc,
         handlePay, executePay, handleCancel,
         closePayModal: () => {

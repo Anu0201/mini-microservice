@@ -2,9 +2,13 @@ import {useState} from 'react';
 import {ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {COLORS} from '../../../constants';
 import {useRegister} from '../hooks/useRegister';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 
-export default function RegisterScreen({onGoLogin}) {
-    const {loading, handleRegister} = useRegister({onGoLogin});
+export default function RegisterScreen({onGoLogin, onRegisterSuccess}) {
+    const {loading, handleRegister} = useRegister({onRegisterSuccess, onGoLogin});
+    const {t} = useLanguage();
+    const {colors} = useTheme();
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -12,23 +16,23 @@ export default function RegisterScreen({onGoLogin}) {
     const [phone, setPhone] = useState('');
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <Text style={styles.title}>Бүртгүүлэх</Text>
+                <Text style={[styles.title, {color: colors.text}]}>{t('Бүртгүүлэх', 'Register')}</Text>
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="Нэвтрэх нэр"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Нэвтрэх нэр', 'Username')}
+                    placeholderTextColor={colors.muted}
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
                 />
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="И-мэйл"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('И-мэйл', 'Email')}
+                    placeholderTextColor={colors.muted}
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -36,37 +40,37 @@ export default function RegisterScreen({onGoLogin}) {
                 />
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="Утасны дугаар"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Утасны дугаар', 'Phone number')}
+                    placeholderTextColor={colors.muted}
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                 />
 
                 <TextInput
-                    style={styles.input}
-                    placeholder="Нууц үг"
-                    placeholderTextColor={COLORS.muted}
+                    style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}]}
+                    placeholder={t('Нууц үг', 'Password')}
+                    placeholderTextColor={colors.muted}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                 />
 
                 <TouchableOpacity
-                    style={[styles.submitBtn, loading && styles.submitDisabled]}
+                    style={[styles.submitBtn, {backgroundColor: colors.primary}, loading && {backgroundColor: colors.muted}]}
                     onPress={() => handleRegister({username, password, email, phone})}
                     disabled={loading}
                     activeOpacity={0.85}
                 >
-                    <Text style={styles.submitText}>
-                        {loading ? 'Түр хүлээнэ үү...' : 'Бүртгүүлэх'}
+                    <Text style={[styles.submitText, {color: colors.textOnPrimary}]}>
+                        {loading ? t('Түр хүлээнэ үү...', 'Please wait...') : t('Бүртгүүлэх', 'Register')}
                     </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onGoLogin} style={styles.linkRow}>
-                    <Text style={styles.linkText}>Бүртгэлтэй юу? </Text>
-                    <Text style={styles.linkBold}>Нэвтрэх</Text>
+                    <Text style={[styles.linkText, {color: colors.secondary}]}>{t('Бүртгэлтэй юу? ', 'Already have an account? ')}</Text>
+                    <Text style={[styles.linkBold, {color: colors.primary}]}>{t('Нэвтрэх', 'Login')}</Text>
                 </TouchableOpacity>
             </ScrollView>
         </View>

@@ -14,6 +14,12 @@ export const CURRENCY_BG = {MNT: '#4D55CC', USD: '#7A73D1', EUR: '#B5A8D5'};
 
 export const CURRENCY_FALLBACK_BG = '#6b7280';
 
+export const getCurrencyBg = (currency, colors) => ({
+    MNT: colors.primary,
+    USD: colors.secondary,
+    EUR: colors.primaryLight,
+}[currency] ?? colors.muted);
+
 export const COLORS = {
     primary: '#4635B1',
     primaryLight: '#7A73D1',

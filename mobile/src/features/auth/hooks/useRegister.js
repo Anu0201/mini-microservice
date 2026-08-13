@@ -1,8 +1,9 @@
 import {useState} from 'react';
 import {Alert} from 'react-native';
 import {register} from '../../../services/userApi';
+import {login} from '../services/authApi';
 
-export const useRegister = ({onGoLogin}) => {
+export const useRegister = ({onRegisterSuccess, onGoLogin}) => {
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async ({username, password, email, phone}) => {
@@ -13,7 +14,8 @@ export const useRegister = ({onGoLogin}) => {
         setLoading(true);
         try {
             await register(username, password, email, phone);
-            Alert.alert('Амжилттай', 'Бүртгэл үүслээ. Нэвтэрнэ үү.', [{text: 'OK', onPress: onGoLogin}]);
+            const loginData = await login({phone, password});
+            onRegisterSuccess(loginData);
         } catch (e) {
             Alert.alert('Алдаа', e.response?.data?.message || e.message || 'Бүртгэл амжилтгүй');
         } finally {

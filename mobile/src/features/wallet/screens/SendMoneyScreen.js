@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {
+    Image,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -9,27 +10,27 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {
-    CURRENCY_BG,
     CURRENCY_SIGN,
-    CURRENCY_FALLBACK_BG,
-    COLORS,
     MIN_PHONE_LOOKUP_LENGTH,
     EXCHANGE_RATE_FRACTION_DIGITS,
-    AMOUNT_FRACTION_DIGITS
+    AMOUNT_FRACTION_DIGITS,
+    getCurrencyBg,
 } from '../../../constants';
 import {avatarColor, normalizePhone} from '../../../utils/helpers';
 import {PhoneIcon} from '../../../components/icons';
 import PinBottomSheet from '../../../components/PinBottomSheet';
 import AccountCarousel from '../../../components/AccountCarousel';
 import {useSendMoney} from '../hooks/useSendMoney';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 
 export default function SendMoneyScreen({
-                                            action = 'send',
-                                            amount = 0,
-                                            currency: filterCurrency = null,
-                                            onBack,
-                                            onSuccess
-                                        }) {
+    action = 'send',
+    amount = 0,
+    currency: filterCurrency = null,
+    onBack,
+    onSuccess
+}) {
     const {
         receiverPhone, setReceiverPhone,
         receiverUser, lookupLoading,
@@ -43,6 +44,8 @@ export default function SendMoneyScreen({
         pinVisible, handlePinConfirm, handlePinClose,
     } = useSendMoney({action, amount, filterCurrency, onSuccess});
 
+    const {t} = useLanguage();
+    const {colors} = useTheme();
     const [description, setDescription] = useState('');
     const [accountIndex, setAccountIndex] = useState(0);
     const [accountCarouselDragging, setAccountCarouselDragging] = useState(false);
@@ -52,30 +55,23 @@ export default function SendMoneyScreen({
         return norm.length > 0 && norm === normalizePhone(currentUserPhone);
     };
 
-    const handlePhoneChange = (text) => {
-        setReceiverPhone(text);
-    };
-
     useEffect(() => {
         if (accounts.length === 0) return;
-        if (accountIndex > accounts.length - 1) {
-            setAccountIndex(0);
-            return;
-        }
+        if (accountIndex > accounts.length - 1) { setAccountIndex(0); return; }
         setSelectedId(accounts[accountIndex].accountId);
     }, [accounts, accountIndex]);
 
     const currencySign = CURRENCY_SIGN[currency] ?? currency;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             <SafeAreaView edges={['top']}>
-                <View style={styles.header}>
+                <View style={[styles.header, {backgroundColor: colors.background, borderColor: colors.border}]}>
                     <TouchableOpacity onPress={onBack} hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
-                        <Text style={styles.backArrow}>‹</Text>
+                        <Text style={[styles.backArrow, {color: colors.text}]}>‹</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>
-                        {Number(amount).toLocaleString()} {currencySign} {isSend ? 'илгээх' : 'нэхэмжлэх'}
+                    <Text style={[styles.headerTitle, {color: colors.text}]}>
+                        {Number(amount).toLocaleString()} {currencySign} {isSend ? t('илгээх', 'send') : t('нэхэмжлэх', 'invoice')}
                     </Text>
                     <View style={{width: 32}}/>
                 </View>
@@ -86,56 +82,59 @@ export default function SendMoneyScreen({
                 keyboardShouldPersistTaps="handled"
                 scrollEnabled={!accountCarouselDragging}
             >
-                <View style={styles.inputCard}>
-                    <PhoneIcon size={24} color="#94a3b8"/>
+                <View style={[styles.inputCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+                    <PhoneIcon size={24} color={colors.muted}/>
                     <TextInput
-                        style={styles.phoneInput}
-                        placeholder="Утасны дугаар оруулах"
-                        placeholderTextColor="#94a3b8"
+                        style={[styles.phoneInput, {color: colors.text}]}
+                        placeholder={t('Утасны дугаар оруулах', 'Enter phone number')}
+                        placeholderTextColor={colors.muted}
                         value={receiverPhone}
-                        onChangeText={handlePhoneChange}
+                        onChangeText={(text) => setReceiverPhone(text)}
                         keyboardType="phone-pad"
                     />
                 </View>
 
                 {isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && (
-                    <View style={[styles.userCard, styles.userCardNotFound]}>
-                        <Text style={styles.userCardNotFoundText}>
-                            Өөрийн дугаарт {isSend ? 'илгээх' : 'нэхэмжлэх'} боломжгүй
+                    <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                        <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>
+                            {isSend ? t('Өөрийн дугаарт илгээх боломжгүй', 'Cannot send to your own number') : t('Өөрийн дугаарт нэхэмжлэх боломжгүй', 'Cannot invoice your own number')}
                         </Text>
                     </View>
                 )}
 
                 {lookupLoading && (
-                    <View style={styles.userCard}>
-                        <Spinner size="small" color={COLORS.accent}/>
+                    <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                        <Spinner size="small" color="$blue500"/>
                     </View>
                 )}
                 {!lookupLoading && !isSelfPhone(receiverPhone) && receiverUser && (
-                    <View style={styles.userCard}>
+                    <View style={[styles.userCard, {backgroundColor: colors.card}]}>
                         <View style={styles.userCardLeft}>
-                            <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
-                            <Text style={styles.userCardName}>{receiverUser.maskedName}</Text>
+                            <Text style={[styles.userCardPhone, {color: colors.text}]}>{receiverUser.phoneNumber}</Text>
+                            <Text style={[styles.userCardName, {color: colors.muted}]}>{receiverUser.maskedName}</Text>
                         </View>
-                        <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username)}]}>
-                            <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
+                        <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username, colors)}]}>
+                            {receiverUser.profileImageUrl
+                                ? <Image source={{uri: receiverUser.profileImageUrl}} style={styles.userAvatarImage}/>
+                                : <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
+                            }
                         </View>
                     </View>
                 )}
                 {!lookupLoading && !isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
-                    <View style={[styles.userCard, styles.userCardNotFound]}>
-                        <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
+                    <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                        <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>{t('Хэрэглэгч олдсонгүй', 'User not found')}</Text>
                     </View>
                 )}
 
                 {isSend ? (
                     <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>Илгээх данс</Text>
+                        <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Илгээх данс', 'From account')}</Text>
                         {loadingAcc ? (
                             <View style={styles.centerPad}><Spinner color="$blue500"/></View>
                         ) : accounts.length === 0 ? (
-                            <View style={styles.emptyCard}>
-                                <Text style={styles.emptyText}>Данс байхгүй байна</Text>
+                            <View style={[styles.emptyCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.emptyText, {color: colors.muted}]}>{t('Данс байхгүй байна', 'No accounts found')}</Text>
                             </View>
                         ) : (
                             <AccountCarousel
@@ -148,12 +147,12 @@ export default function SendMoneyScreen({
                     </View>
                 ) : (
                     <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>Хүлээн авах данс</Text>
+                        <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Хүлээн авах данс', 'Receive to account')}</Text>
                         {loadingMyAcc ? (
                             <View style={styles.centerPad}><Spinner color="$blue500"/></View>
                         ) : myAccounts.length === 0 ? (
-                            <View style={styles.emptyCard}>
-                                <Text style={styles.emptyText}>Данс байхгүй байна</Text>
+                            <View style={[styles.emptyCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.emptyText, {color: colors.muted}]}>{t('Данс байхгүй байна', 'No accounts found')}</Text>
                             </View>
                         ) : (
                             myAccounts.map((account) => {
@@ -162,22 +161,25 @@ export default function SendMoneyScreen({
                                 return (
                                     <TouchableOpacity
                                         key={account.accountId}
-                                        style={[styles.accountRow, active && styles.accountRowActive]}
+                                        style={[
+                                            styles.accountRow,
+                                            {borderColor: colors.border, backgroundColor: colors.surface},
+                                            active && {borderColor: colors.accent, backgroundColor: colors.accentLight},
+                                        ]}
                                         onPress={() => setReceiverAccountId(account.accountId)}
                                         activeOpacity={0.7}
                                     >
-                                        <View
-                                            style={[styles.badge, {backgroundColor: CURRENCY_BG[account.currency] ?? CURRENCY_FALLBACK_BG}]}>
+                                        <View style={[styles.badge, {backgroundColor: getCurrencyBg(account.currency, colors)}]}>
                                             <Text style={styles.badgeText}>{account.currency}</Text>
                                         </View>
                                         <View style={{flex: 1}}>
-                                            <Text style={styles.accNum}>{account.accountNumber}</Text>
-                                            <Text style={styles.accBal}>
+                                            <Text style={[styles.accNum, {color: colors.muted}]}>{account.accountNumber}</Text>
+                                            <Text style={[styles.accBal, {color: colors.text}]}>
                                                 {Number(account.balance).toLocaleString()} {currencySymbol}
                                             </Text>
                                         </View>
-                                        <View style={[styles.radio, active && styles.radioActive]}>
-                                            {active && <View style={styles.radioDot}/>}
+                                        <View style={[styles.radio, {borderColor: colors.border}, active && {borderColor: colors.accent}]}>
+                                            {active && <View style={[styles.radioDot, {backgroundColor: colors.accent}]}/>}
                                         </View>
                                     </TouchableOpacity>
                                 );
@@ -187,53 +189,53 @@ export default function SendMoneyScreen({
                 )}
 
                 {needsConversion && (
-                    <View style={styles.conversionCard}>
-                        <Text style={styles.conversionTitle}>Ханш хөрвүүлэлт</Text>
+                    <View style={[styles.conversionCard, {backgroundColor: colors.convertBg, borderColor: colors.border}]}>
+                        <Text style={[styles.conversionTitle, {color: colors.convertText}]}>{t('Ханш хөрвүүлэлт', 'Exchange Rate')}</Text>
                         {loadingRate ? (
                             <View style={styles.conversionLoading}>
-                                <Spinner size="small" color={COLORS.convertText}/>
-                                <Text style={styles.conversionLoadingText}>Ханш татаж байна...</Text>
+                                <Spinner size="small" color="$blue500"/>
+                                <Text style={[styles.conversionLoadingText, {color: colors.convertText}]}>{t('Ханш татаж байна...', 'Loading rate...')}</Text>
                             </View>
                         ) : exchangeRate ? (
                             <>
                                 <View style={styles.conversionRateRow}>
-                                    <Text style={styles.conversionRateLabel}>1 {filterCurrency}</Text>
-                                    <Text style={styles.conversionRateEq}>≈</Text>
-                                    <Text style={styles.conversionRateValue}>
+                                    <Text style={[styles.conversionRateLabel, {color: colors.muted}]}>1 {filterCurrency}</Text>
+                                    <Text style={[styles.conversionRateEq, {color: colors.convertText}]}>≈</Text>
+                                    <Text style={[styles.conversionRateValue, {color: colors.text}]}>
                                         {CURRENCY_SIGN[selectedAccount.currency]}{Number(exchangeRate).toLocaleString(undefined, {maximumFractionDigits: EXCHANGE_RATE_FRACTION_DIGITS})} {selectedAccount.currency}
                                     </Text>
                                 </View>
-                                <View style={styles.conversionDivider}/>
+                                <View style={[styles.conversionDivider, {backgroundColor: colors.border}]}/>
                                 <View style={styles.conversionAmountRow}>
-                                    <View style={styles.conversionAmountBox}>
-                                        <Text style={styles.conversionAmountLabel}>{filterCurrency}</Text>
-                                        <Text style={styles.conversionAmountValue}>
+                                    <View style={[styles.conversionAmountBox, {backgroundColor: colors.surface}]}>
+                                        <Text style={[styles.conversionAmountLabel, {color: colors.muted}]}>{filterCurrency}</Text>
+                                        <Text style={[styles.conversionAmountValue, {color: colors.text}]}>
                                             {CURRENCY_SIGN[filterCurrency]}{Number(amount).toLocaleString()}
                                         </Text>
                                     </View>
-                                    <Text style={styles.conversionArrow}>→</Text>
-                                    <View style={[styles.conversionAmountBox, styles.conversionAmountBoxResult]}>
-                                        <Text style={styles.conversionAmountLabel}>{selectedAccount.currency}</Text>
-                                        <Text style={[styles.conversionAmountValue, styles.conversionAmountValueResult]}>
+                                    <Text style={[styles.conversionArrow, {color: colors.convertText}]}>→</Text>
+                                    <View style={[styles.conversionAmountBox, {backgroundColor: colors.accentLight}]}>
+                                        <Text style={[styles.conversionAmountLabel, {color: colors.muted}]}>{selectedAccount.currency}</Text>
+                                        <Text style={[styles.conversionAmountValue, {color: colors.convertText}]}>
                                             {CURRENCY_SIGN[selectedAccount.currency]}{Number(amount * exchangeRate).toLocaleString(undefined, {maximumFractionDigits: AMOUNT_FRACTION_DIGITS})}
                                         </Text>
                                     </View>
                                 </View>
                             </>
                         ) : (
-                            <Text style={styles.conversionLoadingText}>
-                                {filterCurrency} → {selectedAccount.currency} ханш авах боломжгүй байна
+                            <Text style={[styles.conversionLoadingText, {color: colors.convertText}]}>
+                                {filterCurrency} → {selectedAccount.currency} {t('ханш авах боломжгүй байна', 'exchange rate unavailable')}
                             </Text>
                         )}
                     </View>
                 )}
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Тайлбар</Text>
+                    <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Тайлбар', 'Description')}</Text>
                     <TextInput
-                        style={styles.descInput}
-                        placeholder="Шилжүүлгийн тайлбар (заавал биш)"
-                        placeholderTextColor="#94a3b8"
+                        style={[styles.descInput, {backgroundColor: colors.card, borderColor: colors.border, color: colors.text}]}
+                        placeholder={t('Шилжүүлгийн тайлбар (заавал биш)', 'Transfer description (optional)')}
+                        placeholderTextColor={colors.muted}
                         value={description}
                         onChangeText={setDescription}
                         multiline
@@ -242,19 +244,19 @@ export default function SendMoneyScreen({
                 </View>
             </ScrollView>
 
-            <SafeAreaView edges={['bottom']}>
+            <SafeAreaView edges={['bottom']} style={{backgroundColor: colors.background}}>
                 <TouchableOpacity
                     style={[
                         styles.submitBtn,
-                        isSend ? styles.submitSend : styles.submitInvoice,
-                        sending && styles.submitDisabled,
+                        {backgroundColor: isSend ? colors.accent : colors.primary},
+                        sending && {backgroundColor: colors.muted},
                     ]}
                     onPress={() => handleSubmit(description)}
                     disabled={sending}
                     activeOpacity={0.85}
                 >
-                    <Text style={styles.submitText}>
-                        {sending ? 'Илгээж байна...' : isSend ? 'Илгээх' : 'Нэхэмжлэх'}
+                    <Text style={[styles.submitText, {color: colors.textOnPrimary}]}>
+                        {sending ? t('Илгээж байна...', 'Sending...') : isSend ? t('Илгээх', 'Send') : t('Нэхэмжлэх', 'Invoice')}
                     </Text>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -270,7 +272,7 @@ export default function SendMoneyScreen({
 }
 
 const styles = StyleSheet.create({
-    container: {flex: 1, backgroundColor: '#fff'},
+    container: {flex: 1},
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -278,112 +280,87 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderColor: '#f1f5f9',
     },
-    backArrow: {fontSize: 32, color: '#0f172a', lineHeight: 36},
-    headerTitle: {fontSize: 17, fontWeight: '700', color: '#0f172a'},
+    backArrow: {fontSize: 32, lineHeight: 36},
+    headerTitle: {fontSize: 17, fontWeight: '700'},
     body: {padding: 20, paddingBottom: 32},
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
         borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 4,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
     },
-    phoneInput: {flex: 1, fontSize: 16, color: '#0f172a', paddingVertical: 14},
+    phoneInput: {flex: 1, fontSize: 16, paddingVertical: 14},
     section: {marginBottom: 20},
     sectionLabel: {
         fontSize: 12,
         fontWeight: '700',
-        color: COLORS.muted,
         marginBottom: 10,
         textTransform: 'uppercase',
         letterSpacing: 0.6,
     },
     centerPad: {paddingVertical: 24, alignItems: 'center'},
-    emptyCard: {backgroundColor: '#f8fafc', borderRadius: 12, padding: 16},
-    emptyText: {color: COLORS.muted, fontSize: 14},
+    emptyCard: {borderRadius: 12, padding: 16},
+    emptyText: {fontSize: 14},
     badge: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12},
     badgeText: {color: '#fff', fontWeight: '700', fontSize: 11},
-    accNum: {fontSize: 12, color: COLORS.muted, marginBottom: 2},
-    accBal: {fontSize: 16, fontWeight: '700', color: '#0f172a'},
+    accNum: {fontSize: 12, marginBottom: 2},
+    accBal: {fontSize: 16, fontWeight: '700'},
     accountRow: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 14,
         borderRadius: 14,
         borderWidth: 1.5,
-        borderColor: '#e2e8f0',
         marginBottom: 10,
-        backgroundColor: '#fff',
     },
-    accountRowActive: {borderColor: COLORS.accent, backgroundColor: COLORS.accentLight},
     radio: {
         width: 22, height: 22, borderRadius: 11,
-        borderWidth: 2, borderColor: '#cbd5e1',
-        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 2, alignItems: 'center', justifyContent: 'center',
     },
-    radioActive: {borderColor: COLORS.accent},
-    radioDot: {width: 11, height: 11, borderRadius: 6, backgroundColor: COLORS.accent},
+    radioDot: {width: 11, height: 11, borderRadius: 6},
     descInput: {
-        backgroundColor: '#f8fafc',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: COLORS.toggleBg,
         padding: 14,
         fontSize: 15,
-        color: '#0f172a',
         minHeight: 90,
         textAlignVertical: 'top',
     },
     conversionCard: {
-        backgroundColor: COLORS.convertBg,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#e9d5ff',
         padding: 16,
         marginBottom: 20,
     },
     conversionTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: COLORS.convertText,
         textTransform: 'uppercase',
         letterSpacing: 0.8,
         marginBottom: 12,
     },
     conversionLoading: {flexDirection: 'row', alignItems: 'center', gap: 8},
-    conversionLoadingText: {fontSize: 13, color: COLORS.convertText},
+    conversionLoadingText: {fontSize: 13},
     conversionRateRow: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12},
-    conversionRateLabel: {fontSize: 13, color: COLORS.secondary, fontWeight: '500'},
-    conversionRateEq: {fontSize: 14, color: COLORS.convertText, fontWeight: '700'},
-    conversionRateValue: {fontSize: 14, fontWeight: '700', color: '#0f172a', flex: 1},
-    conversionDivider: {height: 1, backgroundColor: '#e9d5ff', marginBottom: 12},
+    conversionRateLabel: {fontSize: 13, fontWeight: '500'},
+    conversionRateEq: {fontSize: 14, fontWeight: '700'},
+    conversionRateValue: {fontSize: 14, fontWeight: '700', flex: 1},
+    conversionDivider: {height: 1, marginBottom: 12},
     conversionAmountRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
-    conversionAmountBox: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 12,
-    },
-    conversionAmountBoxResult: {
-        backgroundColor: '#f3e8ff',
-    },
+    conversionAmountBox: {flex: 1, borderRadius: 12, padding: 12},
     conversionAmountLabel: {
         fontSize: 10,
         fontWeight: '700',
-        color: COLORS.muted,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: 4,
     },
-    conversionAmountValue: {fontSize: 17, fontWeight: '800', color: '#0f172a'},
-    conversionAmountValueResult: {color: COLORS.convertText},
-    conversionArrow: {fontSize: 20, color: COLORS.convertText, fontWeight: '700'},
+    conversionAmountValue: {fontSize: 17, fontWeight: '800'},
+    conversionArrow: {fontSize: 20, fontWeight: '700'},
     submitBtn: {
         marginHorizontal: 16,
         marginBottom: 12,
@@ -392,14 +369,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    submitSend: {backgroundColor: COLORS.accent},
-    submitInvoice: {backgroundColor: COLORS.primary},
-    submitDisabled: {backgroundColor: COLORS.muted},
-    submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    submitText: {fontWeight: '700', fontSize: 17},
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f1f5f9',
         borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -407,17 +380,14 @@ const styles = StyleSheet.create({
         minHeight: 64,
     },
     userCardLeft: {flex: 1},
-    userCardPhone: {fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 2},
-    userCardName: {fontSize: 14, color: COLORS.secondary},
+    userCardPhone: {fontSize: 16, fontWeight: '700', marginBottom: 2},
+    userCardName: {fontSize: 14},
     userAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: COLORS.accent,
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: 48, height: 48, borderRadius: 24,
+        alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
     },
+    userAvatarImage: {width: 48, height: 48, borderRadius: 24},
     userAvatarText: {color: '#fff', fontWeight: '700', fontSize: 16},
-    userCardNotFound: {justifyContent: 'center'},
-    userCardNotFoundText: {color: COLORS.muted, fontSize: 14},
+    userCardNotFoundText: {fontSize: 14},
 });

@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {
+    Image,
     ScrollView,
     StyleSheet,
     Switch,
@@ -11,7 +12,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {
     CURRENCY_SIGN,
-    COLORS,
     MIN_PHONE_LOOKUP_LENGTH,
     PHONE_LOOKUP_DEBOUNCE_MS
 } from '../../../constants';
@@ -20,6 +20,8 @@ import {useCreateInvoice} from '../hooks/useCreateInvoice';
 import {lookupUserByPhone} from '../../../services/userApi';
 import {avatarColor, normalizePhone} from '../../../utils/helpers';
 import AccountCarousel from '../../../components/AccountCarousel';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
 
 const MIN_SPLIT_PHONES = 2;
 
@@ -30,6 +32,9 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
         currentUserPhone
     } = useCreateInvoice({currency, initialAmount, onSuccess});
 
+    const {t} = useLanguage();
+    const {colors} = useTheme();
+
     const isSelfPhone = (phone) => {
         const norm = normalizePhone(phone);
         return norm.length > 0 && norm === normalizePhone(currentUserPhone);
@@ -38,9 +43,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
     const [receiverPhone, setReceiverPhone] = useState('');
     const handlePhoneChange = (text) => {
         setReceiverPhone(text);
-        if (isSelfPhone(text.trim())) {
-            return;
-        }
+        if (isSelfPhone(text.trim())) return;
         lookupPhone(text);
     };
     const [amount, setAmount] = useState(initialAmount ? String(initialAmount) : '');
@@ -90,16 +93,9 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
         setSplitPhoneInput(text);
         setSplitLookupUser(null);
         if (splitLookupTimer.current) clearTimeout(splitLookupTimer.current);
-
         const phone = text.trim();
-        if (phone.length < MIN_PHONE_LOOKUP_LENGTH) {
-            setSplitLookupLoading(false);
-            return;
-        }
-        if (isSelfPhone(phone)) {
-            setSplitLookupLoading(false);
-            return;
-        }
+        if (phone.length < MIN_PHONE_LOOKUP_LENGTH) { setSplitLookupLoading(false); return; }
+        if (isSelfPhone(phone)) { setSplitLookupLoading(false); return; }
         setSplitLookupLoading(true);
         splitLookupTimer.current = setTimeout(async () => {
             try {
@@ -125,27 +121,23 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
 
     const removeSplitPhone = (phone) => {
         setSplitPhones(prev => prev.filter(p => p !== phone));
-        setSplitUsers(prev => {
-            const next = {...prev};
-            delete next[phone];
-            return next;
-        });
+        setSplitUsers(prev => { const next = {...prev}; delete next[phone]; return next; });
     };
-    const displayAmount = initialAmount > 0 ? Number(initialAmount).toLocaleString() : (amount || '0');
 
+    const displayAmount = initialAmount > 0 ? Number(initialAmount).toLocaleString() : (amount || '0');
     const canSubmitSingle = receiverPhone.trim().length > 0 && !isSelfPhone(receiverPhone);
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             <SafeAreaView edges={['top']}>
-                <View style={styles.header}>
+                <View style={[styles.header, {backgroundColor: colors.background, borderColor: colors.border}]}>
                     <TouchableOpacity onPress={onBack} hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
-                        <Text style={styles.backArrow}>‹</Text>
+                        <Text style={[styles.backArrow, {color: colors.text}]}>‹</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>
+                    <Text style={[styles.headerTitle, {color: colors.text}]}>
                         {splitMode
-                            ? `${displayAmount} ${currencySign} хуваалцах`
-                            : `${displayAmount} ${currencySign} нэхэмжлэх`}
+                            ? `${displayAmount} ${currencySign} ${t('хуваалцах', 'split')}`
+                            : `${displayAmount} ${currencySign} ${t('нэхэмжлэх', 'invoice')}`}
                     </Text>
                     <View style={{width: 32}}/>
                 </View>
@@ -156,30 +148,29 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                 keyboardShouldPersistTaps="handled"
                 scrollEnabled={!accountCarouselDragging}
             >
-
-                <View style={styles.splitHeroCard}>
+                <View style={[styles.splitHeroCard, {backgroundColor: colors.accentLight}]}>
                     <View style={{flex: 1}}>
-                        <Text style={styles.splitHeroTitle}>Хэсэгчлэн хуваалцах</Text>
-                        <Text style={styles.splitHeroSubtitle}>
-                            Нийт дүнг олон хүнд хуваан нэхэмжлэх
+                        <Text style={[styles.splitHeroTitle, {color: colors.text}]}>{t('Хэсэгчлэн хуваалцах', 'Split invoice')}</Text>
+                        <Text style={[styles.splitHeroSubtitle, {color: colors.muted}]}>
+                            {t('Нийт дүнг олон хүнд хуваан нэхэмжлэх', 'Split the total amount among multiple people')}
                         </Text>
                     </View>
                     <Switch
                         value={splitMode}
                         onValueChange={handleToggleSplit}
-                        trackColor={{false: '#e2e8f0', true: COLORS.accent}}
+                        trackColor={{false: colors.border, true: colors.accent}}
                         thumbColor="#fff"
                     />
                 </View>
 
                 {!splitMode ? (
                     <>
-                        <View style={styles.inputCard}>
-                            <PhoneIcon size={24} color={COLORS.muted}/>
+                        <View style={[styles.inputCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+                            <PhoneIcon size={24} color={colors.muted}/>
                             <TextInput
-                                style={styles.phoneInput}
-                                placeholder="Утасны дугаар оруулах"
-                                placeholderTextColor={COLORS.muted}
+                                style={[styles.phoneInput, {color: colors.text}]}
+                                placeholder={t('Утасны дугаар оруулах', 'Enter phone number')}
+                                placeholderTextColor={colors.muted}
                                 value={receiverPhone}
                                 onChangeText={handlePhoneChange}
                                 keyboardType="phone-pad"
@@ -187,39 +178,41 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                         </View>
 
                         {isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && (
-                            <View style={[styles.userCard, styles.userCardNotFound]}>
-                                <Text style={styles.userCardNotFoundText}>
-                                    Өөрийн дугаарт нэхэмжлэх боломжгүй
+                            <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>
+                                    {t('Өөрийн дугаарт нэхэмжлэх боломжгүй', 'Cannot invoice your own number')}
                                 </Text>
                             </View>
                         )}
 
                         {!lookupLoading && !isSelfPhone(receiverPhone) && receiverUser && (
-                            <View style={styles.userCard}>
+                            <View style={[styles.userCard, {backgroundColor: colors.card}]}>
                                 <View style={{flex: 1}}>
-                                    <Text style={styles.userCardPhone}>{receiverUser.phoneNumber}</Text>
-                                    <Text style={styles.userCardName}>{receiverUser.maskedName}</Text>
+                                    <Text style={[styles.userCardPhone, {color: colors.text}]}>{receiverUser.phoneNumber}</Text>
+                                    <Text style={[styles.userCardName, {color: colors.muted}]}>{receiverUser.maskedName}</Text>
                                 </View>
-                                <View
-                                    style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username)}]}>
-                                    <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
+                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(receiverUser.username, colors)}]}>
+                                    {receiverUser.profileImageUrl
+                                        ? <Image source={{uri: receiverUser.profileImageUrl}} style={styles.userAvatarImage}/>
+                                        : <Text style={styles.userAvatarText}>{receiverUser.initials}</Text>
+                                    }
                                 </View>
                             </View>
                         )}
 
                         {!lookupLoading && !isSelfPhone(receiverPhone) && receiverPhone.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !receiverUser && (
-                            <View style={[styles.userCard, styles.userCardNotFound]}>
-                                <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
+                            <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>{t('Хэрэглэгч олдсонгүй', 'User not found')}</Text>
                             </View>
                         )}
 
                         {!initialAmount && (
-                            <View style={styles.inputCard}>
-                                <Text style={styles.amountPrefix}>{currencySign}</Text>
+                            <View style={[styles.inputCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+                                <Text style={[styles.amountPrefix, {color: colors.text}]}>{currencySign}</Text>
                                 <TextInput
-                                    style={styles.phoneInput}
+                                    style={[styles.phoneInput, {color: colors.text}]}
                                     placeholder="0.00"
-                                    placeholderTextColor={COLORS.muted}
+                                    placeholderTextColor={colors.muted}
                                     value={amount}
                                     onChangeText={setAmount}
                                     keyboardType="decimal-pad"
@@ -229,43 +222,42 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                     </>
                 ) : (
                     <>
-                        <View style={styles.splitToggleCard}>
-                            <Text style={styles.splitToggleLabel}>Өөрийгөө оруулах</Text>
+                        <View style={[styles.splitToggleCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+                            <Text style={[styles.splitToggleLabel, {color: colors.text}]}>{t('Өөрийгөө оруулах', 'Include myself')}</Text>
                             <Switch
                                 value={includeSelf}
                                 onValueChange={setIncludeSelf}
-                                trackColor={{false: '#e2e8f0', true: COLORS.accent}}
+                                trackColor={{false: colors.border, true: colors.accent}}
                                 thumbColor="#fff"
                             />
                         </View>
 
                         {perPerson > 0 && (
-                            <View style={styles.perPersonCard}>
-                                <Text style={styles.perPersonLabel}>Тус бүрт</Text>
-                                <Text style={styles.perPersonAmount}>
+                            <View style={[styles.perPersonCard, {backgroundColor: colors.accentLight}]}>
+                                <Text style={[styles.perPersonLabel, {color: colors.accent}]}>{t('Тус бүрт', 'Per person')}</Text>
+                                <Text style={[styles.perPersonAmount, {color: colors.accent}]}>
                                     {perPerson.toLocaleString()} {currencySign}
                                 </Text>
                             </View>
                         )}
 
-                        <Text style={styles.sectionLabel}>Нэхэмжлэх хүмүүс</Text>
+                        <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Нэхэмжлэх хүмүүс', 'Invoice recipients')}</Text>
 
                         {splitPhones.length > 0 && (
                             <View style={styles.chipsRow}>
                                 {splitPhones.map(phone => {
                                     const u = splitUsers[phone];
                                     return (
-                                        <View key={phone} style={styles.phoneChip}>
-                                            <View
-                                                style={[styles.chipAvatar, {backgroundColor: avatarColor(u.username)}]}>
-                                                <Text style={styles.chipAvatarText}>{u.initials}</Text>
+                                        <View key={phone} style={[styles.phoneChip, {backgroundColor: colors.accentLight}]}>
+                                            <View style={[styles.chipAvatar, {backgroundColor: avatarColor(u.username, colors)}]}>
+                                                {u.profileImageUrl
+                                                    ? <Image source={{uri: u.profileImageUrl}} style={styles.chipAvatarImage}/>
+                                                    : <Text style={styles.chipAvatarText}>{u.initials}</Text>
+                                                }
                                             </View>
-                                            <Text style={styles.phoneChipText}>{u.maskedName}</Text>
-                                            <TouchableOpacity
-                                                onPress={() => removeSplitPhone(phone)}
-                                                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
-                                            >
-                                                <Text style={styles.phoneChipRemove}>✕</Text>
+                                            <Text style={[styles.phoneChipText, {color: colors.accent}]}>{u.maskedName}</Text>
+                                            <TouchableOpacity onPress={() => removeSplitPhone(phone)} hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                                                <Text style={[styles.phoneChipRemove, {color: colors.accent}]}>✕</Text>
                                             </TouchableOpacity>
                                         </View>
                                     );
@@ -273,61 +265,63 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                             </View>
                         )}
 
-                        <View style={styles.inputCard}>
-                            <PhoneIcon size={24} color={COLORS.muted}/>
+                        <View style={[styles.inputCard, {backgroundColor: colors.card, borderColor: colors.border}]}>
+                            <PhoneIcon size={24} color={colors.muted}/>
                             <TextInput
-                                style={styles.phoneInput}
-                                placeholder="Утасны дугаар оруулах"
-                                placeholderTextColor={COLORS.muted}
+                                style={[styles.phoneInput, {color: colors.text}]}
+                                placeholder={t('Утасны дугаар оруулах', 'Enter phone number')}
+                                placeholderTextColor={colors.muted}
                                 value={splitPhoneInput}
                                 onChangeText={handleSplitInputChange}
                                 keyboardType="phone-pad"
                             />
-                            {splitLookupLoading && <Spinner size="small" color={COLORS.accent}/>}
+                            {splitLookupLoading && <Spinner size="small" color="$blue500"/>}
                         </View>
 
                         {!splitLookupLoading && isSelfPhone(splitPhoneInput) && splitPhoneInput.trim().length >= MIN_PHONE_LOOKUP_LENGTH && (
-                            <View style={[styles.userCard, styles.userCardNotFound]}>
-                                <Text style={styles.userCardNotFoundText}>
-                                    Өөрийн дугаарт нэхэмжлэх боломжгүй
+                            <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>
+                                    {t('Өөрийн дугаарт нэхэмжлэх боломжгүй', 'Cannot invoice your own number')}
                                 </Text>
                             </View>
                         )}
 
                         {!splitLookupLoading && !isSelfPhone(splitPhoneInput) && splitLookupUser && (
-                            <TouchableOpacity style={styles.userCard} onPress={selectSplitUser} activeOpacity={0.7}>
+                            <TouchableOpacity style={[styles.userCard, {backgroundColor: colors.card}]} onPress={selectSplitUser} activeOpacity={0.7}>
                                 <View style={{flex: 1}}>
-                                    <Text style={styles.userCardPhone}>{splitLookupUser.phoneNumber}</Text>
-                                    <Text style={styles.userCardName}>{splitLookupUser.maskedName}</Text>
+                                    <Text style={[styles.userCardPhone, {color: colors.text}]}>{splitLookupUser.phoneNumber}</Text>
+                                    <Text style={[styles.userCardName, {color: colors.muted}]}>{splitLookupUser.maskedName}</Text>
                                 </View>
-                                <View
-                                    style={[styles.userAvatar, {backgroundColor: avatarColor(splitLookupUser.username)}]}>
-                                    <Text style={styles.userAvatarText}>{splitLookupUser.initials}</Text>
+                                <View style={[styles.userAvatar, {backgroundColor: avatarColor(splitLookupUser.username, colors)}]}>
+                                    {splitLookupUser.profileImageUrl
+                                        ? <Image source={{uri: splitLookupUser.profileImageUrl}} style={styles.userAvatarImage}/>
+                                        : <Text style={styles.userAvatarText}>{splitLookupUser.initials}</Text>
+                                    }
                                 </View>
                             </TouchableOpacity>
                         )}
 
                         {!splitLookupLoading && !isSelfPhone(splitPhoneInput) && splitPhoneInput.trim().length >= MIN_PHONE_LOOKUP_LENGTH && !splitLookupUser && (
-                            <View style={[styles.userCard, styles.userCardNotFound]}>
-                                <Text style={styles.userCardNotFoundText}>Хэрэглэгч олдсонгүй</Text>
+                            <View style={[styles.userCard, {backgroundColor: colors.card}]}>
+                                <Text style={[styles.userCardNotFoundText, {color: colors.muted}]}>{t('Хэрэглэгч олдсонгүй', 'User not found')}</Text>
                             </View>
                         )}
 
                         {!canSubmitSplit && (
-                            <Text style={styles.hintText}>
-                                Хамгийн багадаа {MIN_SPLIT_PHONES} хүн сонгоно уу
+                            <Text style={[styles.hintText, {color: colors.muted}]}>
+                                {t(`Хамгийн багадаа ${MIN_SPLIT_PHONES} хүн сонгоно уу`, `Select at least ${MIN_SPLIT_PHONES} people`)}
                             </Text>
                         )}
                     </>
                 )}
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Хүлээн авах данс</Text>
+                    <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Хүлээн авах данс', 'Receive to account')}</Text>
                     {loadingAccounts ? (
                         <View style={styles.centerPad}><Spinner color="$blue500"/></View>
                     ) : myAccounts.length === 0 ? (
-                        <View style={styles.emptyCard}>
-                            <Text style={styles.emptyText}>Данс байхгүй байна</Text>
+                        <View style={[styles.emptyCard, {backgroundColor: colors.card}]}>
+                            <Text style={[styles.emptyText, {color: colors.muted}]}>{t('Данс байхгүй байна', 'No accounts found')}</Text>
                         </View>
                     ) : (
                         <AccountCarousel
@@ -340,11 +334,11 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Тайлбар</Text>
+                    <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Тайлбар', 'Description')}</Text>
                     <TextInput
-                        style={styles.descInput}
-                        placeholder="Тайлбар"
-                        placeholderTextColor={COLORS.muted}
+                        style={[styles.descInput, {backgroundColor: colors.card, borderColor: colors.border, color: colors.text}]}
+                        placeholder={t('Тайлбар', 'Description')}
+                        placeholderTextColor={colors.muted}
                         value={description}
                         onChangeText={setDescription}
                         multiline
@@ -353,26 +347,22 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
                 </View>
             </ScrollView>
 
-            <SafeAreaView edges={['bottom']}>
+            <SafeAreaView edges={['bottom']} style={{backgroundColor: colors.background}}>
                 <TouchableOpacity
                     style={[
                         styles.submitBtn,
-                        (sending || (splitMode ? !canSubmitSplit : !canSubmitSingle)) && styles.submitDisabled
+                        {backgroundColor: colors.primary},
+                        (sending || (splitMode ? !canSubmitSplit : !canSubmitSingle)) && {backgroundColor: colors.muted},
                     ]}
                     onPress={() => splitMode
-                        ? handleSplitSubmit({
-                            totalAmount: parsedSplitTotal,
-                            peopleCount: participantCount,
-                            phones: splitPhones,
-                            description
-                        })
+                        ? handleSplitSubmit({totalAmount: parsedSplitTotal, peopleCount: participantCount, phones: splitPhones, description})
                         : handleSubmit({receiverPhone, amount, description})
                     }
                     disabled={sending || (splitMode ? !canSubmitSplit : !canSubmitSingle)}
                     activeOpacity={0.85}
                 >
-                    <Text style={styles.submitText}>
-                        {sending ? 'Илгээж байна...' : 'Нэхэмжлэх'}
+                    <Text style={[styles.submitText, {color: colors.textOnPrimary}]}>
+                        {sending ? t('Илгээж байна...', 'Sending...') : t('Нэхэмжлэх', 'Invoice')}
                     </Text>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -381,7 +371,7 @@ export default function CreateInvoiceScreen({onBack, onSuccess, currency = 'MNT'
 }
 
 const styles = StyleSheet.create({
-    container: {flex: 1, backgroundColor: '#fff'},
+    container: {flex: 1},
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -389,51 +379,44 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderColor: '#f1f5f9',
     },
-    backArrow: {fontSize: 32, color: '#0f172a', lineHeight: 36},
-    headerTitle: {fontSize: 17, fontWeight: '700', color: '#0f172a'},
+    backArrow: {fontSize: 32, lineHeight: 36},
+    headerTitle: {fontSize: 17, fontWeight: '700'},
     body: {padding: 20, paddingBottom: 32},
     splitHeroCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: COLORS.accentLight,
         borderRadius: 16,
         paddingHorizontal: 18,
         paddingVertical: 16,
         marginBottom: 20,
     },
-    splitHeroTitle: {fontSize: 15, fontWeight: '700', color: '#0f172a', marginBottom: 2},
-    splitHeroSubtitle: {fontSize: 12, color: COLORS.secondary},
+    splitHeroTitle: {fontSize: 15, fontWeight: '700', marginBottom: 2},
+    splitHeroSubtitle: {fontSize: 12},
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
         borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 4,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
     },
-    amountPrefix: {fontSize: 18, fontWeight: '700', color: '#0f172a', marginRight: 8},
-    phoneInput: {flex: 1, fontSize: 16, color: '#0f172a', paddingVertical: 14},
+    amountPrefix: {fontSize: 18, fontWeight: '700', marginRight: 8},
+    phoneInput: {flex: 1, fontSize: 16, paddingVertical: 14},
     splitToggleCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#f8fafc',
         borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
         marginBottom: 20,
     },
-    splitToggleLabel: {fontSize: 14, fontWeight: '600', color: '#0f172a'},
+    splitToggleLabel: {fontSize: 14, fontWeight: '600'},
     perPersonCard: {
-        backgroundColor: COLORS.accentLight,
         borderRadius: 14,
         paddingHorizontal: 20,
         paddingVertical: 16,
@@ -442,28 +425,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    perPersonLabel: {fontSize: 14, fontWeight: '600', color: COLORS.accent},
-    perPersonAmount: {fontSize: 22, fontWeight: '800', color: COLORS.accent},
+    perPersonLabel: {fontSize: 14, fontWeight: '600'},
+    perPersonAmount: {fontSize: 22, fontWeight: '800'},
     section: {marginBottom: 20},
     sectionLabel: {
         fontSize: 12,
         fontWeight: '700',
-        color: COLORS.muted,
         marginBottom: 10,
         textTransform: 'uppercase',
         letterSpacing: 0.6,
     },
     centerPad: {paddingVertical: 24, alignItems: 'center'},
-    emptyCard: {backgroundColor: '#f8fafc', borderRadius: 12, padding: 16},
-    emptyText: {color: COLORS.muted, fontSize: 14},
+    emptyCard: {borderRadius: 12, padding: 16},
+    emptyText: {fontSize: 14},
     descInput: {
-        backgroundColor: '#f8fafc',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#e2e8f0',
         padding: 14,
         fontSize: 15,
-        color: '#0f172a',
         minHeight: 90,
         textAlignVertical: 'top',
     },
@@ -474,14 +453,11 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: COLORS.primary,
     },
-    submitDisabled: {backgroundColor: COLORS.muted},
-    submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    submitText: {fontWeight: '700', fontSize: 17},
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f1f5f9',
         borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -489,23 +465,20 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         minHeight: 64,
     },
-    userCardPhone: {fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 2},
-    userCardName: {fontSize: 14, color: COLORS.secondary},
+    userCardPhone: {fontSize: 16, fontWeight: '700', marginBottom: 2},
+    userCardName: {fontSize: 14},
     userAvatar: {
         width: 48, height: 48, borderRadius: 24,
-        backgroundColor: COLORS.accent,
         alignItems: 'center', justifyContent: 'center',
     },
     userAvatarText: {color: '#fff', fontWeight: '700', fontSize: 16},
-    userCardNotFound: {justifyContent: 'center'},
-    userCardNotFoundText: {color: COLORS.muted, fontSize: 14},
-    hintText: {color: COLORS.muted, fontSize: 12, marginBottom: 12},
-
+    userAvatarImage: {width: 48, height: 48, borderRadius: 24},
+    userCardNotFoundText: {fontSize: 14},
+    hintText: {fontSize: 12, marginBottom: 12},
     chipsRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12},
     phoneChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#e0f2fe',
         borderRadius: 20,
         paddingLeft: 4,
         paddingRight: 10,
@@ -514,7 +487,7 @@ const styles = StyleSheet.create({
     },
     chipAvatar: {width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center'},
     chipAvatarText: {color: '#fff', fontWeight: '700', fontSize: 10},
-    phoneChipText: {color: COLORS.accent, fontWeight: '700', fontSize: 13},
-    phoneChipRemove: {color: COLORS.accent, fontSize: 13, fontWeight: '700', paddingLeft: 2},
-    selectHint: {color: COLORS.accent, fontWeight: '700', fontSize: 13, marginLeft: 8},
+    chipAvatarImage: {width: 24, height: 24, borderRadius: 12},
+    phoneChipText: {fontWeight: '700', fontSize: 13},
+    phoneChipRemove: {fontSize: 13, fontWeight: '700', paddingLeft: 2},
 });

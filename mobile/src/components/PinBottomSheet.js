@@ -3,6 +3,8 @@ import {Dimensions, Modal, StyleSheet, TouchableOpacity, View} from 'react-nativ
 import {Text} from '@gluestack-ui/themed';
 import {BackspaceIcon, LockIcon} from './icons';
 import {COLORS} from "../constants";
+import {useLanguage} from '../context/LanguageContext';
+import {useTheme} from '../context/ThemeContext';
 
 const PIN_LENGTH = 4;
 const {width: SW} = Dimensions.get('window');
@@ -18,10 +20,13 @@ export default function PinBottomSheet({
                                            visible,
                                            onConfirm,
                                            onClose,
-                                           title = 'Гүйлгээний PIN оруулна уу',
+                                           title,
                                            onForgot,
                                            loading = false,
                                        }) {
+    const {t} = useLanguage();
+    const {colors} = useTheme();
+    const resolvedTitle = title ?? t('Гүйлгээний PIN оруулна уу', 'Enter transaction PIN');
     const [digits, setDigits] = useState([]);
 
     useEffect(() => {
@@ -56,12 +61,12 @@ export default function PinBottomSheet({
         >
             <View style={styles.overlay}>
                 <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}/>
-                <View style={styles.sheet}>
+                <View style={[styles.sheet, {backgroundColor: colors.primary}]}>
                     <View style={styles.handle}/>
 
                     <LockIcon size={52}/>
 
-                    <Text style={styles.title}>{title}</Text>
+                    <Text style={styles.title}>{resolvedTitle}</Text>
 
                     <View style={styles.dotsRow}>
                         {Array.from({length: PIN_LENGTH}).map((_, i) => (
@@ -74,7 +79,7 @@ export default function PinBottomSheet({
 
                     {onForgot && (
                         <TouchableOpacity onPress={onForgot} hitSlop={{top: 12, bottom: 12, left: 16, right: 16}}>
-                            <Text style={styles.forgot}>Мартсан?</Text>
+                            <Text style={styles.forgot}>{t('Мартсан?', 'Forgot?')}</Text>
                         </TouchableOpacity>
                     )}
 

@@ -1,31 +1,34 @@
 import {useEffect, useRef, useState} from 'react';
-import {Alert, Animated, Easing, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Alert, Animated, Easing, Image, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import {Spinner, Text} from '@gluestack-ui/themed';
-import {CURRENCY_BG, CURRENCY_SIGN, COLORS, CURRENCIES} from '../../../constants';
+import {EditIcon} from '../../../components/icons';
+import {CURRENCY_SIGN, COLORS, CURRENCIES, getCurrencyBg} from '../../../constants';
 import {isPrefixCurrency} from '../../../utils/helpers';
 import {useAccount} from '../hooks/useAccount';
+import {useLanguage} from '../../../context/LanguageContext';
+import {useTheme} from '../../../context/ThemeContext';
+import {uploadProfileImage} from '../../../services/userApi';
 
-function AccountCard({account, onPress}) {
-    const color = CURRENCY_BG[account.currency] ?? COLORS.secondary;
+function AccountCard({account, onPress, t, colors}) {
+    const color = getCurrencyBg(account.currency, colors);
     const currencySymbol = CURRENCY_SIGN[account.currency] ?? account.currency;
     const isPrefix = isPrefixCurrency(account.currency);
     return (
-        <TouchableOpacity style={styles.accountCard} onPress={() => onPress(account)} activeOpacity={0.8}>
+        <TouchableOpacity style={[styles.accountCard, {backgroundColor: colors.surface}]} onPress={() => onPress(account)} activeOpacity={0.8}>
             <View style={styles.accountCardTop}>
-                <Text style={styles.bankLabel}>Дансны мэдээлэл</Text>
+                <Text style={[styles.bankLabel, {color: colors.muted}]}>{t('Дансны мэдээлэл', 'Account Info')}</Text>
                 <View style={[styles.currencyTag, {backgroundColor: color}]}>
                     <Text style={styles.currencyTagText}>{account.currency}</Text>
                 </View>
             </View>
-            <Text style={styles.accountNumber} numberOfLines={1}>{account.accountNumber}</Text>
+            <Text style={[styles.accountNumber, {color: colors.secondary}]} numberOfLines={1}>{account.accountNumber}</Text>
             <View style={styles.accountCardBottom}>
-                <Text style={styles.balanceAmount}>
+                <Text style={[styles.balanceAmount, {color: colors.text}]}>
                     {isPrefix
-                        ? <><Text
-                            style={styles.balanceCurrency}>{currencySymbol} </Text>{Number(account.balance).toLocaleString()}</>
-                        : <>{Number(account.balance).toLocaleString()} <Text
-                            style={styles.balanceCurrency}>{currencySymbol}</Text></>
+                        ? <><Text style={[styles.balanceCurrency, {color: colors.text}]}>{currencySymbol} </Text>{Number(account.balance).toLocaleString()}</>
+                        : <>{Number(account.balance).toLocaleString()} <Text style={[styles.balanceCurrency, {color: colors.text}]}>{currencySymbol}</Text></>
                     }
                 </Text>
             </View>
@@ -34,8 +37,35 @@ function AccountCard({account, onPress}) {
 }
 
 export default function AccountScreen({onSelectAccount, onLogout}) {
+    const {t} = useLanguage();
+    const {colors} = useTheme();
     const {userInfo, accounts, loading, fetched, creating, load, createNewAccount} = useAccount();
     const [newCurrency, setNewCurrency] = useState('MNT');
+    const [uploading, setUploading] = useState(false);
+
+    const pickAndUpload = async () => {
+        const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert(t('Зөвшөөрөл', 'Permission'), t('Зургийн сан ашиглах зөвшөөрөл шаардлагатай', 'Media library permission is required'));
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (result.canceled) return;
+        setUploading(true);
+        try {
+            await uploadProfileImage(result.assets[0].uri);
+            await load();
+        } catch {
+            Alert.alert(t('Алдаа', 'Error'), t('Зураг байршуулахад алдаа гарлаа', 'Failed to upload image'));
+        } finally {
+            setUploading(false);
+        }
+    };
     const [currencyTrackWidth, setCurrencyTrackWidth] = useState(0);
     const indicatorX = useRef(new Animated.Value(0)).current;
     const selectedCurrencyIndex = Math.max(0, CURRENCIES.indexOf(newCurrency));
@@ -54,26 +84,42 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
     if (!fetched && !loading) load();
 
     return (
-        <View style={styles.container}>
-            <View style={styles.profileHeader}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
+            <View style={[styles.profileHeader, {backgroundColor: colors.primary}]}>
                 <SafeAreaView edges={['top']}>
                     <View style={styles.profileHeaderContent}>
-                        <View style={styles.avatarCircle}>
-                            <Text style={styles.avatarText}>{userInfo?.initials ?? '?'}</Text>
-                        </View>
+                        <TouchableOpacity onPress={pickAndUpload} activeOpacity={0.85} style={styles.avatarWrapper}>
+                            <View style={styles.avatarCircle}>
+                                {userInfo?.profileImageUrl ? (
+                                    <Image source={{uri: userInfo.profileImageUrl}} style={styles.avatarImage}/>
+                                ) : (
+                                    <Text style={styles.avatarText}>{userInfo?.initials ?? '?'}</Text>
+                                )}
+                            </View>
+                            <View style={styles.avatarEditBadge}>
+                                {uploading
+                                    ? <Spinner size="small" color="#fff"/>
+                                    : <EditIcon size={14} color="#fff"/>
+                                }
+                            </View>
+                        </TouchableOpacity>
                         <Text style={styles.userName}>{userInfo?.username ?? '...'}</Text>
                         {userInfo?.email ? <Text style={styles.userEmail}>{userInfo.email}</Text> : null}
                         {onLogout && (
                             <TouchableOpacity
                                 onPress={() =>
-                                    Alert.alert('Гарах', 'Системээс гарахдаа итгэлтэй байна уу?', [
-                                        {text: 'Болих', style: 'cancel'},
-                                        {text: 'Гарах', style: 'destructive', onPress: onLogout},
-                                    ])
+                                    Alert.alert(
+                                        t('Гарах', 'Logout'),
+                                        t('Системээс гарахдаа итгэлтэй байна уу?', 'Are you sure you want to logout?'),
+                                        [
+                                            {text: t('Болих', 'Cancel'), style: 'cancel'},
+                                            {text: t('Гарах', 'Logout'), style: 'destructive', onPress: onLogout},
+                                        ]
+                                    )
                                 }
                                 style={styles.logoutBtn}
                             >
-                                <Text style={styles.logoutText}>Гарах</Text>
+                                <Text style={styles.logoutText}>{t('Гарах', 'Logout')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -87,14 +133,14 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
             ) : (
                 <ScrollView contentContainerStyle={styles.body}>
                     {accounts.map((account) => (
-                        <AccountCard key={account.accountId} account={account} onPress={onSelectAccount}/>
+                        <AccountCard key={account.accountId} account={account} onPress={onSelectAccount} t={t} colors={colors}/>
                     ))}
 
-                    <View style={styles.newAccountCard}>
-                        <Text style={styles.newAccountTitle}>Шинэ данс нээх</Text>
+                    <View style={[styles.newAccountCard, {backgroundColor: colors.surface}]}>
+                        <Text style={[styles.newAccountTitle, {color: colors.primary}]}>{t('Шинэ данс нээх', 'Open New Account')}</Text>
                         <View style={styles.currencyRow}>
                             <View
-                                style={styles.currencyTrack}
+                                style={[styles.currencyTrack, {backgroundColor: colors.card}]}
                                 onLayout={(event) => setCurrencyTrackWidth(event.nativeEvent.layout.width)}
                             >
                                 {indicatorWidth > 0 && (
@@ -103,6 +149,7 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                                             styles.currencyIndicator,
                                             {
                                                 width: indicatorWidth,
+                                                backgroundColor: colors.primary,
                                                 transform: [{translateX: indicatorX}],
                                             },
                                         ]}
@@ -117,7 +164,7 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                                             onPress={() => setNewCurrency(currencyCode)}
                                             activeOpacity={0.8}
                                         >
-                                            <Text style={[styles.currencyBtnText, active && styles.currencyBtnTextActive]}>
+                                            <Text style={[styles.currencyBtnText, {color: active ? colors.textOnPrimary : colors.muted}]}>
                                                 {currencyCode}
                                             </Text>
                                         </TouchableOpacity>
@@ -126,11 +173,11 @@ export default function AccountScreen({onSelectAccount, onLogout}) {
                             </View>
                         </View>
                         <TouchableOpacity
-                            style={[styles.openBtn, (creating || !userInfo) && styles.openBtnDisabled]}
+                            style={[styles.openBtn, {backgroundColor: colors.primary}, (creating || !userInfo) && {backgroundColor: colors.muted}]}
                             onPress={() => createNewAccount(newCurrency)}
                             disabled={creating || !userInfo}
                         >
-                            <Text style={styles.openBtnText}>{creating ? 'Нээж байна...' : 'Данс нээх'}</Text>
+                            <Text style={[styles.openBtnText, {color: colors.textOnPrimary}]}>{creating ? t('Нээж байна...', 'Opening...') : t('Данс нээх', 'Open Account')}</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -151,6 +198,7 @@ const styles = StyleSheet.create({
         paddingBottom: 8,
         paddingHorizontal: 20,
     },
+    avatarWrapper: {marginBottom: 12, position: 'relative'},
     avatarCircle: {
         width: 80,
         height: 80,
@@ -158,11 +206,24 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 12,
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.5)',
+        overflow: 'hidden',
     },
+    avatarImage: {width: 80, height: 80, borderRadius: 40},
     avatarText: {color: '#fff', fontSize: 28, fontWeight: '700'},
+    avatarEditBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarEditIcon: {},
     userName: {color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 4},
     userEmail: {color: 'rgba(255,255,255,0.75)', fontSize: 13},
     logoutBtn: {
