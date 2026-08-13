@@ -12,7 +12,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "UIDesignRequiresCompatibility": false
+        "UIDesignRequiresCompatibility": false,
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.anonymous.mobile"
     },
@@ -26,6 +27,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "47bcdac5-22af-4689-8c1a-658a5660558c"
+      }
     }
   }
 }

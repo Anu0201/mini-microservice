@@ -5,39 +5,68 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2ed4b8d7-1876-4765-b772-bc4e53653789" name="Changes" comment="Merge remote-tracking branch 'origin/main'">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/deploy.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/deploy.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/dto/LoginRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/dto/LoginRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/feign/UserClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/feign/UserClient.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/serviceImpl/AuthServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/handler/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/handler/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/body.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/body.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/chapters/implementation.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/chapters/introduction.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/chapters/introduction.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/chapters/research.tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/chapters/technologies.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/chapters/technologies.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/important/abstract.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/important/abstract.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/important/appendix.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/important/appendix.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/important/main-pre.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/important/main-pre.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/important/plan.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/important/plan.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/main.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/main.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/intern-report/main.tex" beforeDir="false" afterPath="$PROJECT_DIR$/intern-report/main.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/util/MessageUtility.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/auth-service/src/main/java/com/anudari/auth_service/util/MessageUtility.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/docker-compose.prod.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/docker-compose.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/gateway-service/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/gateway-service/src/main/java/com/anudari/gateway_service/utility/MessageUtility.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/gateway-service/src/main/java/com/anudari/gateway_service/utility/MessageUtility.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/config/AppProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/config/AppProperties.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/repository/PaymentRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/repository/PaymentRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/resources/messages.properties" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/resources/messages.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/main/resources/messages_mn.properties" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/main/resources/messages_mn.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/payment-service/src/test/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImplTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/payment-service/src/test/java/com/anudari/payment_service/serviceImpl/InvoiceServiceImplTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/config/AppProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/config/AppProperties.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/dto/UserLookupResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/dto/UserLookupResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/dto/UserResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/dto/UserResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/serviceImpl/UserServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/java/com/anudari/user_service/serviceImpl/UserServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/microservice/user-service/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/microservice/user-service/src/main/resources/application.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/accountApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/accountApi.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/authApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/services/authApi.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/axiosInstance.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/axiosInstance.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/paymentApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/paymentApi.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/api/userApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/userApi.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/components/TabBar.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/TabBar.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/components/icons.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/icons.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/constants.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAccount.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useAccount.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAccountDetail.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useAccountDetail.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useAppNavigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/hooks/useAppNavigation.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useCreateInvoice.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useCreateInvoice.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useInvoiceList.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useInvoiceList.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useLogin.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/hooks/useLogin.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useRegister.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/hooks/useRegister.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useSendInvoice.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/hooks/useSendInvoice.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/hooks/useSendMoney.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useSendMoney.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/AccountDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountDetailScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/AccountScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/CreateInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/CreateInvoiceScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/HomeScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/InvoiceListScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/InvoiceListScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/LoginScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/RegisterScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/RegisterScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/SendInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/SendInvoiceScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/screens/SendMoneyScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/SendMoneyScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile/utils/helpers.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/utils/helpers.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/components/AccountCarousel.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/AccountCarousel.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/components/PinBottomSheet.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/PinBottomSheet.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/components/TabBar.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/TabBar.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/components/icons.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/components/icons.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/constants.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/auth/screens/LoginScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/LoginScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/auth/screens/RegisterScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/auth/screens/RegisterScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/invoice/screens/CreateInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/CreateInvoiceScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/invoice/screens/InvoiceListScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/InvoiceListScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/invoice/screens/SendInvoiceScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/invoice/screens/SendInvoiceScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/usePinSettings.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/usePinSettings.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useSendMoney.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/hooks/useSendMoney.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountDetailScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/AccountScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/HomeScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/LanguageSettingsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/LanguageSettingsScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/MenuScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/MenuScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/PinSettingsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/PinSettingsScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/features/wallet/screens/SendMoneyScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/features/wallet/screens/SendMoneyScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/services/userApi.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/services/userApi.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile/src/utils/helpers.js" beforeDir="false" afterPath="$PROJECT_DIR$/mobile/src/utils/helpers.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,6 +189,21 @@
   &quot;fromUser&quot;: true
 }</component>
   <component name="ProjectId" id="3FLOOrrHb3mBnnTPvI5mribmsY5" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="auto" />
+          </model>
+        </option>
+        <option name="targetType" value="BACKGROUND" />
+        <option name="worktreeMode" value="WORKSPACE" />
+      </template>
+    </option>
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -264,7 +308,16 @@
       <workItem from="1783216837087" duration="790000" />
       <workItem from="1783299465922" duration="15415000" />
       <workItem from="1783387640124" duration="3728000" />
-      <workItem from="1783473485268" duration="3714000" />
+      <workItem from="1783473485268" duration="7133000" />
+      <workItem from="1784510792694" duration="2111000" />
+      <workItem from="1784623443019" duration="1198000" />
+      <workItem from="1784768742141" duration="873000" />
+      <workItem from="1784855125274" duration="597000" />
+      <workItem from="1785114695157" duration="597000" />
+      <workItem from="1785805674613" duration="30000" />
+      <workItem from="1786065095951" duration="17000" />
+      <workItem from="1786440020157" duration="2000" />
+      <workItem from="1786583861066" duration="7000" />
     </task>
     <task id="LOCAL-00001" summary="Feat: User-service, Payment-service">
       <option name="closed" value="true" />
