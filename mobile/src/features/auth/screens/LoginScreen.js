@@ -4,9 +4,10 @@ import {COLORS} from '../../../constants';
 import {useLogin} from '../hooks/useLogin';
 import {useLanguage} from '../../../context/LanguageContext';
 import {useTheme} from '../../../context/ThemeContext';
+import {FaceIdIcon} from '../../../components/icons';
 
 export default function LoginScreen({onLoginSuccess, onGoRegister}) {
-    const {loading, handleLogin} = useLogin({onLoginSuccess});
+    const {loading, handleLogin, handleBiometricLogin, biometricEnabled} = useLogin({onLoginSuccess});
     const {t} = useLanguage();
     const {colors} = useTheme();
 
@@ -49,6 +50,20 @@ export default function LoginScreen({onLoginSuccess, onGoRegister}) {
                     </Text>
                 </TouchableOpacity>
 
+                {biometricEnabled && (
+                    <TouchableOpacity
+                        style={[styles.biometricBtn]}
+                        onPress={handleBiometricLogin}
+                        disabled={loading}
+                        activeOpacity={0.8}
+                    >
+                        <FaceIdIcon size={22} color={colors.text}/>
+                        <Text style={[styles.biometricText, {color: colors.text}]}>
+                            {t('Face ID / Touch ID', 'Face ID / Touch ID')}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity onPress={onGoRegister} style={styles.linkRow}>
                     <Text style={[styles.linkText, {color: colors.secondary}]}>{t('Бүртгэлгүй юу? ', 'No account? ')}</Text>
                     <Text style={[styles.linkBold, {color: colors.primary}]}>{t('Бүртгүүлэх', 'Register')}</Text>
@@ -80,10 +95,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 8,
+        marginBottom: 12,
+    },
+    submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    biometricBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        height: 56,
         marginBottom: 16,
     },
-    submitDisabled: {backgroundColor: COLORS.muted},
-    submitText: {color: '#fff', fontWeight: '700', fontSize: 17},
+    biometricText: {fontSize: 15, fontWeight: '600'},
     linkRow: {flexDirection: 'row', justifyContent: 'center'},
     linkText: {fontSize: 14, color: COLORS.secondary},
     linkBold: {fontSize: 14, color: COLORS.primaryLight, fontWeight: '700'},

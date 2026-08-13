@@ -3,9 +3,12 @@ import {Alert} from 'react-native';
 import {getMe} from '../../../services/userApi';
 import {createPin, changePin, recoverPin, checkPin} from '../../../services/pinApi';
 import {useLanguage} from '../../../context/LanguageContext';
+import {useBiometric} from '../../auth/hooks/useBiometric';
 
 export const usePinSettings = ({onPinCreated} = {}) => {
     const {t} = useLanguage();
+    const {updateBiometricPin} = useBiometric();
+
     const [hasPinSet, setHasPinSet] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
@@ -84,6 +87,8 @@ export const usePinSettings = ({onPinCreated} = {}) => {
                 if (flow === 'create') await createPin(pin);
                 else if (flow === 'change') await changePin(pin);
                 else if (flow === 'recover') await recoverPin(pin);
+                // Keep biometric PIN in sync whenever PIN is set/changed
+                await updateBiometricPin(pin);
                 setHasPinSet(true);
                 setSuccessMsg(flow === 'create' ? t('PIN амжилттай үүслээ', 'PIN created successfully') : t('PIN амжилттай солигдлоо', 'PIN changed successfully'));
                 closePin();

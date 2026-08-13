@@ -1,9 +1,13 @@
-import {Alert, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Alert, StyleSheet, Switch, TouchableOpacity, View, ScrollView} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
-import {LockIcon, ColorPaletteIcon, LanguageIcon, LogoutIcon} from '../../../components/icons';
+import {LockIcon, ColorPaletteIcon, LanguageIcon, LogoutIcon, FaceIdIcon} from '../../../components/icons';
 import {useLanguage} from '../../../context/LanguageContext';
 import {useTheme} from '../../../context/ThemeContext';
+import {useBiometric} from '../../auth/hooks/useBiometric';
+import {checkPin} from '../../../services/pinApi';
+import PinBottomSheet from '../../../components/PinBottomSheet';
+import {useState} from 'react';
 
 function MenuItem({icon, label, sub, onPress, chevron = true, colors}) {
     return (
@@ -25,10 +29,37 @@ function MenuItem({icon, label, sub, onPress, chevron = true, colors}) {
 export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLogout}) {
     const {t, lang} = useLanguage();
     const {colors, theme} = useTheme();
+    const {isAvailable, isPinEnabled, enablePinBiometric, disablePinBiometric} = useBiometric();
 
-    const THEME_NAMES_MN = {lavender: 'Lavender', rose: 'Rose', ocean: 'Ocean', meadow: 'Meadow', sunset: 'Sunset', dark: 'Dark'};
-    const THEME_NAMES_EN = {lavender: 'Lavender', rose: 'Rose', ocean: 'Ocean', meadow: 'Meadow', sunset: 'Sunset', dark: 'Dark'};
-    const themeName = lang === 'mn' ? (THEME_NAMES_MN[theme.id] ?? theme.id) : (THEME_NAMES_EN[theme.id] ?? theme.id);
+    const [pinEntryVisible, setPinEntryVisible] = useState(false);
+
+    const THEME_NAMES = {lavender: 'Lavender', rose: 'Rose', ocean: 'Ocean', meadow: 'Meadow', sunset: 'Sunset', dark: 'Dark'};
+    const themeName = THEME_NAMES[theme.id] ?? theme.id;
+
+    const handleBiometricToggle = (value) => {
+        if (!value) {
+            Alert.alert(
+                t('Идэвхгүй болгох', 'Disable'),
+                t('Face ID / Touch ID-г идэвхгүй болгох уу?', 'Disable Face ID / Touch ID?'),
+                [
+                    {text: t('Болих', 'Cancel'), style: 'cancel'},
+                    {text: t('Идэвхгүй болгох', 'Disable'), style: 'destructive', onPress: disablePinBiometric},
+                ]
+            );
+        } else {
+            setPinEntryVisible(true);
+        }
+    };
+
+    const handlePinEntryConfirm = async (pin) => {
+        setPinEntryVisible(false);
+        try {
+            await checkPin(pin);
+            await enablePinBiometric(pin);
+        } catch {
+            Alert.alert(t('Буруу PIN', 'Wrong PIN'), t('PIN буруу байна', 'Incorrect PIN'));
+        }
+    };
 
     return (
         <View style={[styles.container, {backgroundColor: colors.background}]}>
@@ -48,6 +79,34 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLo
                         colors={colors}
                     />
                 </View>
+
+                {isAvailable ? (
+                    <View style={[styles.section, {backgroundColor: colors.surface}]}>
+                        <View style={styles.menuItem}>
+                            <View style={[styles.menuIcon, {backgroundColor: colors.accentLight}]}>
+                                <FaceIdIcon size={20} color={colors.primary}/>
+                            </View>
+                            <View style={{flex: 1}}>
+                                <Text style={[styles.menuLabel, {color: colors.text}]}>
+                                    {t('Face ID тохиргоо', 'Face ID Settings')}
+                                </Text>
+                                <Text style={[styles.menuSub, {color: colors.muted}]}>
+                                    {isPinEnabled
+                                        ? t('PIN-ийн оронд Face ID ашиглана', 'Using Face ID instead of PIN')
+                                        : t('PIN ашиглана', 'Using PIN')}
+                                </Text>
+                            </View>
+                            <Switch
+                                value={isPinEnabled}
+                                onValueChange={handleBiometricToggle}
+                                trackColor={{false: colors.border, true: colors.primary}}
+                                thumbColor="#fff"
+                                ios_backgroundColor={colors.border}
+                            />
+                        </View>
+                    </View>
+                ) : null}
+
 
                 <Text style={[styles.sectionLabel, {color: colors.muted}]}>{t('Харагдац', 'Appearance')}</Text>
                 <View style={[styles.section, {backgroundColor: colors.surface}]}>
@@ -72,7 +131,7 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLo
 
             <SafeAreaView edges={['bottom']} style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.logoutBtn]}
+                    style={styles.logoutBtn}
                     activeOpacity={0.7}
                     onPress={() =>
                         Alert.alert(
@@ -89,6 +148,14 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLo
                     <Text style={[styles.logoutText, {color: colors.danger}]}>{t('Гарах', 'Logout')}</Text>
                 </TouchableOpacity>
             </SafeAreaView>
+
+            <PinBottomSheet
+                visible={pinEntryVisible}
+                onConfirm={handlePinEntryConfirm}
+                onClose={() => setPinEntryVisible(false)}
+                title={t('Одоогийн PIN оруулна уу', 'Enter your current PIN')}
+                useBiometricPin={false}
+            />
         </View>
     );
 }

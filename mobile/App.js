@@ -10,6 +10,7 @@ import TabBar from './src/components/TabBar';
 import {TAB_CONTENT_HEIGHT, TAB_BAR_FALLBACK_PADDING} from './src/constants';
 import {LanguageProvider} from './src/context/LanguageContext';
 import {ThemeProvider, useTheme} from './src/context/ThemeContext';
+import {BiometricProvider} from './src/context/BiometricContext';
 
 import LoginScreen from './src/features/auth/screens/LoginScreen';
 import RegisterScreen from './src/features/auth/screens/RegisterScreen';
@@ -175,11 +176,13 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <GluestackUIProvider config={config}>
-                <ThemeProvider>
-                    <LanguageProvider>
-                        <AppContent/>
-                    </LanguageProvider>
-                </ThemeProvider>
+                <BiometricProvider>
+                    <ThemeProvider>
+                        <LanguageProvider>
+                            <AppContent/>
+                        </LanguageProvider>
+                    </ThemeProvider>
+                </BiometricProvider>
                 <StatusBar style="auto"/>
             </GluestackUIProvider>
         </SafeAreaProvider>

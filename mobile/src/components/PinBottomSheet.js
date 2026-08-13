@@ -1,10 +1,11 @@
-import {useEffect, useState} from 'react';
-import {Dimensions, Modal, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {ActivityIndicator, Dimensions, Modal, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from '@gluestack-ui/themed';
-import {BackspaceIcon, LockIcon} from './icons';
-import {COLORS} from "../constants";
+import * as Haptics from 'expo-haptics';
+import {BackspaceIcon, FaceIdIcon, LockIcon} from './icons';
 import {useLanguage} from '../context/LanguageContext';
 import {useTheme} from '../context/ThemeContext';
+import {useBiometric} from '../features/auth/hooks/useBiometric';
 
 const PIN_LENGTH = 4;
 const {width: SW} = Dimensions.get('window');
@@ -23,15 +24,76 @@ export default function PinBottomSheet({
                                            title,
                                            onForgot,
                                            loading = false,
+                                           useBiometricPin = true,
                                        }) {
     const {t} = useLanguage();
     const {colors} = useTheme();
-    const resolvedTitle = title ?? t('Гүйлгээний PIN оруулна уу', 'Enter transaction PIN');
-    const [digits, setDigits] = useState([]);
+    const {isAvailable, isPinEnabled, authenticateForPin} = useBiometric();
 
+    const canUseBiometric = useBiometricPin && isAvailable && isPinEnabled;
+    const resolvedTitle = title ?? t('Гүйлгээний PIN оруулна уу', 'Enter transaction PIN');
+
+    const [digits, setDigits] = useState([]);
+    const [mode, setMode] = useState('pin'); // 'biometric' | 'pin'
+    const [bioLoading, setBioLoading] = useState(false);
+    const [bioAttempts, setBioAttempts] = useState(0);
+    const bioAttemptsRef = useRef(0);
+    const autoTriggeredRef = useRef(false);
+
+    const triggerBiometric = useCallback(async () => {
+        setBioLoading(true);
+        try {
+            const result = await authenticateForPin();
+            if (result.success && result.pin) {
+                onConfirm(result.pin);
+                return;
+            }
+            const {error} = result;
+            if (error === 'user_fallback' || error === 'biometryLockout' || error === 'lockout') {
+                setMode('pin');
+                return;
+            }
+            if (error === 'authentication_failed') {
+                bioAttemptsRef.current += 1;
+                setBioAttempts(bioAttemptsRef.current);
+                if (bioAttemptsRef.current >= 2) {
+                    setMode('pin');
+                }
+            }
+            // user_cancel / system_cancel → stay on biometric screen, show retry
+        } catch {
+            setMode('pin');
+        } finally {
+            setBioLoading(false);
+        }
+    }, [authenticateForPin, onConfirm]);
+
+    // Reset state when visibility changes
     useEffect(() => {
-        if (visible) setDigits([]);
+        if (!visible) {
+            autoTriggeredRef.current = false;
+            bioAttemptsRef.current = 0;
+            setBioAttempts(0);
+            setMode('pin');
+            return;
+        }
+        setDigits([]);
+        bioAttemptsRef.current = 0;
+        setBioAttempts(0);
+        if (canUseBiometric) {
+            setMode('biometric');
+        } else {
+            setMode('pin');
+        }
     }, [visible]);
+
+    // Auto-trigger biometric once when mode becomes 'biometric'
+    useEffect(() => {
+        if (!visible || mode !== 'biometric' || autoTriggeredRef.current) return;
+        autoTriggeredRef.current = true;
+        const timer = setTimeout(() => triggerBiometric(), 400);
+        return () => clearTimeout(timer);
+    }, [visible, mode, triggerBiometric]);
 
     useEffect(() => {
         setDigits([]);
@@ -39,6 +101,7 @@ export default function PinBottomSheet({
 
     const pressDigit = (num) => {
         if (loading || digits.length >= PIN_LENGTH) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const next = [...digits, String(num)];
         setDigits(next);
         if (next.length === PIN_LENGTH) {
@@ -48,6 +111,7 @@ export default function PinBottomSheet({
 
     const pressDelete = () => {
         if (loading) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setDigits((d) => d.slice(0, -1));
     };
 
@@ -64,58 +128,93 @@ export default function PinBottomSheet({
                 <View style={[styles.sheet, {backgroundColor: colors.primary}]}>
                     <View style={styles.handle}/>
 
-                    <LockIcon size={52}/>
+                    {mode === 'biometric' ? (
+                        <View style={styles.bioContainer}>
+                            <FaceIdIcon size={64} color="#fff"/>
+                            <Text style={styles.title}>
+                                {t('Нүүр танилтаар баталгаажуулах', 'Confirm with Face ID')}
+                            </Text>
 
-                    <Text style={styles.title}>{resolvedTitle}</Text>
-
-                    <View style={styles.dotsRow}>
-                        {Array.from({length: PIN_LENGTH}).map((_, i) => (
-                            <View
-                                key={i}
-                                style={[styles.dot, i < digits.length && styles.dotFilled]}
-                            />
-                        ))}
-                    </View>
-
-                    {onForgot && (
-                        <TouchableOpacity onPress={onForgot} hitSlop={{top: 12, bottom: 12, left: 16, right: 16}}>
-                            <Text style={styles.forgot}>{t('Мартсан?', 'Forgot?')}</Text>
-                        </TouchableOpacity>
-                    )}
-
-                    <View style={styles.pad}>
-                        {KEYS.map((row, ri) => (
-                            <View key={ri} style={styles.padRow}>
-                                {row.map((num) => (
-                                    <TouchableOpacity
-                                        key={num}
-                                        style={styles.key}
-                                        onPress={() => pressDigit(num)}
-                                        activeOpacity={0.6}
-                                    >
-                                        <Text style={styles.keyText}>{num}</Text>
+                            {bioLoading ? (
+                                <ActivityIndicator color="#fff" size="large" style={{marginTop: 8}}/>
+                            ) : (
+                                <View style={styles.bioButtons}>
+                                    {bioAttempts > 0 && (
+                                        <TouchableOpacity
+                                            style={styles.bioRetryBtn}
+                                            onPress={() => {
+                                                autoTriggeredRef.current = false;
+                                                triggerBiometric();
+                                            }}
+                                        >
+                                            <Text style={styles.bioRetryText}>
+                                                {t('Дахин оролдох', 'Try again')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity onPress={() => setMode('pin')}>
+                                        <Text style={styles.bioPinFallback}>
+                                            {t('PIN ашиглах', 'Use PIN')}
+                                        </Text>
                                     </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    ) : (
+                        <>
+                            <LockIcon size={52}/>
+                            <Text style={styles.title}>{resolvedTitle}</Text>
+
+                            <View style={styles.dotsRow}>
+                                {Array.from({length: PIN_LENGTH}).map((_, i) => (
+                                    <View
+                                        key={i}
+                                        style={[styles.dot, i < digits.length && styles.dotFilled]}
+                                    />
                                 ))}
                             </View>
-                        ))}
-                        <View style={styles.padRow}>
-                            <View style={styles.key}/>
-                            <TouchableOpacity
-                                style={styles.key}
-                                onPress={() => pressDigit(0)}
-                                activeOpacity={0.6}
-                            >
-                                <Text style={styles.keyText}>0</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.key}
-                                onPress={pressDelete}
-                                activeOpacity={0.6}
-                            >
-                                <BackspaceIcon size={26}/>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+
+                            {onForgot && (
+                                <TouchableOpacity onPress={onForgot} hitSlop={{top: 12, bottom: 12, left: 16, right: 16}}>
+                                    <Text style={styles.forgot}>{t('Мартсан?', 'Forgot?')}</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <View style={styles.pad}>
+                                {KEYS.map((row, ri) => (
+                                    <View key={ri} style={styles.padRow}>
+                                        {row.map((num) => (
+                                            <TouchableOpacity
+                                                key={num}
+                                                style={styles.key}
+                                                onPress={() => pressDigit(num)}
+                                                activeOpacity={0.6}
+                                            >
+                                                <Text style={styles.keyText}>{num}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                ))}
+                                <View style={styles.padRow}>
+                                    <View style={styles.key}/>
+                                    <TouchableOpacity
+                                        style={styles.key}
+                                        onPress={() => pressDigit(0)}
+                                        activeOpacity={0.6}
+                                    >
+                                        <Text style={styles.keyText}>0</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.key}
+                                        onPress={pressDelete}
+                                        activeOpacity={0.6}
+                                    >
+                                        <BackspaceIcon size={26}/>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
         </Modal>
@@ -132,7 +231,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.45)',
     },
     sheet: {
-        backgroundColor: COLORS.primaryLight,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         paddingBottom: 36,
@@ -153,7 +251,39 @@ const styles = StyleSheet.create({
         marginTop: 16,
         marginBottom: 24,
         letterSpacing: 0.2,
+        textAlign: 'center',
+        paddingHorizontal: 24,
     },
+    // Biometric mode
+    bioContainer: {
+        alignItems: 'center',
+        paddingBottom: 40,
+        paddingHorizontal: 32,
+        minHeight: 280,
+        justifyContent: 'center',
+    },
+    bioButtons: {
+        alignItems: 'center',
+        gap: 16,
+        marginTop: 8,
+    },
+    bioRetryBtn: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 28,
+    },
+    bioRetryText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    bioPinFallback: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        textDecorationLine: 'underline',
+    },
+    // PIN mode
     dotsRow: {
         flexDirection: 'row',
         gap: 18,
