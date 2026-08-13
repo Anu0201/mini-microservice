@@ -21,6 +21,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'com.cloudinary:cloudinary-http45:1.39.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

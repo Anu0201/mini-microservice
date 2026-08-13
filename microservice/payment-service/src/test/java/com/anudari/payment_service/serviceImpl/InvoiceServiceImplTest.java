@@ -195,8 +195,10 @@ class InvoiceServiceImplTest {
         when(userServiceClient.getAccountById(5L, "true"))
                 .thenReturn(new AccountInfo(5L, "MN0000000001", CurrencyType.MNT, BigDecimal.valueOf(100000)));
         when(appProperties.getInternalSecret()).thenReturn("secret");
+        when(appProperties.getDailyLimit()).thenReturn(new BigDecimal("5000000"));
         when(userServiceClient.verifyPin(any(PinVerifyRequest.class), anyString()))
                 .thenReturn(new PinVerifyResponse(true, null));
+        when(paymentRepository.sumTodayByUserId(anyLong(), any())).thenReturn(BigDecimal.ZERO);
 
         InvoiceResponse response = invoiceService.payInvoice(1L, 5L, 7L, "idem-key-1", "1234");
 

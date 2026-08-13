@@ -52,6 +52,9 @@ public class User extends Audit {
     @Column(name = "pin_locked_until")
     private Instant pinLockedUntil;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Account> accounts = new ArrayList<>();
 }

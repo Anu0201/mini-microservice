@@ -36,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -367,6 +369,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 debitAmount = invoice.getAmount().multiply(rate).setScale(2, RoundingMode.HALF_UP);
             }
 
+            checkDailyLimit(userId, debitAmount);
             try {
                 userServiceClient.debitAccount(
                         new DebitRequest(accountId, userId, debitAmount),
@@ -427,6 +430,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         LogUtility.info(this.getClass().getName(), String.valueOf(senderId), "INVOICE", "[send.money] " + JSONUtility.toJSON(request));
         try {
             verifyPin(senderId, pin);
+            checkDailyLimit(senderId, request.amount());
             UserIdResponse receiver;
             try {
                 receiver = userServiceClient.getUserByPhone(request.receiverPhone(), appProperties.getInternalSecret());
@@ -528,6 +532,14 @@ public class InvoiceServiceImpl implements InvoiceService {
         } catch (Exception ex) {
             LogUtility.error(this.getClass().getName(), String.valueOf(userId), "INVOICE", "[cancel.user.invoice] Exception: " + ex.getMessage());
             throw ex;
+        }
+    }
+
+    private void checkDailyLimit(Long userId, BigDecimal amount) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        BigDecimal todayTotal = paymentRepository.sumTodayByUserId(userId, startOfDay);
+        if (todayTotal.add(amount).compareTo(appProperties.getDailyLimit()) > 0) {
+            throw new BusinessException(MessageUtility.getMessage("transfer.daily.limit.exceeded"));
         }
     }
 

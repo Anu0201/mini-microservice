@@ -6,7 +6,7 @@ import com.anudari.user_service.entity.User;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public record UserResponse(Long userId, String username, String email, String phoneNumber, Set<String> roles, LocalDateTime createdDate, String initials, boolean hasPinSet) {
+public record UserResponse(Long userId, String username, String email, String phoneNumber, Set<String> roles, LocalDateTime createdDate, String initials, boolean hasPinSet, String profileImageUrl) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -17,7 +17,8 @@ public record UserResponse(Long userId, String username, String email, String ph
                 user.getRoles(),
                 user.getCreatedDate(),
                 StringUtility.initials(user.getUsername()),
-                user.getPinHash() != null
+                user.getPinHash() != null,
+                user.getProfileImageUrl()
         );
     }
 }

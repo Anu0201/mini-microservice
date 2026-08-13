@@ -12,12 +12,14 @@ import com.anudari.user_service.dto.UserLookupResponse;
 import com.anudari.user_service.dto.UserResponse;
 import com.anudari.user_service.entity.User;
 import com.anudari.user_service.repository.UserRepository;
+import com.anudari.user_service.service.CloudinaryService;
 import com.anudari.user_service.service.UserService;
 import com.anudari.user_service.util.MessageUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public UserResponse register(RegisterRequest request) {
@@ -154,6 +157,21 @@ public class UserServiceImpl implements UserService {
         } catch (Exception ex) {
             LogUtility.error(this.getClass().getName(), phoneNumber, "USER", "[internal.search.by.phone] Exception: " + ex.getMessage());
             throw ex;
+        }
+    }
+
+    @Override
+    public UserResponse uploadProfileImage(String username, MultipartFile file) {
+        LogUtility.info(this.getClass().getName(), username, "USER", "[upload.profile.image]");
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new NoSuchElementException(MessageUtility.getMessage("user.not.found")));
+            String url = cloudinaryService.uploadProfileImage(file, username);
+            user.setProfileImageUrl(url);
+            return UserResponse.from(userRepository.save(user));
+        } catch (Exception ex) {
+            LogUtility.error(this.getClass().getName(), username, "USER", "[upload.profile.image] Exception: " + ex.getMessage());
+            throw new RuntimeException(ex.getMessage(), ex);
         }
     }
 

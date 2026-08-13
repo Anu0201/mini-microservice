@@ -5,6 +5,7 @@ import com.anudari.user_service.dto.UpdateUserRequest;
 import com.anudari.user_service.dto.UserInternalResponse;
 import com.anudari.user_service.dto.UserLookupResponse;
 import com.anudari.user_service.dto.UserResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,4 +27,6 @@ public interface UserService {
     UserLookupResponse lookupByPhone(String phoneNumber);
 
     CompletableFuture<List<UserResponse>> listAllUsers(String secretToken);
+
+    UserResponse uploadProfileImage(String username, MultipartFile file);
 }
