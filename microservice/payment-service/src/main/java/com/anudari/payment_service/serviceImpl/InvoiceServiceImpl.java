@@ -261,7 +261,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         LogUtility.info(this.getClass().getName(), String.valueOf(senderId), "INVOICE", "[list.sent.invoices] senderId: " + senderId);
         try {
             List<InvoiceResponse> responses = invoiceRepository.findBySenderId(senderId).stream()
-                    .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId()), fetchSenderName(inv.getUserId())))
+                    .map(inv -> InvoiceResponse.from(inv, fetchUser(inv.getSenderId()), fetchUser(inv.getUserId())))
                     .toList();
 
             LogUtility.info(this.getClass().getName(), String.valueOf(senderId), "INVOICE", "[list.sent.invoices] count: " + responses.size());
@@ -295,7 +295,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         LogUtility.info(this.getClass().getName(), String.valueOf(userId), "INVOICE", "[list.user.invoices] userId: " + userId);
         try {
             List<InvoiceResponse> responses = invoiceRepository.findByUserId(userId).stream()
-                    .map(inv -> InvoiceResponse.from(inv, fetchSenderName(inv.getSenderId())))
+                    .map(inv -> InvoiceResponse.from(inv, fetchUser(inv.getSenderId()), null))
                     .toList();
 
             LogUtility.info(this.getClass().getName(), String.valueOf(userId), "INVOICE", "[list.user.invoices] count: " + responses.size());
@@ -370,9 +370,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
 
             checkDailyLimit(userId, debitAmount);
+            String senderName = fetchSenderName(invoice.getSenderId());
+            String payerName = fetchSenderName(userId);
             try {
                 userServiceClient.debitAccount(
-                        new DebitRequest(accountId, userId, debitAmount),
+                        new DebitRequest(accountId, userId, debitAmount, senderName),
                         appProperties.getInternalSecret()
                 );
             } catch (FeignException.BadRequest e) {
@@ -381,7 +383,7 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             if (invoice.getReceiverAccountId() != null && invoice.getSenderId() != null) {
                 userServiceClient.creditAccount(
-                        new CreditRequest(invoice.getReceiverAccountId(), invoice.getSenderId(), invoice.getAmount()),
+                        new CreditRequest(invoice.getReceiverAccountId(), invoice.getSenderId(), invoice.getAmount(), payerName),
                         appProperties.getInternalSecret()
                 );
             }
@@ -466,9 +468,11 @@ public class InvoiceServiceImpl implements InvoiceService {
                 debitAmount = request.amount().multiply(rate).setScale(2, RoundingMode.HALF_UP);
             }
 
+            String receiverName = fetchSenderName(receiver.userId());
+            String senderName = fetchSenderName(senderId);
             try {
                 userServiceClient.debitAccount(
-                        new DebitRequest(request.senderAccountId(), senderId, debitAmount),
+                        new DebitRequest(request.senderAccountId(), senderId, debitAmount, receiverName),
                         appProperties.getInternalSecret()
                 );
             } catch (FeignException.BadRequest e) {
@@ -476,7 +480,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
 
             userServiceClient.creditAccount(
-                    new CreditRequest(receiverAccount.accountId(), receiver.userId(), request.amount()),
+                    new CreditRequest(receiverAccount.accountId(), receiver.userId(), request.amount(), senderName),
                     appProperties.getInternalSecret()
             );
 
@@ -565,6 +569,15 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (senderId == null) return null;
         try {
             return userServiceClient.getUserById(senderId, "true").fullName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private UserIdResponse fetchUser(Long userId) {
+        if (userId == null) return null;
+        try {
+            return userServiceClient.getUserById(userId, "true");
         } catch (Exception e) {
             return null;
         }

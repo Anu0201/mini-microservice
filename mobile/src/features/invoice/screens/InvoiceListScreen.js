@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import TransactionDetailScreen from '../../wallet/screens/TransactionDetailScreen';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {CURRENCY_SIGN} from '../../../constants';
@@ -9,8 +10,11 @@ import PinBottomSheet from '../../../components/PinBottomSheet';
 import {useLanguage} from '../../../context/LanguageContext';
 import {useTheme} from '../../../context/ThemeContext';
 
-function Avatar({name, initials}) {
+function Avatar({name, initials, imageUrl}) {
     const {colors} = useTheme();
+    if (imageUrl) {
+        return <Image source={{uri: imageUrl}} style={styles.avatar}/>;
+    }
     return (
         <View style={[styles.avatar, {backgroundColor: avatarColor(name, colors)}]}>
             <Text style={styles.avatarText}>{initials ?? '?'}</Text>
@@ -40,7 +44,7 @@ function InvoiceRow({item, onSelect}) {
             onPress={() => onSelect(item)}
             activeOpacity={0.7}
         >
-            <Avatar name={name} initials={item.senderInitials}/>
+            <Avatar name={name} initials={item.senderInitials} imageUrl={item.senderProfileImageUrl}/>
             <View style={styles.txInfo}>
                 <Text style={[styles.txName, {color: colors.text}]}>{name}</Text>
                 <Text style={[styles.txMeta, {color: colors.muted}]}>{formatDate(item.createdAt)} - SocialPay {t('нэхэмжлэл', 'invoice')}</Text>
@@ -66,7 +70,7 @@ function InvoiceDetailModal({item, onClose, onPay, onCancel}) {
             <View style={[styles.sheet, {backgroundColor: colors.surface}]}>
                 <View style={[styles.sheetHandle, {backgroundColor: colors.border}]}/>
                 <View style={styles.detailHeader}>
-                    <Avatar name={name} initials={item.senderInitials}/>
+                    <Avatar name={name} initials={item.senderInitials} imageUrl={item.senderProfileImageUrl}/>
                     <View style={{flex: 1, marginLeft: 12}}>
                         <Text style={[styles.detailName, {color: colors.text}]}>{name}</Text>
                         <Text style={[styles.detailMeta, {color: colors.muted}]}>{formatDate(item.createdAt)}</Text>
@@ -161,7 +165,7 @@ function PayModal({visible, accounts, loading, onClose, onPay}) {
     );
 }
 
-function TransactionRow({item}) {
+function TransactionRow({item, onSelect}) {
     const {t} = useLanguage();
     const {colors} = useTheme();
     const isSent = item._isSent;
@@ -179,8 +183,12 @@ function TransactionRow({item}) {
     const amountColor = isPending || isDeclined ? colors.muted : prefix === '+' ? colors.success : colors.danger;
 
     return (
-        <View style={[styles.txRow, {backgroundColor: colors.background, borderColor: colors.border}]}>
-            <Avatar name={name} initials={avatarInitials}/>
+        <TouchableOpacity
+            style={[styles.txRow, {backgroundColor: colors.background, borderColor: colors.border}]}
+            onPress={() => onSelect?.(item)}
+            activeOpacity={0.7}
+        >
+            <Avatar name={name} initials={avatarInitials} imageUrl={isSent ? item.receiverProfileImageUrl : item.senderProfileImageUrl}/>
             <View style={styles.txInfo}>
                 <Text style={[styles.txName, {color: isPending || isDeclined ? colors.muted : colors.text}]}>{name}</Text>
                 <Text style={[styles.txMeta, {color: colors.muted}]}>{formatDate(item.createdAt)} - SocialPay {label}</Text>
@@ -193,7 +201,7 @@ function TransactionRow({item}) {
                     {prefix}{Number(item.amount).toLocaleString()}{sign}
                 </Text>
             )}
-        </View>
+        </TouchableOpacity>
     );
 }
 
@@ -205,10 +213,11 @@ export default function InvoiceListScreen({onBack}) {
         pendingInvoices, transactions,
         payModalVisible, payAccounts, loadingAcc,
         handlePay, executePay, handleCancel, closePayModal,
-        pinVisible, handlePinConfirm, handlePinClose,
+        pinVisible, handlePinConfirm, handlePinClose, registerPaySuccess,
     } = useInvoiceList();
 
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     if (!fetched && !loading) load();
 
@@ -238,7 +247,7 @@ export default function InvoiceListScreen({onBack}) {
                                 {t('Ирсэн нэхэмжлэл', 'Pending Invoices')}
                             </Text>
                             {pendingInvoices.map((item) => (
-                                <InvoiceRow key={item.id} item={item} onSelect={setSelectedInvoice}/>
+                                <InvoiceRow key={item.id} item={item} onSelect={(inv) => setSelectedTransaction({...inv, _isSent: false})}/>
                             ))}
                         </>
                     )}
@@ -249,7 +258,11 @@ export default function InvoiceListScreen({onBack}) {
                                 {t('Гүйлгээ', 'Transactions')}
                             </Text>
                             {transactions.map((item) => (
-                                <TransactionRow key={`${item._isSent ? 's' : 'r'}-${item.id}`} item={item}/>
+                                <TransactionRow
+                                    key={`${item._isSent ? 's' : 'r'}-${item.id}`}
+                                    item={item}
+                                    onSelect={setSelectedTransaction}
+                                />
                             ))}
                         </>
                     )}
@@ -262,23 +275,38 @@ export default function InvoiceListScreen({onBack}) {
                 </ScrollView>
             )}
 
+            <Modal visible={!!selectedTransaction} animationType="slide" onRequestClose={() => setSelectedTransaction(null)}>
+                {selectedTransaction && (
+                    <TransactionDetailScreen
+                        item={selectedTransaction}
+                        onBack={() => setSelectedTransaction(null)}
+                        onCancel={(id) => handleCancel(id, () => {
+                            setSelectedTransaction(prev => prev ? {...prev, status: 'CANCELLED', _isDeclined: true} : null);
+                        })}
+                        onPay={(id) => {
+                            registerPaySuccess(() => setSelectedTransaction(null));
+                            handlePay(id);
+                        }}
+                    />
+                )}
+                <PayModal
+                    visible={payModalVisible}
+                    accounts={payAccounts}
+                    loading={loadingAcc}
+                    onClose={closePayModal}
+                    onPay={executePay}
+                />
+                <PinBottomSheet
+                    visible={pinVisible}
+                    onConfirm={handlePinConfirm}
+                    onClose={handlePinClose}
+                />
+            </Modal>
             <InvoiceDetailModal
                 item={selectedInvoice}
                 onClose={() => setSelectedInvoice(null)}
                 onPay={handlePay}
                 onCancel={handleCancel}
-            />
-            <PayModal
-                visible={payModalVisible}
-                accounts={payAccounts}
-                loading={loadingAcc}
-                onClose={closePayModal}
-                onPay={executePay}
-            />
-            <PinBottomSheet
-                visible={pinVisible}
-                onConfirm={handlePinConfirm}
-                onClose={handlePinClose}
             />
         </View>
     );

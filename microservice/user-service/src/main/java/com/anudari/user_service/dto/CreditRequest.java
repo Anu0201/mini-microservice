@@ -8,5 +8,6 @@ import java.math.BigDecimal;
 public record CreditRequest(
         @NotNull Long accountId,
         @NotNull Long userId,
-        @NotNull @DecimalMin("0.01") BigDecimal amount
+        @NotNull @DecimalMin("0.01") BigDecimal amount,
+        String counterpartyName
 ) {}

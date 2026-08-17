@@ -13,6 +13,7 @@ public record AccountTransactionResponse(
         BigDecimal balanceBefore,
         BigDecimal balanceAfter,
         String description,
+        String counterpartyName,
         LocalDateTime createdAt,
         String currency
 ) {
@@ -24,6 +25,7 @@ public record AccountTransactionResponse(
                 tx.getBalanceBefore(),
                 tx.getBalanceAfter(),
                 tx.getDescription(),
+                tx.getCounterpartyName(),
                 tx.getCreatedAt(),
                 tx.getAccount().getCurrency().name()
         );

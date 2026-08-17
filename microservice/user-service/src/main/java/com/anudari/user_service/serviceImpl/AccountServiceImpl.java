@@ -105,7 +105,7 @@ public class AccountServiceImpl implements AccountService {
             BigDecimal before = account.getBalance();
             account.setBalance(before.add(request.amount()));
             accountRepository.save(account);
-            recordTransaction(account, TransactionType.DEPOSIT, request.amount(), before, account.getBalance(), "Deposit");
+            recordTransaction(account, TransactionType.DEPOSIT, request.amount(), before, account.getBalance(), "Deposit", null);
             AccountResponse response = AccountResponse.from(account);
             LogUtility.info(this.getClass().getName(), String.valueOf(requesterId), "ACCOUNT", "[deposit] " + JSONUtility.toJSON(response));
             return response;
@@ -126,7 +126,7 @@ public class AccountServiceImpl implements AccountService {
             BigDecimal before = account.getBalance();
             account.setBalance(before.subtract(request.amount()));
             accountRepository.save(account);
-            recordTransaction(account, TransactionType.WITHDRAW, request.amount(), before, account.getBalance(), "Withdrawal");
+            recordTransaction(account, TransactionType.WITHDRAW, request.amount(), before, account.getBalance(), "Withdrawal", null);
             AccountResponse response = AccountResponse.from(account);
             LogUtility.info(this.getClass().getName(), String.valueOf(requesterId), "ACCOUNT", "[withdraw] " + JSONUtility.toJSON(response));
             return response;
@@ -163,7 +163,7 @@ public class AccountServiceImpl implements AccountService {
             BigDecimal before = account.getBalance();
             account.setBalance(before.subtract(request.amount()));
             accountRepository.save(account);
-            recordTransaction(account, TransactionType.INVOICE_DEBIT, request.amount(), before, account.getBalance(), "Invoice payment");
+            recordTransaction(account, TransactionType.INVOICE_DEBIT, request.amount(), before, account.getBalance(), "Invoice payment", request.counterpartyName());
             LogUtility.info(this.getClass().getName(), String.valueOf(request.userId()), "ACCOUNT", "[debit.for.invoice] " + JSONUtility.toJSON(AccountResponse.from(account)));
         } catch (Exception ex) {
             LogUtility.error(this.getClass().getName(), String.valueOf(request.userId()), "ACCOUNT", "[debit.for.invoice] Exception: " + ex.getMessage());
@@ -180,7 +180,7 @@ public class AccountServiceImpl implements AccountService {
             BigDecimal before = account.getBalance();
             account.setBalance(before.add(request.amount()));
             accountRepository.save(account);
-            recordTransaction(account, TransactionType.INVOICE_CREDIT, request.amount(), before, account.getBalance(), "Invoice payment");
+            recordTransaction(account, TransactionType.INVOICE_CREDIT, request.amount(), before, account.getBalance(), "Invoice payment", request.counterpartyName());
             LogUtility.info(this.getClass().getName(), String.valueOf(request.userId()), "ACCOUNT", "[credit.for.invoice] " + JSONUtility.toJSON(AccountResponse.from(account)));
         } catch (Exception ex) {
             LogUtility.error(this.getClass().getName(), String.valueOf(request.userId()), "ACCOUNT", "[credit.for.invoice] Exception: " + ex.getMessage());
@@ -220,7 +220,7 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-    private void recordTransaction(Account account, TransactionType type, BigDecimal amount, BigDecimal before, BigDecimal after, String description) {
+    private void recordTransaction(Account account, TransactionType type, BigDecimal amount, BigDecimal before, BigDecimal after, String description, String counterpartyName) {
         transactionRepository.save(AccountTransaction.builder()
                 .account(account)
                 .type(type)
@@ -228,6 +228,7 @@ public class AccountServiceImpl implements AccountService {
                 .balanceBefore(before)
                 .balanceAfter(after)
                 .description(description)
+                .counterpartyName(counterpartyName)
                 .build());
     }
 

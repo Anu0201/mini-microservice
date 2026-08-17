@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import {cancelMyInvoice, getMyInvoices, getSentInvoices, payInvoice} from '../../../services/paymentApi';
 import {getMyAccounts} from '../../../services/accountApi';
@@ -19,6 +19,7 @@ export const useInvoiceList = () => {
     const [loadingAcc, setLoadingAcc] = useState(false);
     const [pinVisible, setPinVisible] = useState(false);
     const pendingAccountIdRef = useRef(null);
+    const onPaySuccessRef = useRef(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -68,17 +69,24 @@ export const useInvoiceList = () => {
             await payInvoice(payingId, pendingAccountIdRef.current, pin);
             setPayingId(null);
             load();
+            const cb = onPaySuccessRef.current;
+            onPaySuccessRef.current = null;
+            cb?.();
         } catch (e) {
             Alert.alert('Алдаа', e.response?.data?.message || 'Төлөлт амжилтгүй');
         }
     };
+
+    const registerPaySuccess = useCallback((fn) => {
+        onPaySuccessRef.current = fn;
+    }, []);
 
     const handlePinClose = () => {
         setPinVisible(false);
         setPayModalVisible(true);
     };
 
-    const handleCancel = (id) => {
+    const handleCancel = (id, onSuccess) => {
         Alert.alert('Цуцлах', 'Нэхэмжлэлийг цуцлах уу?', [
             {text: 'Үгүй'},
             {
@@ -86,6 +94,7 @@ export const useInvoiceList = () => {
                     try {
                         await cancelMyInvoice(id);
                         load();
+                        onSuccess?.();
                     } catch (e) {
                         Alert.alert('Алдаа', e.response?.data?.message || 'Цуцлах амжилтгүй');
                     }
@@ -123,6 +132,6 @@ export const useInvoiceList = () => {
             setPayModalVisible(false);
             setPayingId(null);
         },
-        pinVisible, handlePinConfirm, handlePinClose,
+        pinVisible, handlePinConfirm, handlePinClose, registerPaySuccess,
     };
 };

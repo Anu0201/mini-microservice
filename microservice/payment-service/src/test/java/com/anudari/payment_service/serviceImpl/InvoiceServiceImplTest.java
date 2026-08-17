@@ -295,11 +295,11 @@ class InvoiceServiceImplTest {
     void splitInvoice_splitsTotalAcrossReceiversAndSavesEachInvoice() {
         when(appProperties.getInternalSecret()).thenReturn("secret");
         when(userServiceClient.getUserByPhone("99110011", "secret"))
-                .thenReturn(new UserIdResponse(101L, "u1", "Нэр1", "Овог1", null, List.of("USER")));
+                .thenReturn(new UserIdResponse(101L, "u1", "Нэр1", "Овог1", null, List.of("USER"), null));
         when(userServiceClient.getUserByPhone("99110022", "secret"))
-                .thenReturn(new UserIdResponse(102L, "u2", "Нэр2", "Овог2", null, List.of("USER")));
+                .thenReturn(new UserIdResponse(102L, "u2", "Нэр2", "Овог2", null, List.of("USER"), null));
         when(userServiceClient.getUserByPhone("99110033", "secret"))
-                .thenReturn(new UserIdResponse(103L, "u3", "Нэр3", "Овог3", null, List.of("USER")));
+                .thenReturn(new UserIdResponse(103L, "u3", "Нэр3", "Овог3", null, List.of("USER"), null));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         List<InvoiceResponse> responses = invoiceService.splitInvoice(

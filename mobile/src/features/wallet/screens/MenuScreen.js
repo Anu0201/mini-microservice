@@ -90,11 +90,6 @@ export default function MenuScreen({onOpenPin, onOpenLanguage, onOpenTheme, onLo
                                 <Text style={[styles.menuLabel, {color: colors.text}]}>
                                     {t('Face ID тохиргоо', 'Face ID Settings')}
                                 </Text>
-                                <Text style={[styles.menuSub, {color: colors.muted}]}>
-                                    {isPinEnabled
-                                        ? t('PIN-ийн оронд Face ID ашиглана', 'Using Face ID instead of PIN')
-                                        : t('PIN ашиглана', 'Using PIN')}
-                                </Text>
                             </View>
                             <Switch
                                 value={isPinEnabled}

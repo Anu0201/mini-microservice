@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {ActivityIndicator, Dimensions, Modal, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text} from '@gluestack-ui/themed';
 import * as Haptics from 'expo-haptics';
 import {BackspaceIcon, FaceIdIcon, LockIcon} from './icons';
@@ -18,23 +19,24 @@ const KEYS = [
 ];
 
 export default function PinBottomSheet({
-                                           visible,
-                                           onConfirm,
-                                           onClose,
-                                           title,
-                                           onForgot,
-                                           loading = false,
-                                           useBiometricPin = true,
-                                       }) {
+    visible,
+    onConfirm,
+    onClose,
+    title,
+    onForgot,
+    loading = false,
+    useBiometricPin = true,
+}) {
     const {t} = useLanguage();
     const {colors} = useTheme();
+    const insets = useSafeAreaInsets();
     const {isAvailable, isPinEnabled, authenticateForPin} = useBiometric();
 
     const canUseBiometric = useBiometricPin && isAvailable && isPinEnabled;
     const resolvedTitle = title ?? t('Гүйлгээний PIN оруулна уу', 'Enter transaction PIN');
 
     const [digits, setDigits] = useState([]);
-    const [mode, setMode] = useState('pin'); // 'biometric' | 'pin'
+    const [mode, setMode] = useState('pin');
     const [bioLoading, setBioLoading] = useState(false);
     const [bioAttempts, setBioAttempts] = useState(0);
     const bioAttemptsRef = useRef(0);
@@ -56,11 +58,8 @@ export default function PinBottomSheet({
             if (error === 'authentication_failed') {
                 bioAttemptsRef.current += 1;
                 setBioAttempts(bioAttemptsRef.current);
-                if (bioAttemptsRef.current >= 2) {
-                    setMode('pin');
-                }
+                if (bioAttemptsRef.current >= 2) setMode('pin');
             }
-            // user_cancel / system_cancel → stay on biometric screen, show retry
         } catch {
             setMode('pin');
         } finally {
@@ -68,7 +67,6 @@ export default function PinBottomSheet({
         }
     }, [authenticateForPin, onConfirm]);
 
-    // Reset state when visibility changes
     useEffect(() => {
         if (!visible) {
             autoTriggeredRef.current = false;
@@ -80,14 +78,9 @@ export default function PinBottomSheet({
         setDigits([]);
         bioAttemptsRef.current = 0;
         setBioAttempts(0);
-        if (canUseBiometric) {
-            setMode('biometric');
-        } else {
-            setMode('pin');
-        }
+        setMode(canUseBiometric ? 'biometric' : 'pin');
     }, [visible]);
 
-    // Auto-trigger biometric once when mode becomes 'biometric'
     useEffect(() => {
         if (!visible || mode !== 'biometric' || autoTriggeredRef.current) return;
         autoTriggeredRef.current = true;
@@ -123,37 +116,36 @@ export default function PinBottomSheet({
             onRequestClose={onClose}
             statusBarTranslucent
         >
-            <View style={styles.overlay}>
-                <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}/>
-                <View style={[styles.sheet, {backgroundColor: colors.primary}]}>
-                    <View style={styles.handle}/>
+            <View style={s.overlay}>
+                <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={onClose}/>
+                <View style={[s.sheet, {backgroundColor: colors.surface, paddingBottom: insets.bottom + 16}]}>
+                    <View style={[s.handle, {backgroundColor: colors.border}]}/>
 
                     {mode === 'biometric' ? (
-                        <View style={styles.bioContainer}>
-                            <FaceIdIcon size={64} color="#fff"/>
-                            <Text style={styles.title}>
+                        <View style={s.bioContainer}>
+                            <FaceIdIcon size={64} color={colors.primary}/>
+                            <Text style={[s.title, {color: colors.text}]}>
                                 {t('Нүүр танилтаар баталгаажуулах', 'Confirm with Face ID')}
                             </Text>
-
                             {bioLoading ? (
-                                <ActivityIndicator color="#fff" size="large" style={{marginTop: 8}}/>
+                                <ActivityIndicator color={colors.primary} size="large" style={{marginTop: 8}}/>
                             ) : (
-                                <View style={styles.bioButtons}>
+                                <View style={s.bioButtons}>
                                     {bioAttempts > 0 && (
                                         <TouchableOpacity
-                                            style={styles.bioRetryBtn}
+                                            style={[s.bioRetryBtn, {backgroundColor: colors.primaryLight}]}
                                             onPress={() => {
                                                 autoTriggeredRef.current = false;
                                                 triggerBiometric();
                                             }}
                                         >
-                                            <Text style={styles.bioRetryText}>
+                                            <Text style={[s.bioRetryText, {color: colors.primary}]}>
                                                 {t('Дахин оролдох', 'Try again')}
                                             </Text>
                                         </TouchableOpacity>
                                     )}
                                     <TouchableOpacity onPress={() => setMode('pin')}>
-                                        <Text style={styles.bioPinFallback}>
+                                        <Text style={[s.bioPinFallback, {color: colors.muted}]}>
                                             {t('PIN ашиглах', 'Use PIN')}
                                         </Text>
                                     </TouchableOpacity>
@@ -162,54 +154,60 @@ export default function PinBottomSheet({
                         </View>
                     ) : (
                         <>
-                            <LockIcon size={52}/>
-                            <Text style={styles.title}>{resolvedTitle}</Text>
+                            <LockIcon size={52} color={colors.primary}/>
+                            <Text style={[s.title, {color: colors.text}]}>{resolvedTitle}</Text>
 
-                            <View style={styles.dotsRow}>
+                            <View style={s.dotsRow}>
                                 {Array.from({length: PIN_LENGTH}).map((_, i) => (
                                     <View
                                         key={i}
-                                        style={[styles.dot, i < digits.length && styles.dotFilled]}
+                                        style={[
+                                            s.dot,
+                                            {backgroundColor: colors.border, borderColor: colors.border},
+                                            i < digits.length && {backgroundColor: colors.primary, borderColor: colors.primary},
+                                        ]}
                                     />
                                 ))}
                             </View>
 
                             {onForgot && (
                                 <TouchableOpacity onPress={onForgot} hitSlop={{top: 12, bottom: 12, left: 16, right: 16}}>
-                                    <Text style={styles.forgot}>{t('Мартсан?', 'Forgot?')}</Text>
+                                    <Text style={[s.forgot, {color: colors.muted}]}>
+                                        {t('Мартсан?', 'Forgot?')}
+                                    </Text>
                                 </TouchableOpacity>
                             )}
 
-                            <View style={styles.pad}>
+                            <View style={s.pad}>
                                 {KEYS.map((row, ri) => (
-                                    <View key={ri} style={styles.padRow}>
+                                    <View key={ri} style={s.padRow}>
                                         {row.map((num) => (
                                             <TouchableOpacity
                                                 key={num}
-                                                style={styles.key}
+                                                style={[s.key, {backgroundColor: colors.card}]}
                                                 onPress={() => pressDigit(num)}
                                                 activeOpacity={0.6}
                                             >
-                                                <Text style={styles.keyText}>{num}</Text>
+                                                <Text style={[s.keyText, {color: colors.text}]}>{num}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
                                 ))}
-                                <View style={styles.padRow}>
-                                    <View style={styles.key}/>
+                                <View style={s.padRow}>
+                                    <View style={s.key}/>
                                     <TouchableOpacity
-                                        style={styles.key}
+                                        style={[s.key, {backgroundColor: colors.card}]}
                                         onPress={() => pressDigit(0)}
                                         activeOpacity={0.6}
                                     >
-                                        <Text style={styles.keyText}>0</Text>
+                                        <Text style={[s.keyText, {color: colors.text}]}>0</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={styles.key}
+                                        style={s.key}
                                         onPress={pressDelete}
                                         activeOpacity={0.6}
                                     >
-                                        <BackspaceIcon size={26}/>
+                                        <BackspaceIcon size={26} color={colors.text}/>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -221,11 +219,8 @@ export default function PinBottomSheet({
     );
 }
 
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
+const s = StyleSheet.create({
+    overlay: {flex: 1, justifyContent: 'flex-end'},
     backdrop: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0,0,0,0.45)',
@@ -233,28 +228,20 @@ const styles = StyleSheet.create({
     sheet: {
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
-        paddingBottom: 36,
         paddingTop: 14,
         alignItems: 'center',
     },
     handle: {
-        width: 44,
-        height: 5,
-        borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.6)',
+        width: 44, height: 5, borderRadius: 3,
         marginBottom: 28,
     },
     title: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#fff',
-        marginTop: 16,
-        marginBottom: 24,
+        fontSize: 18, fontWeight: '700',
+        marginTop: 16, marginBottom: 24,
         letterSpacing: 0.2,
         textAlign: 'center',
         paddingHorizontal: 24,
     },
-    // Biometric mode
     bioContainer: {
         alignItems: 'center',
         paddingBottom: 40,
@@ -262,60 +249,22 @@ const styles = StyleSheet.create({
         minHeight: 280,
         justifyContent: 'center',
     },
-    bioButtons: {
-        alignItems: 'center',
-        gap: 16,
-        marginTop: 8,
-    },
+    bioButtons: {alignItems: 'center', gap: 16, marginTop: 8},
     bioRetryBtn: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 20,
         paddingVertical: 10,
         paddingHorizontal: 28,
     },
-    bioRetryText: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    bioPinFallback: {
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 14,
-        textDecorationLine: 'underline',
-    },
-    // PIN mode
-    dotsRow: {
-        flexDirection: 'row',
-        gap: 18,
-        marginBottom: 20,
-    },
+    bioRetryText: {fontSize: 15, fontWeight: '600'},
+    bioPinFallback: {fontSize: 14, textDecorationLine: 'underline'},
+    dotsRow: {flexDirection: 'row', gap: 18, marginBottom: 20},
     dot: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: 'rgba(255,255,255,0.35)',
+        width: 16, height: 16, borderRadius: 8,
         borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.6)',
     },
-    dotFilled: {
-        backgroundColor: '#fff',
-        borderColor: '#fff',
-    },
-    forgot: {
-        color: 'rgba(255,255,255,0.75)',
-        fontSize: 14,
-        marginBottom: 28,
-        textDecorationLine: 'underline',
-    },
-    pad: {
-        width: '100%',
-        paddingHorizontal: 12,
-        gap: 4,
-    },
-    padRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
+    forgot: {fontSize: 14, marginBottom: 28, textDecorationLine: 'underline'},
+    pad: {width: '100%', paddingHorizontal: 12, gap: 4},
+    padRow: {flexDirection: 'row', justifyContent: 'space-around'},
     key: {
         width: KEY_SIZE,
         height: KEY_SIZE * 0.7,
@@ -323,10 +272,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderRadius: 12,
     },
-    keyText: {
-        fontSize: 30,
-        fontWeight: '400',
-        color: '#fff',
-        lineHeight: 36,
-    },
+    keyText: {fontSize: 30, fontWeight: '400', lineHeight: 36},
 });

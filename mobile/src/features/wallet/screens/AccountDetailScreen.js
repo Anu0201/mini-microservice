@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
     Alert,
     Animated,
@@ -15,10 +15,11 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Spinner, Text} from '@gluestack-ui/themed';
 import {COLORS, CURRENCY_SIGN, getCurrencyBg} from '../../../constants';
 import {DepositIcon, WithdrawIcon, BackIcon} from '../../../components/icons';
-import {isPrefixCurrency} from '../../../utils/helpers';
+import {avatarColor, isPrefixCurrency} from '../../../utils/helpers';
 import {useAccountDetail} from '../hooks/useAccountDetail';
 import {useLanguage} from '../../../context/LanguageContext';
 import {useTheme} from '../../../context/ThemeContext';
+import TransactionDetailScreen from './TransactionDetailScreen';
 
 let LiquidGlassView = null;
 let isLiquidGlassSupported = false;
@@ -32,55 +33,68 @@ try {
 const GLASS = isLiquidGlassSupported;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const getTxLabel = (t) => ({
-    DEPOSIT: t('Орлого', 'Deposit'),
-    WITHDRAW: t('Зарлага', 'Withdrawal'),
-    INVOICE_CREDIT: t('SOCIALPAY гүйлгээ', 'SOCIALPAY transfer'),
-    INVOICE_DEBIT: t('Нэхэмжлэл гүйлгээ', 'Invoice payment'),
-});
 const TX_SIGN = {DEPOSIT: '+', INVOICE_CREDIT: '+', WITHDRAW: '-', INVOICE_DEBIT: '-'};
-const TX_COLOR = {
-    DEPOSIT: COLORS.success,
-    INVOICE_CREDIT: COLORS.success,
-    WITHDRAW: COLORS.danger,
-    INVOICE_DEBIT: COLORS.danger,
-};
 
-function TxCard({item}) {
+function TxAvatar({item, colors, t}) {
+    const isInvoice = item.type === 'INVOICE_CREDIT' || item.type === 'INVOICE_DEBIT';
+    const name = item.counterpartyName;
+    if (isInvoice && name) {
+        const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        return (
+            <View style={[styles.txAvatar, {backgroundColor: avatarColor(name, colors)}]}>
+                <Text style={styles.txAvatarText}>{initials}</Text>
+            </View>
+        );
+    }
+    const isCredit = item.type === 'DEPOSIT' || item.type === 'INVOICE_CREDIT';
+    return (
+        <View style={[styles.txAvatar, {backgroundColor: isCredit ? colors.success + '22' : colors.danger + '22'}]}>
+            {isCredit
+                ? <DepositIcon size={20} color={colors.success}/>
+                : <WithdrawIcon size={20} color={colors.danger}/>
+            }
+        </View>
+    );
+}
+
+function TxCard({item, onSelect}) {
     const {t} = useLanguage();
     const {colors} = useTheme();
-    const amountSign = TX_SIGN[item.type] ?? '';
-    const isCredit = amountSign === '+';
-    const color = isCredit ? colors.primary : colors.accent;
-    const label = getTxLabel(t)[item.type] ?? item.type;
+    const sign = TX_SIGN[item.type] ?? '';
+    const isCredit = sign === '+';
+    const amountColor = isCredit ? colors.success : colors.danger;
     const currencySymbol = CURRENCY_SIGN[item.currency] ?? item.currency ?? '';
     const isPrefix = isPrefixCurrency(item.currency);
     const amountDisplay = isPrefix
-        ? `${amountSign}${currencySymbol}${Number(item.amount).toLocaleString()}`
-        : `${amountSign}${Number(item.amount).toLocaleString()}${currencySymbol}`;
+        ? `${sign}${currencySymbol}${Number(item.amount).toLocaleString()}`
+        : `${sign}${Number(item.amount).toLocaleString()}${currencySymbol}`;
+
+    const isInvoice = item.type === 'INVOICE_CREDIT' || item.type === 'INVOICE_DEBIT';
+    const displayName = isInvoice && item.counterpartyName
+        ? item.counterpartyName
+        : item.type === 'DEPOSIT' ? t('Орлого', 'Deposit') : t('Зарлага', 'Withdrawal');
+    const subLabel = isInvoice
+        ? item.type === 'INVOICE_CREDIT' ? t('SocialPay гүйлгээ', 'SocialPay transfer') : t('Нэхэмжлэл төлбөр', 'Invoice payment')
+        : null;
     const date = item.createdAt
-        ? new Date(item.createdAt).toLocaleString('mn-MN', {
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-        })
+        ? new Date(item.createdAt).toLocaleString('mn-MN', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})
         : '';
 
     return (
-        <View style={[styles.txCard, {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderLeftColor: color,
-            shadowOpacity: colors.isDark ? 0 : 0.06,
-        }]}>
-            <View style={styles.txLeft}>
-                <Text style={[styles.txLabel, {color: colors.text}]}>{label}</Text>
-                {item.description ? <Text style={[styles.txDesc, {color: colors.muted}]}>{item.description}</Text> : null}
-                <Text style={[styles.txDate, {color: colors.muted}]}>{date}</Text>
+        <TouchableOpacity
+            style={[styles.txCard, {backgroundColor: colors.background, borderBottomColor: colors.border}]}
+            onPress={() => onSelect?.(item)}
+            activeOpacity={0.7}
+        >
+            <TxAvatar item={item} colors={colors} t={t}/>
+            <View style={styles.txInfo}>
+                <Text style={[styles.txName, {color: colors.text}]}>{displayName}</Text>
+                <Text style={[styles.txMeta, {color: colors.muted}]}>
+                    {date}{subLabel ? ` · ${subLabel}` : ''}
+                </Text>
             </View>
-            <View style={styles.txRight}>
-                <Text style={[styles.txAmount, {color}]}>{amountDisplay}</Text>
-                <Text style={[styles.txBalance, {color: colors.muted}]}>{Number(item.balanceAfter).toLocaleString()}</Text>
-            </View>
-        </View>
+            <Text style={[styles.txAmount, {color: amountColor}]}>{amountDisplay}</Text>
+        </TouchableOpacity>
     );
 }
 
@@ -218,6 +232,8 @@ export default function AccountDetailScreen({accountId, onBack}) {
         openModal, handleTransaction,
     } = useAccountDetail(accountId);
 
+    const [selectedTx, setSelectedTx] = useState(null);
+
     const headerContent = (
         <View style={styles.headerContent}>
             <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.7}>
@@ -270,7 +286,7 @@ export default function AccountDetailScreen({accountId, onBack}) {
                         <FlatList
                             data={transactions}
                             keyExtractor={(item) => String(item.transactionId)}
-                            renderItem={({item}) => <TxCard item={item}/>}
+                            renderItem={({item}) => <TxCard item={item} onSelect={setSelectedTx}/>}
                             ListEmptyComponent={
                                 <View style={styles.emptyWrap}>
                                     <Text style={[styles.emptyText, {color: colors.muted}]}>{t('Гүйлгээний түүх байхгүй байна', 'No transaction history')}</Text>
@@ -282,6 +298,10 @@ export default function AccountDetailScreen({accountId, onBack}) {
                     )}
                 </>
             )}
+
+            <Modal visible={!!selectedTx} animationType="slide" onRequestClose={() => setSelectedTx(null)}>
+                {selectedTx && <TransactionDetailScreen item={selectedTx} onBack={() => setSelectedTx(null)}/>}
+            </Modal>
 
             <Modal
                 visible={!!modal}
@@ -389,25 +409,20 @@ const styles = StyleSheet.create({
     txCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginHorizontal: 12,
-        marginTop: 8,
-        borderRadius: 16,
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingVertical: 14,
-        borderWidth: 1,
-        borderLeftWidth: 4,
-        shadowColor: '#000',
-        shadowRadius: 4,
-        shadowOffset: {width: 0, height: 1},
-        elevation: 1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    txLeft: {flex: 1, marginRight: 12},
-    txLabel: {fontSize: 14, fontWeight: '600', color: '#0f172a'},
-    txDesc: {fontSize: 12, color: COLORS.secondary, marginTop: 1},
-    txDate: {fontSize: 11, color: COLORS.muted, marginTop: 2},
-    txRight: {alignItems: 'flex-end'},
-    txAmount: {fontSize: 16, fontWeight: '700'},
-    txBalance: {fontSize: 11, color: COLORS.muted, marginTop: 2},
+    txAvatar: {
+        width: 46, height: 46, borderRadius: 23,
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 12, flexShrink: 0,
+    },
+    txAvatarText: {color: '#fff', fontWeight: '700', fontSize: 15},
+    txInfo: {flex: 1, marginRight: 8},
+    txName: {fontSize: 15, fontWeight: '600', marginBottom: 2},
+    txMeta: {fontSize: 12},
+    txAmount: {fontSize: 15, fontWeight: '700', flexShrink: 0},
 
     emptyWrap: {alignItems: 'center', marginTop: 48},
     emptyText: {color: COLORS.muted, fontSize: 14},

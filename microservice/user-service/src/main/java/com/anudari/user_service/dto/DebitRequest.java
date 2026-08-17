@@ -8,5 +8,6 @@ import java.math.BigDecimal;
 public record DebitRequest(
         @NotNull Long accountId,
         @NotNull Long userId,
-        @NotNull @DecimalMin("0.01") BigDecimal amount
+        @NotNull @DecimalMin("0.01") BigDecimal amount,
+        String counterpartyName
 ) {}

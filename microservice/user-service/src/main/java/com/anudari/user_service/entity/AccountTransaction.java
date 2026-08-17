@@ -38,6 +38,9 @@ public class AccountTransaction {
 
     private String description;
 
+    @Column(name = "counterparty_name")
+    private String counterpartyName;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
